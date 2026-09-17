@@ -1,6 +1,6 @@
 // Enterprise HMS — Multi-Schema Prisma Definition
-// Architecture Baseline: W1-T02 Organization Model
-// Domain Schemas: platform_schema (Organization), audit_schema (Outbox)
+// Architecture Baseline: W1-T02 Organization Model & W1-T03 Identity/IAM
+// Domain Schemas: platform_schema (Organization & IAM), audit_schema (Outbox & Security Audit)
 
 generator client {
   provider        = "prisma-client-js"
@@ -26,7 +26,10 @@ model HotelGroup {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
-  regions     Region[]
+  regions        Region[]
+  memberships    OrganizationMembership[]
+  roles          Role[]
+  userRoleScopes UserRoleScope[]
 
   @@index([status])
   @@index([deletedAt])
@@ -48,8 +51,9 @@ model Region {
   updatedAt    DateTime   @updatedAt @map("updated_at")
   deletedAt    DateTime?  @map("deleted_at")
 
-  hotelGroup   HotelGroup @relation(fields: [hotelGroupId], references: [id], onDelete: Restrict)
-  countries    Country[]
+  hotelGroup     HotelGroup      @relation(fields: [hotelGroupId], references: [id], onDelete: Restrict)
+  countries      Country[]
+  userRoleScopes UserRoleScope[]
 
   @@unique([hotelGroupId, code])
   @@index([hotelGroupId])
@@ -63,17 +67,18 @@ model Region {
 // 3. COUNTRY (Jurisdictional Tier)
 // ==============================================================================
 model Country {
-  id        String     @id
-  regionId  String     @map("region_id")
-  code      String     // ISO 3166-1 alpha-2 (e.g., 'JP', 'US', 'AE')
-  name      String
-  status    String     @default("ACTIVE")
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
-  deletedAt DateTime?  @map("deleted_at")
+  id             String          @id
+  regionId       String          @map("region_id")
+  code           String          // ISO 3166-1 alpha-2 (e.g., 'JP', 'US', 'AE')
+  name           String
+  status         String          @default("ACTIVE")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  deletedAt      DateTime?       @map("deleted_at")
 
-  region    Region     @relation(fields: [regionId], references: [id], onDelete: Restrict)
-  properties Property[]
+  region         Region          @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  properties     Property[]
+  userRoleScopes UserRoleScope[]
 
   @@unique([regionId, code])
   @@index([regionId])
@@ -107,8 +112,10 @@ model Property {
   updatedAt     DateTime   @updatedAt @map("updated_at")
   deletedAt     DateTime?  @map("deleted_at")
 
-  country       Country    @relation(fields: [countryId], references: [id], onDelete: Restrict)
-  buildings     Building[]
+  country        Country         @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  buildings      Building[]
+  defaultUsers   User[]          @relation("UserDefaultProperty")
+  userRoleScopes UserRoleScope[]
 
   @@index([countryId])
   @@index([status])
@@ -190,5 +197,275 @@ model OutboxEvent {
 
   @@index([published, time])
   @@map("outbox_events")
+  @@schema("audit_schema")
+}
+
+// ==============================================================================
+// 8. USER (Unified Identity Core)
+// ==============================================================================
+model User {
+  id                String    @id
+  email             String    @unique
+  firstName         String    @map("first_name")
+  lastName          String    @map("last_name")
+  phone             String?   @map("phone")
+  status            String    @default("ACTIVE") @map("status")
+  failedLoginCount  Int       @default(0) @map("failed_login_count")
+  lockedUntil       DateTime? @map("locked_until")
+  lastLoginAt       DateTime? @map("last_login_at")
+  defaultPropertyId String?   @map("default_property_id")
+  version           Int       @default(1) @map("version")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  defaultProperty   Property?                @relation("UserDefaultProperty", fields: [defaultPropertyId], references: [id], onDelete: SetNull)
+  credential        UserCredential?
+  passwordHistories PasswordHistory[]
+  memberships       OrganizationMembership[]
+  roleScopes        UserRoleScope[]
+  authSessions      AuthSession[]
+
+  @@index([status])
+  @@index([deletedAt])
+  @@index([defaultPropertyId])
+  @@map("users")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 9. USER CREDENTIAL (Separate Authentication Secret Persistence)
+// ==============================================================================
+model UserCredential {
+  id                String   @id
+  userId            String   @unique @map("user_id")
+  passwordHash      String   @map("password_hash")
+  passwordChangedAt DateTime @default(now()) @map("password_changed_at")
+  status            String   @default("ACTIVE") @map("status")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_credentials")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 10. PASSWORD HISTORY (Previous Credential Hashes for History Validation)
+// ==============================================================================
+model PasswordHistory {
+  id           String   @id
+  userId       String   @map("user_id")
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("password_histories")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 11. ORGANIZATION MEMBERSHIP (Multi-Group / Affiliation Modeling)
+// ==============================================================================
+model OrganizationMembership {
+  id           String    @id
+  userId       String    @map("user_id")
+  hotelGroupId String    @map("hotel_group_id")
+  isPrimary    Boolean   @default(false) @map("is_primary")
+  status       String    @default("ACTIVE") @map("status")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hotelGroup HotelGroup @relation(fields: [hotelGroupId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, hotelGroupId])
+  @@index([userId])
+  @@index([hotelGroupId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("organization_memberships")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 12. ROLE (System & Hotel Group Custom Roles)
+// ==============================================================================
+model Role {
+  id           String    @id
+  hotelGroupId String?   @map("hotel_group_id")
+  code         String    @map("code")
+  name         String    @map("name")
+  description  String?   @map("description")
+  isSystem     Boolean   @default(false) @map("is_system")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  hotelGroup      HotelGroup?      @relation(fields: [hotelGroupId], references: [id], onDelete: Restrict)
+  rolePermissions RolePermission[]
+  userRoleScopes  UserRoleScope[]
+
+  @@index([hotelGroupId])
+  @@index([code])
+  @@index([isSystem])
+  @@index([deletedAt])
+  @@map("roles")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 13. PERMISSION (Normalized Domain Capabilities)
+// ==============================================================================
+model Permission {
+  id          String   @id
+  code        String   @unique @map("code")
+  name        String   @map("name")
+  description String?  @map("description")
+  module      String?  @map("module")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+
+  @@index([module])
+  @@map("permissions")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 14. ROLE PERMISSION (Role-to-Permission Mapping)
+// ==============================================================================
+model RolePermission {
+  id           String   @id
+  roleId       String   @map("role_id")
+  permissionId String   @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 15. USER ROLE SCOPE (Hierarchically Scoped Role Assignments)
+// ==============================================================================
+model UserRoleScope {
+  id             String   @id
+  userId         String   @map("user_id")
+  roleId         String   @map("role_id")
+  scopeType      String   @map("scope_type")
+  hotelGroupId   String?  @map("hotel_group_id")
+  regionId       String?  @map("region_id")
+  countryId      String?  @map("country_id")
+  propertyId     String?  @map("property_id")
+  departmentCode String?  @map("department_code")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role        @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  hotelGroup HotelGroup? @relation(fields: [hotelGroupId], references: [id], onDelete: Restrict)
+  region     Region?     @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  country    Country?    @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  property   Property?   @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([roleId])
+  @@index([scopeType])
+  @@index([hotelGroupId])
+  @@index([regionId])
+  @@index([countryId])
+  @@index([propertyId])
+  @@map("user_role_scopes")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 16. AUTH SESSION (Server-Side Session & Revocation Metadata)
+// ==============================================================================
+model AuthSession {
+  id               String    @id
+  userId           String    @map("user_id")
+  sessionToken     String    @unique @map("session_token")
+  deviceInfo       String?   @map("device_info")
+  ipAddress        String?   @map("ip_address")
+  userAgent        String?   @map("user_agent")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  revocationReason String?   @map("revocation_reason")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@index([userId])
+  @@index([sessionToken])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("auth_sessions")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 17. REFRESH TOKEN (Hashed Token Family Rotation Persistence)
+// ==============================================================================
+model RefreshToken {
+  id                String    @id
+  sessionId         String    @map("session_id")
+  tokenFamily       String    @map("token_family")
+  tokenHash         String    @unique @map("token_hash")
+  issuedAt          DateTime  @default(now()) @map("issued_at")
+  expiresAt         DateTime  @map("expires_at")
+  usedAt            DateTime? @map("used_at")
+  revokedAt         DateTime? @map("revoked_at")
+  replacedByTokenId String?   @map("replaced_by_token_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  session      AuthSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  replacedBy   RefreshToken?  @relation("TokenReplacement", fields: [replacedByTokenId], references: [id], onDelete: SetNull)
+  replacements RefreshToken[] @relation("TokenReplacement")
+
+  @@index([sessionId])
+  @@index([tokenFamily])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 18. SECURITY AUDIT LOG (Append-Only Immutable Ledger)
+// ==============================================================================
+model SecurityAuditLog {
+  id            String   @id
+  timestamp     DateTime @default(now()) @map("timestamp")
+  actorId       String?  @map("actor_id")
+  actorType     String   @default("USER") @map("actor_type")
+  action        String   @map("action")
+  resourceType  String?  @map("resource_type")
+  resourceId    String?  @map("resource_id")
+  outcome       String   @map("outcome")
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  correlationId String?  @map("correlation_id")
+  details       Json?    @map("details")
+
+  @@index([timestamp])
+  @@index([actorId])
+  @@index([action])
+  @@index([resourceType, resourceId])
+  @@index([correlationId])
+  @@map("security_audit_logs")
   @@schema("audit_schema")
 }
