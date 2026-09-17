@@ -21,8 +21,10 @@ async function bootstrap() {
     exposedHeaders: ['X-Correlation-ID', 'X-Property-ID', 'X-Tenant-ID'],
   });
 
-  // Global Prefix
-  app.setGlobalPrefix('api');
+  // Global Prefix (excluding standard discovery endpoints like /.well-known/jwks.json)
+  app.setGlobalPrefix('api', {
+    exclude: ['/.well-known/jwks.json', '.well-known/jwks.json'],
+  });
 
   // Global Validation Pipe
   app.useGlobalPipes(

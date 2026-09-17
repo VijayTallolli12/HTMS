@@ -138,3 +138,67 @@ export interface SecurityAuditLogDto {
   correlationId: string | null;
   details: Record<string, unknown> | null;
 }
+
+// ==============================================================================
+// T04 Authentication & Session DTOs
+// ==============================================================================
+
+export interface SafeUserDto {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  status: string;
+  defaultPropertyId: string | null;
+}
+
+export interface ActiveAuthContext {
+  hotelGroupId?: string;
+  propertyId?: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+  clientType?: 'web' | 'native';
+  deviceInfo?: string;
+}
+
+/**
+ * Web Authentication Response:
+ * Strictly omits refresh token from JSON payload.
+ * Refresh token is delivered exclusively via HttpOnly cookie.
+ */
+export interface WebAuthenticationResponse {
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+  user: SafeUserDto;
+  activeContext: ActiveAuthContext;
+}
+
+/**
+ * Native / Mobile Authentication Response:
+ * Includes refresh token in payload for secure OS keychain storage.
+ */
+export interface NativeAuthenticationResponse extends WebAuthenticationResponse {
+  refreshToken: string;
+}
+
+export type AuthenticationResponse = WebAuthenticationResponse | NativeAuthenticationResponse;
+
+export interface RefreshRequest {
+  /** Optional in body for native clients; extracted from HttpOnly cookie for web */
+  refreshToken?: string;
+}
+
+export interface MeResponse {
+  user: SafeUserDto;
+  activeContext: ActiveAuthContext;
+  sessionId: string;
+}
+
+export interface LogoutResponse {
+  success: boolean;
+  message: string;
+}
