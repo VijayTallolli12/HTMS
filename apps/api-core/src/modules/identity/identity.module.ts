@@ -14,6 +14,13 @@ import { LocalBreachedPasswordChecker } from './infrastructure/services/local-br
 import { AuthController } from './presentation/controllers/auth.controller';
 import { JwksController } from './presentation/controllers/jwks.controller';
 
+import { APP_GUARD } from '@nestjs/core';
+import { HierarchyValidationService } from './application/services/hierarchy-validation.service';
+import { AuthorizationCacheService } from './application/services/authorization-cache.service';
+import { AuthorizationService } from './application/services/authorization.service';
+import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
+import { ScopedRbacGuard } from './presentation/guards/scoped-rbac.guard';
+
 @Module({
   controllers: [AuthController, JwksController],
   providers: [
@@ -32,6 +39,19 @@ import { JwksController } from './presentation/controllers/jwks.controller';
     RefreshTokenService,
     AuthThrottleService,
     AuthenticationService,
+    HierarchyValidationService,
+    AuthorizationCacheService,
+    AuthorizationService,
+    JwtAuthGuard,
+    ScopedRbacGuard,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ScopedRbacGuard,
+    },
   ],
   exports: [
     PrismaService,
@@ -45,6 +65,11 @@ import { JwksController } from './presentation/controllers/jwks.controller';
     AuthThrottleService,
     AuthenticationService,
     BREACHED_PASSWORD_CHECKER,
+    HierarchyValidationService,
+    AuthorizationCacheService,
+    AuthorizationService,
+    JwtAuthGuard,
+    ScopedRbacGuard,
   ],
 })
 export class IdentityModule {}

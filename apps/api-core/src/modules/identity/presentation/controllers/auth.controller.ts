@@ -23,6 +23,7 @@ import {
   MeResponse,
   LogoutResponse,
 } from '@hms/api-contracts';
+import { Public, Authenticated } from '../decorators/authz.decorators';
 
 const REFRESH_COOKIE_NAME = 'hms_refresh_token';
 const REFRESH_COOKIE_PATH = '/api/v1/auth/refresh';
@@ -36,6 +37,7 @@ export class AuthController {
     private readonly tokenService: TokenService,
   ) {}
 
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate user with email and password' })
@@ -72,6 +74,7 @@ export class AuthController {
     return createApiResponse(response, req);
   }
 
+  @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Rotate refresh token and obtain new RS256 access token' })
@@ -116,6 +119,7 @@ export class AuthController {
     return createApiResponse(response, req);
   }
 
+  @Authenticated()
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Revoke active session and clear authentication cookie' })
@@ -148,6 +152,7 @@ export class AuthController {
     return createApiResponse({ success: true, message: 'Logged out successfully.' }, req);
   }
 
+  @Authenticated()
   @Get('me')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()

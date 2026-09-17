@@ -4,7 +4,10 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { HealthService } from './health.service';
 import { HealthResponse, LivenessResponse, ReadinessResponse } from '@hms/api-contracts';
 
+import { Public } from '../identity/presentation/decorators/authz.decorators';
+
 @ApiTags('Health')
+@Public()
 @Controller()
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}

@@ -73,3 +73,5 @@ export type DepartmentCode =
   | 'SECURITY'
   | 'SPA_LEISURE'
   | 'IT_SYSTEMS';
+
+export * from './security-context.contract';
