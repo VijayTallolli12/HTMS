@@ -70,10 +70,19 @@ Front-office and rooms management workflows require **dense, glanceable, high-th
 
 ---
 
-## 5. Luxury Design System & Operational Usability
-* **Visual Palette**: Elegant luxury palette featuring deep navy (`#0B132B`), slate accents (`#1C2541`), rich gold highlights (`#C5A880`), and high-contrast status colors.
-* **Typography**: Clean humanist sans-serif (`Inter`) for data grids; Monospaced numbers (`JetBrains Mono`) for financial folios to guarantee tabular alignment.
-* **Keyboard Shortcuts**: Power-user hotkeys for Front Desk Agents (`F2` = Search Guest, `F4` = Check-in, `F8` = Post Charge, `Esc` = Close Modal).
+---
+
+## 5. Luxury Design System & Experience Foundation
+The visual language, operational usability rules, design tokens, component specifications, and responsive strategies are centralized in:
+* **[docs/17-HMS-DESIGN-SYSTEM.md](file:///f:/Folkslogic/enterprise-hms/docs/17-HMS-DESIGN-SYSTEM.md)**: Master product design specification (26 sections covering the 4-step glanceability cadence, time-to-action principle, desktop/tablet/mobile paradigms, touch rules, 13 canonical statuses, Arabic/RTL architecture, and 10 signature HMS experiences).
+* **[docs/18-HMS-UX-DEVELOPER-CONTRACT.md](file:///f:/Folkslogic/enterprise-hms/docs/18-HMS-UX-DEVELOPER-CONTRACT.md)**: Binding rules, component reuse standards, and PR quality gates for all developers and AI agents.
+* **`@hms/ui`**: Centralized, strongly-typed TypeScript design token package exporting `LUXURY_PALETTE`, `TYPOGRAPHY`, `SPACING`, `BREAKPOINTS`, `RADII`, `SHADOWS`, `STATUS_TOKENS`, and `Z_INDEX`.
+
+### 5.1 Architectural Responsibility Demarcation
+To preserve documentation integrity:
+* **`10-UI-UX-ARCHITECTURE.md` (This Document)**: Owns frontend engineering mechanics (Angular 18 shell, Signals state, routing, interceptors, performance benchmarks).
+* **`17-HMS-DESIGN-SYSTEM.md`**: Owns product experience, design tokens, visual guidelines, component specifications, UX rules, responsive/tablet/mobile, Arabic/RTL, and signature workflows.
+* **`18-HMS-UX-DEVELOPER-CONTRACT.md`**: Owns developer governance, mandatory UX constraints, and PR rejection criteria.
 
 ---
 
