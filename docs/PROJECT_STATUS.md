@@ -2,9 +2,9 @@
 
 ## 1. Current Project State
 * **Current Phase**: Wave 1 — Core Operating Loop (Active)
-* **System Status**: **TASK W1-T01 COMPLETE — INFRASTRUCTURE & MONOREPO BASELINE VERIFIED**
+* **System Status**: **TASK W1-T02 COMPLETE — MULTI-PROPERTY ORGANIZATION MODEL & HIERARCHY VERIFIED**
 * **Active Architecture Decisions**: ADR-0001 through ADR-0008 Ratified & Frozen
-* **Repository Health**: 100% Documentation Baseline, Monorepo Scaffolding Complete, 100% Tests Passing, Clean Builds, Zero Lint/Type Errors
+* **Repository Health**: 100% Documentation Baseline, Monorepo Scaffolding Complete, Organization Hierarchy Modeled & Migrated, 100% Tests Passing (Unit 28/28, Integration 22/22, E2E 5/5), Clean Builds, Zero Lint/Type Errors
 
 ---
 
@@ -53,10 +53,10 @@
 
 ## 4. Wave 1 Task Status
 * [x] **W1-T01: Monorepo Scaffolding & Local Infrastructure Baseline** — COMPLETE (Verified: Postgres 16, RabbitMQ 3.13, Redis 7, Mailpit, NestJS 10.3, Angular 18, 14/14 tests passing).
-* [ ] **W1-T02: Multi-Property Organization Model & Database Migrations** — PENDING AUTHORIZATION.
+* [x] **W1-T02: Multi-Property Organization Model & Database Migrations** — COMPLETE (Verified: HotelGroup -> Region -> Country -> Property -> Building -> Floor, Prisma multi-schema migrations, Seed, Transactional Outbox, NestJS REST API, Angular 18 Signals UI, 55/55 tests passing).
 * [ ] **W1-T03: Scoped Identity, Auth Guard & Context Resolver** — QUEUED.
 * [ ] **W1-T04: PMS Room Types, Rate Plans & Inventory Calendar** — QUEUED.
 
 ## 5. Immediate Next Step
-* Human Architect review and authorization for Wave 1 Task `W1-T02` (Multi-Property Organization Model & Database Migrations).
+* Human Architect review and authorization for Wave 1 Task `W1-T03` (Scoped Identity, Auth Guard & Context Resolver).
 * Stop condition active: Do NOT automatically proceed without authorization.

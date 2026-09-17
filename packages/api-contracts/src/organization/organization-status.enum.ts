@@ -1,0 +1,6 @@
+export enum OrganizationStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  UNDER_CONSTRUCTION = 'UNDER_CONSTRUCTION',
+}

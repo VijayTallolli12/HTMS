@@ -4,7 +4,15 @@
     "outDir": "./out-tsc/app",
     "types": [],
     "module": "ES2022",
-    "target": "ES2022"
+    "target": "ES2022",
+    "baseUrl": ".",
+    "paths": {
+      "rxjs": ["node_modules/rxjs"],
+      "rxjs/*": ["node_modules/rxjs/*"],
+      "@hms/api-contracts": ["../../packages/api-contracts/dist/index"],
+      "@hms/shared": ["../../packages/shared/dist/index"],
+      "@hms/ui": ["../../packages/ui/dist/index"]
+    }
   },
   "files": ["src/main.ts"],
   "include": ["src/**/*.d.ts", "src/**/*.ts"]

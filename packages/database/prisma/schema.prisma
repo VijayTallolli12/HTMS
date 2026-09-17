@@ -1,0 +1,194 @@
+// Enterprise HMS — Multi-Schema Prisma Definition
+// Architecture Baseline: W1-T02 Organization Model
+// Domain Schemas: platform_schema (Organization), audit_schema (Outbox)
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["platform_schema", "audit_schema"]
+}
+
+// ==============================================================================
+// 1. HOTEL GROUP (Corporate HQ Tier)
+// ==============================================================================
+model HotelGroup {
+  id          String    @id
+  code        String    @unique
+  name        String
+  description String?
+  status      String    @default("ACTIVE")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  regions     Region[]
+
+  @@index([status])
+  @@index([deletedAt])
+  @@map("hotel_groups")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 2. REGION (Geographical / Cluster Tier)
+// ==============================================================================
+model Region {
+  id           String     @id
+  hotelGroupId String     @map("hotel_group_id")
+  code         String
+  name         String
+  description  String?
+  status       String     @default("ACTIVE")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  hotelGroup   HotelGroup @relation(fields: [hotelGroupId], references: [id], onDelete: Restrict)
+  countries    Country[]
+
+  @@unique([hotelGroupId, code])
+  @@index([hotelGroupId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("regions")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 3. COUNTRY (Jurisdictional Tier)
+// ==============================================================================
+model Country {
+  id        String     @id
+  regionId  String     @map("region_id")
+  code      String     // ISO 3166-1 alpha-2 (e.g., 'JP', 'US', 'AE')
+  name      String
+  status    String     @default("ACTIVE")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  deletedAt DateTime?  @map("deleted_at")
+
+  region    Region     @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  properties Property[]
+
+  @@unique([regionId, code])
+  @@index([regionId])
+  @@index([code])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("countries")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 4. PROPERTY (Operational Hotel / Resort Unit Tier)
+// ==============================================================================
+model Property {
+  id            String     @id
+  countryId     String     @map("country_id")
+  code          String     @unique // Globally unique enterprise property code
+  name          String
+  legalName     String?    @map("legal_name")
+  status        String     @default("ACTIVE")
+  timeZone      String     @map("time_zone") // IANA format (e.g., 'Asia/Tokyo')
+  currency      String     @map("currency")  // ISO 4217 (e.g., 'JPY', 'USD')
+  addressLine1  String?    @map("address_line1")
+  addressLine2  String?    @map("address_line2")
+  city          String?    @map("city")
+  stateProvince String?    @map("state_province")
+  postalCode    String?    @map("postal_code")
+  phone         String?    @map("phone")
+  email         String?    @map("email")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  deletedAt     DateTime?  @map("deleted_at")
+
+  country       Country    @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  buildings     Building[]
+
+  @@index([countryId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("properties")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 5. BUILDING (Physical Tower / Wing Tier)
+// ==============================================================================
+model Building {
+  id          String    @id
+  propertyId  String    @map("property_id")
+  code        String
+  name        String
+  description String?
+  status      String    @default("ACTIVE")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  floors      Floor[]
+
+  @@unique([propertyId, code])
+  @@index([propertyId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("buildings")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 6. FLOOR (Physical Level Tier — Terminal Organization Entity)
+// ==============================================================================
+model Floor {
+  id          String    @id
+  buildingId  String    @map("building_id")
+  code        String
+  name        String
+  floorNumber Int       @map("floor_number")
+  status      String    @default("ACTIVE")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  building    Building  @relation(fields: [buildingId], references: [id], onDelete: Restrict)
+
+  @@unique([buildingId, code])
+  @@index([buildingId])
+  @@index([floorNumber])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("floors")
+  @@schema("platform_schema")
+}
+
+// ==============================================================================
+// 7. TRANSACTIONAL OUTBOX (audit_schema.outbox_events)
+// ==============================================================================
+model OutboxEvent {
+  id              String    @id
+  specversion     String    @default("1.0")
+  type            String
+  source          String
+  subject         String?
+  datacontenttype String    @default("application/json")
+  time            DateTime  @default(now())
+  data            Json
+  tenantId        String?   @map("tenant_id")
+  propertyId      String?   @map("property_id")
+  correlationId   String?   @map("correlation_id")
+  causationId     String?   @map("causation_id")
+  published       Boolean   @default(false)
+  publishedAt     DateTime? @map("published_at")
+  retryCount      Int       @default(0) @map("retry_count")
+  lastError       String?   @map("last_error")
+
+  @@index([published, time])
+  @@map("outbox_events")
+  @@schema("audit_schema")
+}

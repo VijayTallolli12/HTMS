@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { parseEnvironment } from '@hms/config';
 import { HealthModule } from './modules/health/health.module';
+import { OrganizationModule } from './modules/organization/organization.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
@@ -17,6 +18,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
       envFilePath: ['.env', '../../.env'],
     }),
     HealthModule,
+    OrganizationModule,
   ],
 })
 export class AppModule implements NestModule {

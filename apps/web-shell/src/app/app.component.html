@@ -10,9 +10,21 @@
     </div>
 
     <div class="header-center">
+      <nav class="header-nav">
+        <a routerLink="/health" routerLinkActive="active-nav" class="nav-link">System Status</a>
+        <a routerLink="/organization" routerLinkActive="active-nav" class="nav-link"
+          >Organization</a
+        >
+      </nav>
+
       <div class="property-selector">
         <span class="selector-label">ACTIVE CONTEXT</span>
-        <span class="selector-value">🌐 Portfolio Master (All Properties)</span>
+        <span class="selector-value" *ngIf="activeProperty()">
+          🏨 {{ activeProperty()!.name }} ({{ activeProperty()!.code }})
+        </span>
+        <span class="selector-value" *ngIf="!activeProperty()">
+          🌐 Portfolio Master (All Properties)
+        </span>
       </div>
     </div>
 

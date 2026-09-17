@@ -1,0 +1,499 @@
+<div class="org-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Organization Architecture</h1>
+      <p class="page-subtitle">
+        Enterprise multi-property hierarchy: Hotel Group &rarr; Region &rarr; Country &rarr;
+        Property &rarr; Building &rarr; Floor
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button
+        class="btn-secondary"
+        [class.active]="currentLevel() === 'tree'"
+        (click)="navigateTo('tree')"
+      >
+        🌳 Full Hierarchy Tree
+      </button>
+      <button
+        *ngIf="currentLevel() !== 'tree'"
+        class="btn-primary"
+        (click)="openCreateModal(currentLevel())"
+      >
+        + Add {{ currentLevel() | titlecase }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Status / Feedback Banners -->
+  <div *ngIf="errorMessage()" class="alert alert-error">
+    <span class="alert-icon">⚠️</span>
+    <span class="alert-text">{{ errorMessage() }}</span>
+    <button class="alert-close" (click)="errorMessage.set(null)">✕</button>
+  </div>
+
+  <div *ngIf="successMessage()" class="alert alert-success">
+    <span class="alert-icon">✓</span>
+    <span class="alert-text">{{ successMessage() }}</span>
+    <button class="alert-close" (click)="successMessage.set(null)">✕</button>
+  </div>
+
+  <!-- Hierarchical Breadcrumb Navigation -->
+  <nav *ngIf="currentLevel() !== 'tree'" class="breadcrumb-nav">
+    <button
+      class="crumb-btn"
+      [class.active]="currentLevel() === 'group'"
+      (click)="navigateTo('group')"
+    >
+      🏢 Hotel Groups
+    </button>
+
+    <ng-container *ngIf="selectedGroup()">
+      <span class="crumb-separator">&rsaquo;</span>
+      <button
+        class="crumb-btn"
+        [class.active]="currentLevel() === 'region'"
+        (click)="navigateTo('region')"
+      >
+        🌍 {{ selectedGroup()!.name }}
+      </button>
+    </ng-container>
+
+    <ng-container *ngIf="selectedRegion()">
+      <span class="crumb-separator">&rsaquo;</span>
+      <button
+        class="crumb-btn"
+        [class.active]="currentLevel() === 'country'"
+        (click)="navigateTo('country')"
+      >
+        🏳️ {{ selectedRegion()!.name }}
+      </button>
+    </ng-container>
+
+    <ng-container *ngIf="selectedCountry()">
+      <span class="crumb-separator">&rsaquo;</span>
+      <button
+        class="crumb-btn"
+        [class.active]="currentLevel() === 'property'"
+        (click)="navigateTo('property')"
+      >
+        🏨 {{ selectedCountry()!.name }}
+      </button>
+    </ng-container>
+
+    <ng-container *ngIf="selectedProperty()">
+      <span class="crumb-separator">&rsaquo;</span>
+      <button
+        class="crumb-btn"
+        [class.active]="currentLevel() === 'building'"
+        (click)="navigateTo('building')"
+      >
+        🏛️ {{ selectedProperty()!.name }}
+      </button>
+    </ng-container>
+
+    <ng-container *ngIf="selectedBuilding()">
+      <span class="crumb-separator">&rsaquo;</span>
+      <button
+        class="crumb-btn"
+        [class.active]="currentLevel() === 'floor'"
+        (click)="navigateTo('floor')"
+      >
+        📶 {{ selectedBuilding()!.name }}
+      </button>
+    </ng-container>
+  </nav>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="loading-state">
+    <div class="spinner"></div>
+    <span>Loading organization data...</span>
+  </div>
+
+  <!-- Content Views -->
+  <div *ngIf="!isLoading()">
+    <!-- 1. GROUPS VIEW -->
+    <div *ngIf="currentLevel() === 'group'" class="entity-section">
+      <div class="section-title-row">
+        <h2>Enterprise Hotel Groups ({{ groups().length }})</h2>
+      </div>
+
+      <div *ngIf="groups().length === 0" class="empty-state">
+        <p>No Hotel Groups found. Create your initial parent group to begin.</p>
+        <button class="btn-primary" (click)="openCreateModal('group')">+ Add Hotel Group</button>
+      </div>
+
+      <div class="card-grid">
+        <div *ngFor="let g of groups()" class="org-card">
+          <div class="card-top">
+            <span class="entity-code">{{ g.code }}</span>
+            <span class="status-badge" [class.active]="g.status === 'ACTIVE'">{{ g.status }}</span>
+          </div>
+          <h3 class="card-title">{{ g.name }}</h3>
+          <p class="card-desc">{{ g.description || 'Enterprise parent brand' }}</p>
+          <div class="card-actions">
+            <button class="btn-action drill-down" (click)="selectGroup(g)">
+              Explore Regions &rarr;
+            </button>
+            <button class="btn-action danger" (click)="deleteGroup(g.id, g.name)">
+              Deactivate
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. REGIONS VIEW -->
+    <div *ngIf="currentLevel() === 'region'" class="entity-section">
+      <div class="section-title-row">
+        <h2>Regions in {{ selectedGroup()?.name }} ({{ regions().length }})</h2>
+      </div>
+
+      <div *ngIf="regions().length === 0" class="empty-state">
+        <p>No regions created under this hotel group yet.</p>
+        <button class="btn-primary" (click)="openCreateModal('region')">+ Add First Region</button>
+      </div>
+
+      <div class="card-grid">
+        <div *ngFor="let r of regions()" class="org-card">
+          <div class="card-top">
+            <span class="entity-code">{{ r.code }}</span>
+            <span class="status-badge" [class.active]="r.status === 'ACTIVE'">{{ r.status }}</span>
+          </div>
+          <h3 class="card-title">{{ r.name }}</h3>
+          <p class="card-desc">{{ r.description || 'Regional cluster division' }}</p>
+          <div class="card-actions">
+            <button class="btn-action drill-down" (click)="selectRegion(r)">
+              Explore Countries &rarr;
+            </button>
+            <button class="btn-action danger" (click)="deleteRegion(r.id, r.name)">
+              Deactivate
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. COUNTRIES VIEW -->
+    <div *ngIf="currentLevel() === 'country'" class="entity-section">
+      <div class="section-title-row">
+        <h2>Countries in {{ selectedRegion()?.name }} ({{ countries().length }})</h2>
+      </div>
+
+      <div *ngIf="countries().length === 0" class="empty-state">
+        <p>No countries registered under this region yet.</p>
+        <button class="btn-primary" (click)="openCreateModal('country')">+ Add Country</button>
+      </div>
+
+      <div class="card-grid">
+        <div *ngFor="let c of countries()" class="org-card">
+          <div class="card-top">
+            <span class="entity-code">ISO: {{ c.code }}</span>
+            <span class="status-badge" [class.active]="c.status === 'ACTIVE'">{{ c.status }}</span>
+          </div>
+          <h3 class="card-title">{{ c.name }}</h3>
+          <p class="card-desc">Jurisdictional operating territory</p>
+          <div class="card-actions">
+            <button class="btn-action drill-down" (click)="selectCountry(c)">
+              Explore Properties &rarr;
+            </button>
+            <button class="btn-action danger" (click)="deleteCountry(c.id, c.name)">
+              Deactivate
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. PROPERTIES VIEW -->
+    <div *ngIf="currentLevel() === 'property'" class="entity-section">
+      <div class="section-title-row">
+        <h2>Properties in {{ selectedCountry()?.name }} ({{ properties().length }})</h2>
+      </div>
+
+      <div *ngIf="properties().length === 0" class="empty-state">
+        <p>No hotel or resort properties exist in this country yet.</p>
+        <button class="btn-primary" (click)="openCreateModal('property')">+ Add Property</button>
+      </div>
+
+      <div class="card-grid">
+        <div *ngFor="let p of properties()" class="org-card property-card">
+          <div class="card-top">
+            <span class="entity-code">{{ p.code }}</span>
+            <span class="status-badge" [class.active]="p.status === 'ACTIVE'">{{ p.status }}</span>
+          </div>
+          <h3 class="card-title">{{ p.name }}</h3>
+          <div class="property-meta">
+            <span>🌐 {{ p.timeZone }}</span>
+            <span>💰 {{ p.currency }}</span>
+            <span *ngIf="p.city">📍 {{ p.city }}</span>
+          </div>
+          <p class="card-desc">{{ p.legalName || 'Operating resort unit' }}</p>
+          <div class="card-actions">
+            <button class="btn-action drill-down" (click)="selectProperty(p)">
+              Buildings &rarr;
+            </button>
+            <button class="btn-action context-btn" (click)="setActivePropertyContext(p)">
+              🎯 Set Context
+            </button>
+            <button class="btn-action danger" (click)="deleteProperty(p.id, p.name)">
+              Deactivate
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. BUILDINGS VIEW -->
+    <div *ngIf="currentLevel() === 'building'" class="entity-section">
+      <div class="section-title-row">
+        <h2>Buildings in {{ selectedProperty()?.name }} ({{ buildings().length }})</h2>
+      </div>
+
+      <div *ngIf="buildings().length === 0" class="empty-state">
+        <p>No physical buildings or wings registered under this property yet.</p>
+        <button class="btn-primary" (click)="openCreateModal('building')">+ Add Building</button>
+      </div>
+
+      <div class="card-grid">
+        <div *ngFor="let b of buildings()" class="org-card">
+          <div class="card-top">
+            <span class="entity-code">{{ b.code }}</span>
+            <span class="status-badge" [class.active]="b.status === 'ACTIVE'">{{ b.status }}</span>
+          </div>
+          <h3 class="card-title">{{ b.name }}</h3>
+          <p class="card-desc">{{ b.description || 'Accommodation tower/wing' }}</p>
+          <div class="card-actions">
+            <button class="btn-action drill-down" (click)="selectBuilding(b)">Floors &rarr;</button>
+            <button class="btn-action danger" (click)="deleteBuilding(b.id, b.name)">
+              Deactivate
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. FLOORS VIEW -->
+    <div *ngIf="currentLevel() === 'floor'" class="entity-section">
+      <div class="section-title-row">
+        <h2>Floors in {{ selectedBuilding()?.name }} ({{ floors().length }})</h2>
+      </div>
+
+      <div *ngIf="floors().length === 0" class="empty-state">
+        <p>No floors defined for this building yet.</p>
+        <button class="btn-primary" (click)="openCreateModal('floor')">+ Add Floor</button>
+      </div>
+
+      <div class="floor-table-container" *ngIf="floors().length > 0">
+        <table class="org-table">
+          <thead>
+            <tr>
+              <th>Order / Level</th>
+              <th>Floor Code</th>
+              <th>Display Name</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let fl of floors()">
+              <td class="floor-number-cell">Level {{ fl.floorNumber }}</td>
+              <td class="code-cell">{{ fl.code }}</td>
+              <td>{{ fl.name }}</td>
+              <td>
+                <span class="status-badge" [class.active]="fl.status === 'ACTIVE'">{{
+                  fl.status
+                }}</span>
+              </td>
+              <td>
+                <button class="btn-action danger-sm" (click)="deleteFloor(fl.id, fl.name)">
+                  Deactivate
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 7. FULL HIERARCHY TREE VIEW -->
+    <div *ngIf="currentLevel() === 'tree'" class="entity-section">
+      <div class="section-title-row">
+        <h2>Enterprise Organization Hierarchy Tree</h2>
+        <button class="btn-secondary" (click)="loadHierarchyTree()">🔄 Refresh Tree</button>
+      </div>
+
+      <div *ngIf="!hierarchyTree() || hierarchyTree()!.groups.length === 0" class="empty-state">
+        <p>No organization records found in hierarchy.</p>
+      </div>
+
+      <div *ngIf="hierarchyTree()" class="tree-container">
+        <div *ngFor="let g of hierarchyTree()!.groups" class="tree-node group-node">
+          <div class="tree-header">
+            <span class="node-icon">🏢</span>
+            <span class="node-title">{{ g.name }}</span>
+            <span class="node-badge">{{ g.code }}</span>
+          </div>
+
+          <div class="tree-children">
+            <div *ngFor="let r of g.regions" class="tree-node region-node">
+              <div class="tree-header">
+                <span class="node-icon">🌍</span>
+                <span class="node-title">{{ r.name }}</span>
+                <span class="node-badge">{{ r.code }}</span>
+              </div>
+
+              <div class="tree-children">
+                <div *ngFor="let c of r.countries" class="tree-node country-node">
+                  <div class="tree-header">
+                    <span class="node-icon">🏳️</span>
+                    <span class="node-title">{{ c.name }}</span>
+                    <span class="node-badge">ISO: {{ c.code }}</span>
+                  </div>
+
+                  <div class="tree-children">
+                    <div *ngFor="let p of c.properties" class="tree-node property-node">
+                      <div class="tree-header">
+                        <span class="node-icon">🏨</span>
+                        <span class="node-title">{{ p.name }}</span>
+                        <span class="node-badge"
+                          >{{ p.code }} ({{ p.timeZone }}, {{ p.currency }})</span
+                        >
+                        <button class="btn-context-sm" (click)="setActivePropertyContext(p)">
+                          🎯 Set Context
+                        </button>
+                      </div>
+
+                      <div class="tree-children">
+                        <div *ngFor="let b of p.buildings" class="tree-node building-node">
+                          <div class="tree-header">
+                            <span class="node-icon">🏛️</span>
+                            <span class="node-title">{{ b.name }}</span>
+                            <span class="node-badge">{{ b.code }}</span>
+                          </div>
+
+                          <div class="tree-children">
+                            <div class="floor-chips">
+                              <span *ngFor="let f of b.floors" class="floor-chip">
+                                📶 {{ f.name }} ({{ f.code }}, L{{ f.floorNumber }})
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE / EDIT MODAL -->
+  <div *ngIf="isModalOpen()" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Add New {{ modalType() | titlecase }}</h3>
+        <button class="modal-close" (click)="closeModal()">✕</button>
+      </div>
+
+      <form (ngSubmit)="saveEntity()" class="modal-form">
+        <div class="form-group">
+          <label>Unique Code</label>
+          <input
+            type="text"
+            [(ngModel)]="formCode"
+            name="code"
+            required
+            [placeholder]="modalType() === 'country' ? 'e.g. JP' : 'e.g. HG-GLR, MAIN, FL-01'"
+          />
+          <small class="form-hint">
+            {{
+              modalType() === 'country'
+                ? 'Must be a 2-letter uppercase ISO 3166-1 alpha-2 code'
+                : 'Uppercase alphanumeric code'
+            }}
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Name / Display Label</label>
+          <input
+            type="text"
+            [(ngModel)]="formName"
+            name="name"
+            required
+            placeholder="e.g. Tokyo Grandeur Palace"
+          />
+        </div>
+
+        <!-- Property-specific fields -->
+        <ng-container *ngIf="modalType() === 'property'">
+          <div class="form-row">
+            <div class="form-group">
+              <label>IANA Timezone</label>
+              <input
+                type="text"
+                [(ngModel)]="formTimeZone"
+                name="timeZone"
+                required
+                placeholder="e.g. Asia/Tokyo"
+              />
+            </div>
+            <div class="form-group">
+              <label>Currency (ISO 4217)</label>
+              <input
+                type="text"
+                [(ngModel)]="formCurrency"
+                name="currency"
+                required
+                placeholder="e.g. JPY"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" [(ngModel)]="formCity" name="city" placeholder="e.g. Tokyo" />
+          </div>
+        </ng-container>
+
+        <!-- Floor-specific fields -->
+        <ng-container *ngIf="modalType() === 'floor'">
+          <div class="form-group">
+            <label>Floor Number / Order</label>
+            <input
+              type="number"
+              [(ngModel)]="formFloorNumber"
+              name="floorNumber"
+              required
+              placeholder="e.g. 1"
+            />
+          </div>
+        </ng-container>
+
+        <!-- Description -->
+        <div *ngIf="modalType() !== 'country' && modalType() !== 'floor'" class="form-group">
+          <label>Description</label>
+          <textarea
+            [(ngModel)]="formDescription"
+            name="description"
+            rows="2"
+            placeholder="Optional notes or details"
+          ></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!formCode || !formName">
+            Save {{ modalType() | titlecase }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

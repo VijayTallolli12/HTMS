@@ -19,6 +19,7 @@
     "test": "jest --config jest.config.js --selectProjects unit",
     "test:unit": "jest --config jest.config.js --selectProjects unit",
     "test:integration": "jest --config jest.config.js --selectProjects integration --runInBand",
+    "test:e2e": "playwright test --config=tests/e2e-playwright/playwright.config.ts",
     "test:all": "jest --config jest.config.js --runInBand",
     "lint": "eslint \"apps/**/*.ts\" \"packages/**/*.ts\" \"tests/**/*.ts\"",
     "format": "prettier --check \"{apps,packages,tests,infra}/**/*.{ts,js,json,md,html,scss,css}\"",

@@ -13,6 +13,14 @@ export const routes: Routes = [
     title: 'Enterprise HMS — System Status',
   },
   {
+    path: 'organization',
+    loadComponent: () =>
+      import('./features/organization/organization-management.component').then(
+        (m) => m.OrganizationManagementComponent,
+      ),
+    title: 'Enterprise HMS — Organization Architecture',
+  },
+  {
     path: '**',
     redirectTo: 'health',
   },
