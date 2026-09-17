@@ -28,6 +28,20 @@ export interface UserDto {
   deletedAt: string | null;
 }
 
+export interface UserCredentialDto {
+  id: string;
+  userId: string;
+  status: string;
+  passwordChangedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PasswordPolicyValidationResult {
+  valid: boolean;
+  errors?: string[];
+}
+
 export interface OrganizationMembershipDto {
   id: string;
   userId: string;

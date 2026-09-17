@@ -1,17 +1,1 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
-import { PrismaClient } from '@hms/database';
-
-@Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(PrismaService.name);
-
-  async onModuleInit() {
-    await this.$connect();
-    this.logger.log('Connected to PostgreSQL via PrismaClient (@hms/database)');
-  }
-
-  async onModuleDestroy() {
-    await this.$disconnect();
-    this.logger.log('Disconnected PrismaClient');
-  }
-}
+export { PrismaService } from '../../../../common/database/prisma.service';
