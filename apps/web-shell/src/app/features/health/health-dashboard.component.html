@@ -1,0 +1,221 @@
+<div class="dashboard-container">
+  <!-- Header Banner -->
+  <div class="hero-section">
+    <div class="hero-content">
+      <div class="badge-row">
+        <span class="pill-badge">W1-T01 FOUNDATION BASELINE</span>
+        <span
+          *ngIf="healthService.healthState() as health"
+          class="status-pill"
+          [class.status-ok]="health.status === 'ok'"
+          [class.status-degraded]="health.status === 'degraded'"
+          [class.status-down]="health.status === 'down'"
+        >
+          <span class="status-dot"></span>
+          {{ health.status | uppercase }}
+        </span>
+      </div>
+      <h1 class="hero-title">Enterprise Infrastructure Matrix</h1>
+      <p class="hero-subtitle">
+        Active validation of backend NestJS core services and distributed infrastructure
+        dependencies.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <button class="btn-refresh" (click)="refresh()" [disabled]="healthService.isLoading()">
+        <span class="icon-refresh" [class.spinning]="healthService.isLoading()">↻</span>
+        {{ healthService.isLoading() ? 'Verifying...' : 'Refresh Health' }}
+      </button>
+      <span class="last-checked" *ngIf="healthService.lastChecked() as lastTime">
+        Last ping: {{ lastTime | date: 'HH:mm:ss' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Error Banner if API is unreachable -->
+  <div class="alert-error" *ngIf="healthService.errorMessage() as error">
+    <div class="alert-icon">⚠️</div>
+    <div class="alert-body">
+      <strong>API Core Connection Error</strong>
+      <p>{{ error }}</p>
+      <small
+        >Ensure the NestJS backend is running on port 3000 (<code>npm run dev:api</code>).</small
+      >
+    </div>
+  </div>
+
+  <!-- Dependency Grid -->
+  <div class="grid-container" *ngIf="healthService.healthState() as health">
+    <!-- PostgreSQL Card -->
+    <div
+      class="service-card"
+      [class.border-up]="health.services.database.status === 'up'"
+      [class.border-down]="health.services.database.status === 'down'"
+    >
+      <div class="card-header">
+        <div class="service-title-group">
+          <div class="service-icon db-icon">🗄️</div>
+          <div>
+            <h3 class="service-name">PostgreSQL 16</h3>
+            <span class="service-type">Domain Schemas & Persistence</span>
+          </div>
+        </div>
+        <span class="status-tag" [class.up]="health.services.database.status === 'up'">
+          {{ health.services.database.status | uppercase }}
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="metric-row">
+          <span class="metric-label">Latency:</span>
+          <span class="metric-value font-mono">{{ health.services.database.latencyMs }}ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Isolation:</span>
+          <span class="metric-value">Domain Schemas</span>
+        </div>
+        <div class="metric-row" *ngIf="health.services.database.error">
+          <span class="metric-label error">Error:</span>
+          <span class="metric-value error">{{ health.services.database.error }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RabbitMQ Card -->
+    <div
+      class="service-card"
+      [class.border-up]="health.services.rabbitmq.status === 'up'"
+      [class.border-down]="health.services.rabbitmq.status === 'down'"
+    >
+      <div class="card-header">
+        <div class="service-title-group">
+          <div class="service-icon mq-icon">🐇</div>
+          <div>
+            <h3 class="service-name">RabbitMQ 3.13</h3>
+            <span class="service-type">AMQP 0-9-1 Event Bus</span>
+          </div>
+        </div>
+        <span class="status-tag" [class.up]="health.services.rabbitmq.status === 'up'">
+          {{ health.services.rabbitmq.status | uppercase }}
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="metric-row">
+          <span class="metric-label">Latency:</span>
+          <span class="metric-value font-mono">{{ health.services.rabbitmq.latencyMs }}ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Management:</span>
+          <span class="metric-value"
+            ><a href="http://localhost:15672" target="_blank" class="link-gold"
+              >Port 15672 ↗</a
+            ></span
+          >
+        </div>
+        <div class="metric-row" *ngIf="health.services.rabbitmq.error">
+          <span class="metric-label error">Error:</span>
+          <span class="metric-value error">{{ health.services.rabbitmq.error }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Redis Card -->
+    <div
+      class="service-card"
+      [class.border-up]="health.services.redis.status === 'up'"
+      [class.border-down]="health.services.redis.status === 'down'"
+    >
+      <div class="card-header">
+        <div class="service-title-group">
+          <div class="service-icon redis-icon">⚡</div>
+          <div>
+            <h3 class="service-name">Redis 7</h3>
+            <span class="service-type">Distributed Cache & Locks</span>
+          </div>
+        </div>
+        <span class="status-tag" [class.up]="health.services.redis.status === 'up'">
+          {{ health.services.redis.status | uppercase }}
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="metric-row">
+          <span class="metric-label">Latency:</span>
+          <span class="metric-value font-mono">{{ health.services.redis.latencyMs }}ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Persistence:</span>
+          <span class="metric-value">AOF Enabled</span>
+        </div>
+        <div class="metric-row" *ngIf="health.services.redis.error">
+          <span class="metric-label error">Error:</span>
+          <span class="metric-value error">{{ health.services.redis.error }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mailpit Card -->
+    <div
+      class="service-card"
+      [class.border-up]="health.services.mailpit.status === 'up'"
+      [class.border-down]="health.services.mailpit.status === 'down'"
+    >
+      <div class="card-header">
+        <div class="service-title-group">
+          <div class="service-icon mail-icon">✉️</div>
+          <div>
+            <h3 class="service-name">Mailpit</h3>
+            <span class="service-type">Local SMTP & Email UI</span>
+          </div>
+        </div>
+        <span class="status-tag" [class.up]="health.services.mailpit.status === 'up'">
+          {{ health.services.mailpit.status | uppercase }}
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="metric-row">
+          <span class="metric-label">Latency:</span>
+          <span class="metric-value font-mono">{{ health.services.mailpit.latencyMs }}ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Mailbox UI:</span>
+          <span class="metric-value"
+            ><a href="http://localhost:8025" target="_blank" class="link-gold"
+              >Port 8025 ↗</a
+            ></span
+          >
+        </div>
+        <div class="metric-row" *ngIf="health.services.mailpit.error">
+          <span class="metric-label error">Error:</span>
+          <span class="metric-value error">{{ health.services.mailpit.error }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Runtime Meta Footer -->
+  <div class="runtime-meta-card" *ngIf="healthService.healthState() as health">
+    <div class="meta-item">
+      <span class="meta-key">API Runtime</span>
+      <span class="meta-val">NestJS 10.3 / Node.js</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-key">Environment</span>
+      <span class="meta-val font-mono">{{ health.environment }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-key">API Version</span>
+      <span class="meta-val font-mono">v{{ health.version }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-key">Uptime</span>
+      <span class="meta-val font-mono">{{ health.uptimeSeconds }}s</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-key">Swagger UI</span>
+      <span class="meta-val"
+        ><a href="http://localhost:3000/api/docs" target="_blank" class="link-gold"
+          >/api/docs ↗</a
+        ></span
+      >
+    </div>
+  </div>
+</div>

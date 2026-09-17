@@ -1,0 +1,14 @@
+{
+  "name": "@hms/ui",
+  "version": "1.0.0",
+  "description": "Design tokens, luxury hospitality theme variables, and shared UI primitives for Enterprise HMS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b --force",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "@hms/web-shell",
+  "version": "1.0.0",
+  "description": "Angular Standalone Signals Web Shell for Enterprise HMS",
+  "private": true,
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve --port 4200",
+    "dev": "ng serve --port 4200",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "echo \"web-shell unit tests placeholder\""
+  },
+  "dependencies": {
+    "@angular/animations": "18.0.0",
+    "@angular/common": "18.0.0",
+    "@angular/compiler": "18.0.0",
+    "@angular/core": "18.0.0",
+    "@angular/forms": "18.0.0",
+    "@angular/platform-browser": "18.0.0",
+    "@angular/platform-browser-dynamic": "18.0.0",
+    "@angular/router": "18.0.0",
+    "@hms/api-contracts": "*",
+    "@hms/ui": "*",
+    "rxjs": "7.8.1",
+    "tslib": "2.6.2",
+    "zone.js": "0.14.6"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "18.0.0",
+    "@angular/cli": "18.0.0",
+    "@angular/compiler-cli": "18.0.0",
+    "@types/node": "20.12.11",
+    "typescript": "5.4.5"
+  }
+}

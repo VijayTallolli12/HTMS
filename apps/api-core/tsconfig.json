@@ -1,0 +1,26 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "rootDir": "src",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2022",
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "paths": {
+      "@hms/api-contracts": ["../../packages/api-contracts/dist/index"],
+      "@hms/shared": ["../../packages/shared/dist/index"],
+      "@hms/database": ["../../packages/database/dist/index"],
+      "@hms/config": ["../../packages/config/dist/index"],
+      "@hms/ui": ["../../packages/ui/dist/index"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@hms/config",
+  "version": "1.0.0",
+  "description": "Environment schema, configuration parsing, and validation for Enterprise HMS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b --force",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}

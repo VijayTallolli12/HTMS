@@ -1,0 +1,14 @@
+{
+  "name": "@hms/api-contracts",
+  "version": "1.0.0",
+  "description": "Shared API contracts, DTO interfaces, and RFC specifications for Enterprise HMS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b --force",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}
