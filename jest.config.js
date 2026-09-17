@@ -9,6 +9,7 @@ module.exports = {
         '^.+\\.ts$': 'ts-jest',
       },
       testEnvironment: 'node',
+      modulePathIgnorePatterns: ['<rootDir>/.kilo'],
       moduleNameMapper: {
         '^@hms/api-contracts$': '<rootDir>/packages/api-contracts/src/index.ts',
         '^@hms/shared$': '<rootDir>/packages/shared/src/index.ts',
@@ -26,6 +27,7 @@ module.exports = {
         '^.+\\.ts$': 'ts-jest',
       },
       testEnvironment: 'node',
+      modulePathIgnorePatterns: ['<rootDir>/.kilo'],
       moduleNameMapper: {
         '^@hms/api-contracts$': '<rootDir>/packages/api-contracts/src/index.ts',
         '^@hms/shared$': '<rootDir>/packages/shared/src/index.ts',

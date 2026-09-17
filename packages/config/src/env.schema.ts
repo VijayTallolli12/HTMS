@@ -1,3 +1,5 @@
+import { SecurityConfig, parseSecurityConfig } from './security.schema';
+
 export interface EnvironmentConfig {
   NODE_ENV: 'development' | 'test' | 'staging' | 'production';
   API_PORT: number;
@@ -30,6 +32,8 @@ export interface EnvironmentConfig {
   // API Security
   CORS_ORIGIN: string;
   API_PREFIX: string;
+  // W1-T03 Security Architecture Configuration
+  security: SecurityConfig;
 }
 
 export function parseEnvironment(env: Record<string, string | undefined>): EnvironmentConfig {
@@ -76,5 +80,9 @@ export function parseEnvironment(env: Record<string, string | undefined>): Envir
     MAILPIT_HTTP_PORT: parseInt(env.MAILPIT_HTTP_PORT || '8025', 10),
     CORS_ORIGIN: env.CORS_ORIGIN || 'http://localhost:4200',
     API_PREFIX: env.API_PREFIX || '/api/v1',
+    security: parseSecurityConfig(
+      env,
+      (env.NODE_ENV as EnvironmentConfig['NODE_ENV']) || 'development',
+    ),
   };
 }
