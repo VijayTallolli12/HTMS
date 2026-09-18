@@ -120,6 +120,8 @@ model Property {
   rooms          Room[]
   ratePlans      RatePlan[]
   dailyInventory DailyInventory[]
+  guests         Guest[]
+  reservations   Reservation[]
 
   @@index([countryId])
   @@index([status])
@@ -504,6 +506,7 @@ model RoomType {
   ratePlans       RatePlanRoomType[]
   dailyInventory  DailyInventory[]
   dailyRates      DailyRate[]
+  reservations    Reservation[]
 
   @@unique([propertyId, code], name: "uq_room_types_property_code")
   @@unique([propertyId, id], name: "uq_room_types_property_id")
@@ -570,6 +573,7 @@ model RatePlan {
   property              Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
   roomTypes             RatePlanRoomType[]
   dailyRates            DailyRate[]
+  reservations          Reservation[]
 
   @@unique([propertyId, code], name: "uq_rate_plans_property_code")
   @@unique([propertyId, id], name: "uq_rate_plans_property_id")
@@ -658,3 +662,96 @@ model DailyInventory {
   @@map("daily_inventory")
   @@schema("pms_schema")
 }
+
+// ==============================================================================
+// 25. PMS GUESTS (Operational Property-Local Guest Profiles)
+// ==============================================================================
+model Guest {
+  id                   String        @id
+  propertyId           String        @map("property_id")
+  firstName            String        @map("first_name") @db.VarChar(50)
+  lastName             String        @map("last_name") @db.VarChar(50)
+  email                String?       @map("email") @db.VarChar(100)
+  phone                String?       @map("phone") @db.VarChar(30)
+  identificationType   String?       @map("identification_type") @db.VarChar(30)
+  identificationNumber String?       @map("identification_number") @db.VarChar(50)
+  crmProfileId         String?       @map("crm_profile_id")
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt            DateTime?     @map("deleted_at") @db.Timestamptz(6)
+
+  property             Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  reservations         Reservation[]
+
+  @@unique([propertyId, id], name: "uq_guests_property_id")
+  @@index([propertyId, lastName], name: "idx_guests_property_name")
+  @@index([propertyId, email], name: "idx_guests_property_email")
+  @@index([propertyId, phone], name: "idx_guests_property_phone")
+  @@map("guests")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 26. PMS RESERVATIONS (Central Reservation Aggregate Root)
+// ==============================================================================
+model Reservation {
+  id                 String                 @id
+  propertyId         String                 @map("property_id")
+  confirmationNumber String                 @map("confirmation_number") @db.VarChar(30)
+  idempotencyKey     String?                @map("idempotency_key") @db.VarChar(64)
+  status             String                 @default("CONFIRMED") @map("status") @db.VarChar(20)
+  guestId            String                 @map("guest_id")
+  roomTypeId         String                 @map("room_type_id")
+  ratePlanId         String                 @map("rate_plan_id")
+  arrivalDate        DateTime               @map("arrival_date") @db.Date
+  departureDate      DateTime               @map("departure_date") @db.Date
+  adultsCount        Int                    @default(1) @map("adults_count")
+  childrenCount      Int                    @default(0) @map("children_count")
+  totalAmount        Decimal                @map("total_amount") @db.Decimal(12, 4)
+  currency           String                 @map("currency") @db.VarChar(3)
+  specialRequests    String?                @map("special_requests") @db.Text
+  cancellationReason String?                @map("cancellation_reason") @db.Text
+  cancelledAt        DateTime?              @map("cancelled_at") @db.Timestamptz(6)
+  version            Int                    @default(0)
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?              @map("deleted_at") @db.Timestamptz(6)
+
+  property           Property               @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  guest              Guest                  @relation(fields: [propertyId, guestId], references: [propertyId, id], onDelete: Restrict)
+  roomType           RoomType               @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+  ratePlan           RatePlan               @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
+  rateNights         ReservationRateNight[]
+
+  @@unique([propertyId, id], name: "uq_reservations_property_id")
+  @@unique([propertyId, confirmationNumber], name: "uq_reservations_property_confirmation_number")
+  @@unique([propertyId, idempotencyKey], name: "uq_reservations_property_idempotency_key")
+  @@index([propertyId, status, arrivalDate], name: "idx_reservations_lookup")
+  @@index([propertyId, guestId], name: "idx_reservations_guest")
+  @@map("reservations")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 27. PMS RESERVATION RATE NIGHTS (Immutable Nightly Pricing Snapshot)
+// ==============================================================================
+model ReservationRateNight {
+  id              String      @id
+  propertyId      String      @map("property_id")
+  reservationId   String      @map("reservation_id")
+  businessDate    DateTime    @map("business_date") @db.Date
+  baseRateAmount  Decimal     @map("base_rate_amount") @db.Decimal(12, 4)
+  extraAdultRate  Decimal     @default(0) @map("extra_adult_rate") @db.Decimal(12, 4)
+  extraChildRate  Decimal     @default(0) @map("extra_child_rate") @db.Decimal(12, 4)
+  totalAmount     Decimal     @map("total_amount") @db.Decimal(12, 4)
+  currency        String      @map("currency") @db.VarChar(3)
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  reservation     Reservation @relation(fields: [propertyId, reservationId], references: [propertyId, id], onDelete: Cascade)
+
+  @@unique([reservationId, businessDate], name: "uq_reservation_rate_nights_res_date")
+  @@index([propertyId, businessDate], name: "idx_reservation_rate_nights_lookup")
+  @@map("reservation_rate_nights")
+  @@schema("pms_schema")
+}
+

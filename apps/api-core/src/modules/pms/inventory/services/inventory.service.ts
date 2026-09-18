@@ -263,6 +263,7 @@ export class InventoryService {
     arrivalDate: Date | string,
     departureDate: Date | string,
     count: number = 1,
+    tx?: Prisma.TransactionClient,
   ): Promise<void> {
     const arr = toUtcMidnight(arrivalDate);
     const dep = toUtcMidnight(departureDate);
@@ -273,61 +274,145 @@ export class InventoryService {
 
     const nights = Math.round((dep.getTime() - arr.getTime()) / (24 * 60 * 60 * 1000));
 
-    await this.prisma.$transaction(
-      async (tx) => {
-        // Deterministic ordering: ORDER BY businessDate ASC
-        const rows = await tx.dailyInventory.findMany({
-          where: {
-            propertyId,
-            roomTypeId,
-            businessDate: {
-              gte: arr,
-              lt: dep,
-            },
+    const execute = async (client: Prisma.TransactionClient) => {
+      // Deterministic ordering: ORDER BY businessDate ASC
+      const rows = await client.dailyInventory.findMany({
+        where: {
+          propertyId,
+          roomTypeId,
+          businessDate: {
+            gte: arr,
+            lt: dep,
           },
-          orderBy: {
-            businessDate: 'asc',
+        },
+        orderBy: {
+          businessDate: 'asc',
+        },
+      });
+
+      if (rows.length < nights) {
+        throw new ConflictException('Inventory rows missing for stay window');
+      }
+
+      // Authoritative ATS validation for every night
+      for (const row of rows) {
+        const { ats } = this.atsCalculator.calculateDailyAts(row, false);
+        if (ats < count) {
+          throw new ConflictException(
+            `Insufficient ATS inventory on ${formatDateString(row.businessDate)} (available: ${ats}, requested: ${count})`,
+          );
+        }
+      }
+
+      // Apply OCC increment atomically in deterministic order
+      for (const row of rows) {
+        const res = await client.dailyInventory.updateMany({
+          where: {
+            id: row.id,
+            version: row.version,
+          },
+          data: {
+            bookedCount: { increment: count },
+            version: { increment: 1 },
           },
         });
 
-        if (rows.length < nights) {
-          throw new ConflictException('Inventory rows missing for stay window');
+        if (res.count === 0) {
+          throw new ConflictException(
+            `Optimistic concurrency conflict on date ${formatDateString(row.businessDate)}`,
+          );
         }
+      }
+    };
 
-        // Authoritative ATS validation for every night
-        for (const row of rows) {
-          const { ats } = this.atsCalculator.calculateDailyAts(row, false);
-          if (ats < count) {
-            throw new ConflictException(
-              `Insufficient ATS inventory on ${formatDateString(row.businessDate)} (available: ${ats}, requested: ${count})`,
-            );
-          }
+    if (tx) {
+      return execute(tx);
+    }
+
+    await this.prisma.$transaction(execute, {
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+      timeout: 10000,
+    });
+  }
+
+  /**
+   * Concurrency-safe atomic multi-day inventory release using Prisma OCC.
+   * Deterministic ordering by businessDate ASC guarantees deadlock prevention.
+   */
+  public async releaseInventoryRange(
+    propertyId: string,
+    roomTypeId: string,
+    arrivalDate: Date | string,
+    departureDate: Date | string,
+    count: number = 1,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const arr = toUtcMidnight(arrivalDate);
+    const dep = toUtcMidnight(departureDate);
+
+    if (arr >= dep) {
+      throw new BadRequestException('departureDate must be strictly after arrivalDate');
+    }
+
+    const nights = Math.round((dep.getTime() - arr.getTime()) / (24 * 60 * 60 * 1000));
+
+    const execute = async (client: Prisma.TransactionClient) => {
+      // Deterministic ordering: ORDER BY businessDate ASC
+      const rows = await client.dailyInventory.findMany({
+        where: {
+          propertyId,
+          roomTypeId,
+          businessDate: {
+            gte: arr,
+            lt: dep,
+          },
+        },
+        orderBy: {
+          businessDate: 'asc',
+        },
+      });
+
+      if (rows.length < nights) {
+        throw new ConflictException('Inventory rows missing for stay window');
+      }
+
+      // Validate that bookedCount will not become negative
+      for (const row of rows) {
+        if (row.bookedCount < count) {
+          throw new ConflictException(
+            `Cannot release ${count} rooms: bookedCount on ${formatDateString(row.businessDate)} is only ${row.bookedCount}`,
+          );
         }
+      }
 
-        // Apply OCC increment atomically in deterministic order
-        for (const row of rows) {
-          const res = await tx.dailyInventory.updateMany({
-            where: {
-              id: row.id,
-              version: row.version,
-            },
-            data: {
-              bookedCount: { increment: count },
-              version: { increment: 1 },
-            },
-          });
+      // Apply OCC decrement atomically in deterministic order
+      for (const row of rows) {
+        const res = await client.dailyInventory.updateMany({
+          where: {
+            id: row.id,
+            version: row.version,
+          },
+          data: {
+            bookedCount: { decrement: count },
+            version: { increment: 1 },
+          },
+        });
 
-          if (res.count === 0) {
-            throw new ConflictException(
-              `Optimistic concurrency conflict on date ${formatDateString(row.businessDate)}`,
-            );
-          }
+        if (res.count === 0) {
+          throw new ConflictException(
+            `Optimistic concurrency conflict on date ${formatDateString(row.businessDate)}`,
+          );
         }
-      },
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
-        timeout: 10000,
-      },
-    );
+      }
+    };
+
+    if (tx) {
+      return execute(tx);
+    }
+
+    await this.prisma.$transaction(execute, {
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+      timeout: 10000,
+    });
   }
 }

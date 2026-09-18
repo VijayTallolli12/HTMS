@@ -32,7 +32,11 @@ import { AtsCalculatorService } from './inventory/services/ats-calculator.servic
 import { InventoryService } from './inventory/services/inventory.service';
 import { InventoryController } from './inventory/controllers/inventory.controller';
 
+// Reservations
+import { ReservationsModule } from './reservations/reservations.module';
+
 @Module({
+  imports: [ReservationsModule],
   controllers: [
     RoomTypeController,
     RoomController,
@@ -85,6 +89,7 @@ import { InventoryController } from './inventory/controllers/inventory.controlle
     ROOM_TYPE_DELETION_VALIDATOR,
     ROOM_DEACTIVATION_VALIDATOR,
     RATE_PLAN_DELETION_VALIDATOR,
+    ReservationsModule,
   ],
 })
 export class PmsModule {}

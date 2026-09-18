@@ -11,6 +11,8 @@ export enum PmsEventType {
   RATE_PLAN_UPDATED = 'com.enterprise_hms.pms.rate-plan.updated.v1',
   DAILY_RATE_OVERRIDDEN = 'com.enterprise_hms.pms.daily-rate.overridden.v1',
   DAILY_INVENTORY_ADJUSTED = 'com.enterprise_hms.pms.daily-inventory.adjusted.v1',
+  RESERVATION_CREATED = 'com.enterprise_hms.pms.reservation.created.v1',
+  RESERVATION_CANCELLED = 'com.enterprise_hms.pms.reservation.cancelled.v1',
 }
 
 export interface RoomTypeCreatedData {
@@ -81,4 +83,32 @@ export interface DailyInventoryAdjustedData {
     | 'overbooking_limit';
   delta: number;
   newValue: number;
+}
+
+export interface ReservationCreatedData {
+  reservationId: string;
+  propertyId: string;
+  confirmationNumber: string;
+  guestId: string;
+  roomTypeId: string;
+  ratePlanId: string;
+  arrivalDate: string;
+  departureDate: string;
+  nightsCount: number;
+  adultsCount: number;
+  childrenCount: number;
+  totalAmount: number;
+  currency: string;
+}
+
+export interface ReservationCancelledData {
+  reservationId: string;
+  propertyId: string;
+  confirmationNumber: string;
+  roomTypeId: string;
+  arrivalDate: string;
+  departureDate: string;
+  nightsCount: number;
+  reason: string;
+  cancelledAt: string;
 }
