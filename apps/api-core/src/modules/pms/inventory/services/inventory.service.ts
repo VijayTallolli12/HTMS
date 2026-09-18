@@ -415,4 +415,90 @@ export class InventoryService {
       timeout: 10000,
     });
   }
+
+  /**
+   * Concurrency-safe atomic multi-day maintenance capacity adjustment using Prisma OCC.
+   * Deterministic ordering by businessDate ASC guarantees deadlock prevention.
+   */
+  public async adjustMaintenanceCapacity(
+    propertyId: string,
+    roomTypeId: string,
+    startDate: Date | string,
+    endDate: Date | string,
+    type: 'OUT_OF_ORDER' | 'OUT_OF_SERVICE',
+    direction: 'INCREMENT' | 'DECREMENT',
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const arr = toUtcMidnight(startDate);
+    const dep = toUtcMidnight(endDate);
+
+    if (arr >= dep) {
+      throw new BadRequestException('endDate must be strictly after startDate');
+    }
+
+    const nights = Math.round((dep.getTime() - arr.getTime()) / (24 * 60 * 60 * 1000));
+    const delta = direction === 'INCREMENT' ? 1 : -1;
+    const updateField = type === 'OUT_OF_ORDER' ? 'outOfOrderCount' : 'outOfServiceCount';
+
+    const execute = async (client: Prisma.TransactionClient) => {
+      // Deterministic ordering: ORDER BY businessDate ASC
+      const rows = await client.dailyInventory.findMany({
+        where: {
+          propertyId,
+          roomTypeId,
+          businessDate: {
+            gte: arr,
+            lt: dep,
+          },
+        },
+        orderBy: {
+          businessDate: 'asc',
+        },
+      });
+
+      if (rows.length < nights) {
+        throw new ConflictException('Inventory rows missing for maintenance window');
+      }
+
+      // If decrementing, validate that counter does not drop below 0
+      if (direction === 'DECREMENT') {
+        for (const row of rows) {
+          if (row[updateField] < 1) {
+            throw new ConflictException(
+              `Cannot decrement ${updateField} on ${formatDateString(row.businessDate)}: current count is ${row[updateField]}`,
+            );
+          }
+        }
+      }
+
+      // Apply OCC increment/decrement atomically in deterministic order
+      for (const row of rows) {
+        const res = await client.dailyInventory.updateMany({
+          where: {
+            id: row.id,
+            version: row.version,
+          },
+          data: {
+            [updateField]: { increment: delta },
+            version: { increment: 1 },
+          },
+        });
+
+        if (res.count === 0) {
+          throw new ConflictException(
+            `Optimistic concurrency conflict on date ${formatDateString(row.businessDate)}`,
+          );
+        }
+      }
+    };
+
+    if (tx) {
+      return execute(tx);
+    }
+
+    await this.prisma.$transaction(execute, {
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+      timeout: 10000,
+    });
+  }
 }

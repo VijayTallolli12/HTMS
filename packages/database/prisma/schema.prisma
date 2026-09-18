@@ -119,9 +119,11 @@ model Property {
   roomTypes      RoomType[]
   rooms          Room[]
   ratePlans      RatePlan[]
-  dailyInventory DailyInventory[]
-  guests         Guest[]
-  reservations   Reservation[]
+  dailyInventory    DailyInventory[]
+  guests            Guest[]
+  reservations      Reservation[]
+  maintenanceBlocks RoomMaintenanceBlock[]
+  roomStatusLogs    RoomStatusLog[]
 
   @@index([countryId])
   @@index([status])
@@ -525,20 +527,29 @@ model Room {
   floorId         String    @map("floor_id")
   roomTypeId      String    @map("room_type_id")
   roomNumber      String    @map("room_number") @db.VarChar(30)
-  name            String?   @db.VarChar(100)
-  features        Json?     @map("features")
-  isActive        Boolean   @default(true) @map("is_active")
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+  name                String?   @db.VarChar(100)
+  features            Json?     @map("features")
+  housekeepingStatus  String    @default("DIRTY") @map("housekeeping_status") @db.VarChar(20)
+  serviceStatus       String    @default("IN_SERVICE") @map("service_status") @db.VarChar(20)
+  occupancyStatus     String    @default("VACANT") @map("occupancy_status") @db.VarChar(20)
+  version             Int       @default(0)
+  isActive            Boolean   @default(true) @map("is_active")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt           DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  property        Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
-  building        Building  @relation(fields: [propertyId, buildingId], references: [propertyId, id], onDelete: Restrict)
-  floor           Floor     @relation(fields: [buildingId, floorId], references: [buildingId, id], onDelete: Restrict)
-  roomType        RoomType  @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+  property            Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  building            Building  @relation(fields: [propertyId, buildingId], references: [propertyId, id], onDelete: Restrict)
+  floor               Floor     @relation(fields: [buildingId, floorId], references: [buildingId, id], onDelete: Restrict)
+  roomType            RoomType  @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+  maintenanceBlocks   RoomMaintenanceBlock[]
+  statusLogs          RoomStatusLog[]
 
+  @@unique([propertyId, id], name: "uq_rooms_property_id")
   @@unique([propertyId, roomNumber], name: "uq_rooms_property_room_number")
   @@index([propertyId, roomTypeId], name: "idx_rooms_property_room_type")
+  @@index([propertyId, housekeepingStatus], name: "idx_rooms_property_hk_status")
+  @@index([propertyId, serviceStatus], name: "idx_rooms_property_service_status")
   @@index([floorId], name: "idx_rooms_floor")
   @@index([buildingId], name: "idx_rooms_building")
   @@map("rooms")
@@ -754,4 +765,61 @@ model ReservationRateNight {
   @@map("reservation_rate_nights")
   @@schema("pms_schema")
 }
+
+// ==============================================================================
+// 28. PMS ROOM MAINTENANCE BLOCKS (Authoritative Out-of-Order / Out-of-Service Schedule)
+// ==============================================================================
+model RoomMaintenanceBlock {
+  id                 String    @id
+  propertyId         String    @map("property_id")
+  roomId             String    @map("room_id")
+  type               String    @db.VarChar(20) // OUT_OF_ORDER, OUT_OF_SERVICE
+  reason             String    @db.VarChar(255)
+  notes              String?   @db.Text
+  startDate          DateTime  @map("start_date") @db.Date
+  endDate            DateTime  @map("end_date") @db.Date
+  status             String    @default("ACTIVE") @db.VarChar(20) // ACTIVE, CANCELLED, COMPLETED
+  createdBy          String    @map("created_by")
+  cancelledBy        String?   @map("cancelled_by")
+  cancellationReason String?   @map("cancellation_reason") @db.VarChar(255)
+  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  version            Int       @default(0)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property           Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  room               Room      @relation(fields: [propertyId, roomId], references: [propertyId, id], onDelete: Restrict)
+
+  @@unique([propertyId, id], name: "uq_room_maintenance_blocks_prop_id")
+  @@index([propertyId, roomId, status], name: "idx_room_maintenance_lookup")
+  @@index([propertyId, startDate, endDate], name: "idx_room_maintenance_dates")
+  @@map("room_maintenance_blocks")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 29. PMS ROOM STATUS LOGS (Immutable Room Status Audit Ledger)
+// ==============================================================================
+model RoomStatusLog {
+  id                         String    @id
+  propertyId                 String    @map("property_id")
+  roomId                     String    @map("room_id")
+  previousHousekeepingStatus String?   @map("previous_housekeeping_status") @db.VarChar(20)
+  newHousekeepingStatus      String?   @map("new_housekeeping_status") @db.VarChar(20)
+  previousServiceStatus      String?   @map("previous_service_status") @db.VarChar(20)
+  newServiceStatus           String?   @map("new_service_status") @db.VarChar(20)
+  reason                     String?   @db.VarChar(255)
+  source                     String    @default("MANUAL") @db.VarChar(30)
+  changedBy                  String    @map("changed_by")
+  createdAt                  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  property                   Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  room                       Room      @relation(fields: [propertyId, roomId], references: [propertyId, id], onDelete: Restrict)
+
+  @@index([propertyId, roomId, createdAt], name: "idx_room_status_logs_lookup")
+  @@map("room_status_logs")
+  @@schema("pms_schema")
+}
+
 

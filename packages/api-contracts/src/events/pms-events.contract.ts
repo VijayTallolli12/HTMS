@@ -13,6 +13,9 @@ export enum PmsEventType {
   DAILY_INVENTORY_ADJUSTED = 'com.enterprise_hms.pms.daily-inventory.adjusted.v1',
   RESERVATION_CREATED = 'com.enterprise_hms.pms.reservation.created.v1',
   RESERVATION_CANCELLED = 'com.enterprise_hms.pms.reservation.cancelled.v1',
+  ROOM_STATUS_CHANGED = 'com.enterprise_hms.pms.room.status_changed.v1',
+  ROOM_MAINTENANCE_CREATED = 'com.enterprise_hms.pms.room.maintenance_block_created.v1',
+  ROOM_MAINTENANCE_ENDED = 'com.enterprise_hms.pms.room.maintenance_block_ended.v1',
 }
 
 export interface RoomTypeCreatedData {
@@ -111,4 +114,40 @@ export interface ReservationCancelledData {
   nightsCount: number;
   reason: string;
   cancelledAt: string;
+}
+
+export interface RoomStatusChangedData {
+  propertyId: string;
+  roomId: string;
+  roomNumber: string;
+  previousHousekeepingStatus?: string | null;
+  newHousekeepingStatus?: string | null;
+  previousServiceStatus?: string | null;
+  newServiceStatus?: string | null;
+  reason?: string | null;
+  source: string;
+  updatedBy: string;
+}
+
+export interface RoomMaintenanceCreatedData {
+  propertyId: string;
+  maintenanceBlockId: string;
+  roomId: string;
+  roomNumber?: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  createdBy: string;
+}
+
+export interface RoomMaintenanceEndedData {
+  propertyId: string;
+  maintenanceBlockId: string;
+  roomId: string;
+  roomNumber?: string;
+  type: string;
+  reason?: string | null;
+  cancelledBy?: string | null;
+  cancelledAt?: string | null;
 }

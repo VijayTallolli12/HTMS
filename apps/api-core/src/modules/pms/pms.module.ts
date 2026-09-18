@@ -35,8 +35,11 @@ import { InventoryController } from './inventory/controllers/inventory.controlle
 // Reservations
 import { ReservationsModule } from './reservations/reservations.module';
 
+// Room Operations
+import { RoomOperationsModule } from './room-operations/room-operations.module';
+
 @Module({
-  imports: [ReservationsModule],
+  imports: [ReservationsModule, RoomOperationsModule],
   controllers: [
     RoomTypeController,
     RoomController,
@@ -90,6 +93,7 @@ import { ReservationsModule } from './reservations/reservations.module';
     ROOM_DEACTIVATION_VALIDATOR,
     RATE_PLAN_DELETION_VALIDATOR,
     ReservationsModule,
+    RoomOperationsModule,
   ],
 })
 export class PmsModule {}
