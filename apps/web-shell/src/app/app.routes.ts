@@ -21,6 +21,11 @@ export const routes: Routes = [
     title: 'Enterprise HMS — Organization Architecture',
   },
   {
+    path: 'pms',
+    loadChildren: () => import('./features/pms/pms.routes').then((m) => m.PMS_ROUTES),
+    title: 'Enterprise HMS — Property Management System',
+  },
+  {
     path: '**',
     redirectTo: 'health',
   },

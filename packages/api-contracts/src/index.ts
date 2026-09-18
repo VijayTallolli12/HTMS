@@ -11,5 +11,7 @@ export * from './organization/building.contract';
 export * from './organization/floor.contract';
 export * from './organization/hierarchy-tree.contract';
 export * from './events/organization-events.contract';
+export * from './events/pms-events.contract';
 export * from './security/security.contract';
 export * from './iam/iam.contract';
+export * from './pms';

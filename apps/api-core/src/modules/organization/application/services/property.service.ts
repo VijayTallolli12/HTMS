@@ -136,6 +136,15 @@ export class PropertyService {
       this.validateTimeZone(dto.timeZone);
     }
 
+    if (dto.currency && dto.currency.toUpperCase() !== existing.currency) {
+      const ratePlanCount = await this.prisma.ratePlan.count({ where: { propertyId: id } });
+      if (ratePlanCount > 0) {
+        throw new ConflictException(
+          'Property currency cannot be changed once rate plans have been created.',
+        );
+      }
+    }
+
     const updated = await this.prisma.property.update({
       where: { id },
       data: {

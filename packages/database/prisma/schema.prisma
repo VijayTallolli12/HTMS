@@ -10,7 +10,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["platform_schema", "audit_schema"]
+  schemas  = ["platform_schema", "audit_schema", "pms_schema"]
 }
 
 // ==============================================================================
@@ -116,6 +116,10 @@ model Property {
   buildings      Building[]
   defaultUsers   User[]          @relation("UserDefaultProperty")
   userRoleScopes UserRoleScope[]
+  roomTypes      RoomType[]
+  rooms          Room[]
+  ratePlans      RatePlan[]
+  dailyInventory DailyInventory[]
 
   @@index([countryId])
   @@index([status])
@@ -140,8 +144,10 @@ model Building {
 
   property    Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
   floors      Floor[]
+  rooms       Room[]
 
   @@unique([propertyId, code])
+  @@unique([propertyId, id], name: "uq_buildings_property_id")
   @@index([propertyId])
   @@index([status])
   @@index([deletedAt])
@@ -164,8 +170,10 @@ model Floor {
   deletedAt   DateTime? @map("deleted_at")
 
   building    Building  @relation(fields: [buildingId], references: [id], onDelete: Restrict)
+  rooms       Room[]
 
   @@unique([buildingId, code])
+  @@unique([buildingId, id], name: "uq_floors_building_id")
   @@index([buildingId])
   @@index([floorNumber])
   @@index([status])
@@ -468,4 +476,185 @@ model SecurityAuditLog {
   @@index([correlationId])
   @@map("security_audit_logs")
   @@schema("audit_schema")
+}
+
+// ==============================================================================
+// 19. PMS ROOM TYPES (Accommodation Categories)
+// ==============================================================================
+model RoomType {
+  id              String    @id
+  propertyId      String    @map("property_id")
+  code            String    @db.VarChar(30)
+  name            String    @db.VarChar(100)
+  description     String?   @db.Text
+  roomClass       String    @map("room_class") @db.VarChar(50)
+  baseOccupancy   Int       @default(2) @map("base_occupancy")
+  maxOccupancy    Int       @default(3) @map("max_occupancy")
+  maxAdults       Int       @default(2) @map("max_adults")
+  maxChildren     Int       @default(1) @map("max_children")
+  bedConfiguration Json     @map("bed_configuration")
+  amenities       String[]  @default([])
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property        Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  rooms           Room[]
+  ratePlans       RatePlanRoomType[]
+  dailyInventory  DailyInventory[]
+  dailyRates      DailyRate[]
+
+  @@unique([propertyId, code], name: "uq_room_types_property_code")
+  @@unique([propertyId, id], name: "uq_room_types_property_id")
+  @@index([propertyId, isActive], name: "idx_room_types_property_active")
+  @@map("room_types")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 20. PMS PHYSICAL ROOMS (Architectural Inventory Units)
+// ==============================================================================
+model Room {
+  id              String    @id
+  propertyId      String    @map("property_id")
+  buildingId      String    @map("building_id")
+  floorId         String    @map("floor_id")
+  roomTypeId      String    @map("room_type_id")
+  roomNumber      String    @map("room_number") @db.VarChar(30)
+  name            String?   @db.VarChar(100)
+  features        Json?     @map("features")
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property        Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  building        Building  @relation(fields: [propertyId, buildingId], references: [propertyId, id], onDelete: Restrict)
+  floor           Floor     @relation(fields: [buildingId, floorId], references: [buildingId, id], onDelete: Restrict)
+  roomType        RoomType  @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+
+  @@unique([propertyId, roomNumber], name: "uq_rooms_property_room_number")
+  @@index([propertyId, roomTypeId], name: "idx_rooms_property_room_type")
+  @@index([floorId], name: "idx_rooms_floor")
+  @@index([buildingId], name: "idx_rooms_building")
+  @@map("rooms")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 21. PMS RATE PLANS (Commercial Pricing Plans)
+// ==============================================================================
+model RatePlan {
+  id                    String    @id
+  propertyId            String    @map("property_id")
+  code                  String    @db.VarChar(30)
+  name                  String    @db.VarChar(100)
+  description           String?   @db.Text
+  currency              String    @db.VarChar(3)
+  mealPlanCode          String    @default("RO") @map("meal_plan_code") @db.VarChar(20)
+  pricingModel          String    @default("PER_ROOM") @map("pricing_model") @db.VarChar(30)
+  isClosed              Boolean   @default(false) @map("is_closed")
+  isClosedToArrival     Boolean   @default(false) @map("is_closed_to_arrival")
+  isClosedToDeparture   Boolean   @default(false) @map("is_closed_to_departure")
+  minStayDays           Int       @default(1) @map("min_stay_days")
+  maxStayDays           Int?      @map("max_stay_days")
+  validFrom             DateTime  @map("valid_from") @db.Date
+  validTo               DateTime  @map("valid_to") @db.Date
+  cancellationPolicy    Json?     @map("cancellation_policy")
+  isActive              Boolean   @default(true) @map("is_active")
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property              Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  roomTypes             RatePlanRoomType[]
+  dailyRates            DailyRate[]
+
+  @@unique([propertyId, code], name: "uq_rate_plans_property_code")
+  @@unique([propertyId, id], name: "uq_rate_plans_property_id")
+  @@index([propertyId, isActive], name: "idx_rate_plans_property_active")
+  @@map("rate_plans")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 22. PMS RATE PLAN ROOM TYPES (Room Type Mapping & Base Rates)
+// ==============================================================================
+model RatePlanRoomType {
+  id              String    @id
+  propertyId      String    @map("property_id")
+  ratePlanId      String    @map("rate_plan_id")
+  roomTypeId      String    @map("room_type_id")
+  baseRateAmount  Decimal   @map("base_rate_amount") @db.Decimal(12, 4)
+  extraAdultRate  Decimal   @default(0) @map("extra_adult_rate") @db.Decimal(12, 4)
+  extraChildRate  Decimal   @default(0) @map("extra_child_rate") @db.Decimal(12, 4)
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  ratePlan        RatePlan  @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
+  roomType        RoomType  @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+
+  @@index([ratePlanId, roomTypeId], name: "idx_rate_plan_room_types_plan_room")
+  @@index([roomTypeId], name: "idx_rate_plan_room_types_room_type")
+  @@map("rate_plan_room_types")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 23. PMS DAILY RATES (Date-Specific Price & Restriction Overrides)
+// ==============================================================================
+model DailyRate {
+  id                    String    @id
+  propertyId            String    @map("property_id")
+  ratePlanId            String    @map("rate_plan_id")
+  roomTypeId            String    @map("room_type_id")
+  businessDate          DateTime  @map("business_date") @db.Date
+  baseRateAmount        Decimal   @map("base_rate_amount") @db.Decimal(12, 4)
+  extraAdultRate        Decimal?  @map("extra_adult_rate") @db.Decimal(12, 4)
+  extraChildRate        Decimal?  @map("extra_child_rate") @db.Decimal(12, 4)
+  isClosed              Boolean   @default(false) @map("is_closed")
+  isClosedToArrival     Boolean?  @map("is_closed_to_arrival")
+  isClosedToDeparture   Boolean?  @map("is_closed_to_departure")
+  minStayDays           Int?      @map("min_stay_days")
+  maxStayDays           Int?      @map("max_stay_days")
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  ratePlan              RatePlan  @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
+  roomType              RoomType  @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+
+  @@unique([ratePlanId, roomTypeId, businessDate], name: "uq_daily_rates_plan_room_date")
+  @@index([propertyId, businessDate], name: "idx_daily_rates_property_date")
+  @@map("daily_rates")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 24. PMS DAILY INVENTORY (Operational Capacity Ledger)
+// ==============================================================================
+model DailyInventory {
+  id                    String    @id
+  propertyId            String    @map("property_id")
+  roomTypeId            String    @map("room_type_id")
+  businessDate          DateTime  @map("business_date") @db.Date
+  totalRooms            Int       @default(0) @map("total_rooms")
+  outOfOrderCount       Int       @default(0) @map("out_of_order_count")
+  outOfServiceCount     Int       @default(0) @map("out_of_service_count")
+  blockedCount          Int       @default(0) @map("blocked_count")
+  bookedCount           Int       @default(0) @map("booked_count")
+  overbookingLimit      Int       @default(0) @map("overbooking_limit")
+  version               Int       @default(0)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  property              Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  roomType              RoomType  @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+
+  @@unique([propertyId, roomTypeId, businessDate], name: "uq_daily_inventory_prop_type_date")
+  @@index([propertyId, businessDate], name: "idx_daily_inventory_lookup")
+  @@map("daily_inventory")
+  @@schema("pms_schema")
 }
