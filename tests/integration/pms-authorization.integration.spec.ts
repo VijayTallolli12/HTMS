@@ -17,6 +17,7 @@ import { APP_GUARD } from '@nestjs/core';
 import request from 'supertest';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import type { Socket } from 'net';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
@@ -264,7 +265,7 @@ describe('W1-T04: PMS Authorization & Scoped RBAC Integration Tests', () => {
     // 6. Bootstrap Test App
     const redisServiceForTestApp = new Proxy(redisService, {
       get(target, prop, receiver) {
-        if (prop === 'onModuleDestroy') {
+        if (prop === 'onModuleInit' || prop === 'onModuleDestroy') {
           return () => Promise.resolve();
         }
         return Reflect.get(target, prop, receiver);
@@ -322,10 +323,12 @@ describe('W1-T04: PMS Authorization & Scoped RBAC Integration Tests', () => {
       try {
         const client = redisService?.getClient();
         if (client) {
-          if (client.status === 'ready') {
-            await client.quit();
-          } else if (client.status !== 'end') {
-            client.disconnect();
+          const stream = ((client as any).connector?.stream || (client as any).stream) as
+            | Socket
+            | undefined;
+          client.disconnect(false);
+          if (stream && !stream.destroyed && typeof stream.destroy === 'function') {
+            stream.destroy();
           }
         }
       } catch {

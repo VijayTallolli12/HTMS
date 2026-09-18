@@ -114,6 +114,23 @@ export class RoomMaintenanceService {
 
     return this.prisma.$transaction(
       async (tx) => {
+        // 0. Verify no active reservation assigned to this room overlaps maintenance period
+        const conflictingReservation = await tx.reservation.findFirst({
+          where: {
+            propertyId,
+            assignedRoomId: room.id,
+            status: { in: ['CONFIRMED', 'CHECKED_IN'] },
+            deletedAt: null,
+            arrivalDate: { lt: endD },
+            departureDate: { gt: startD },
+          },
+        });
+        if (conflictingReservation) {
+          throw new ConflictException(
+            `Cannot place room into maintenance: room is assigned to active reservation ${conflictingReservation.confirmationNumber} for overlapping dates`,
+          );
+        }
+
         // 1. Adjust DailyInventory capacity atomically
         await this.inventoryService.adjustMaintenanceCapacity(
           propertyId,
@@ -152,26 +169,27 @@ export class RoomMaintenanceService {
           throw error;
         }
 
-        // 3. Materialize room status if today covered
+        // 3. Atomically synchronize on physical Room row for all maintenance creations
+        const updateRes = await tx.room.updateMany({
+          where: {
+            id: room.id,
+            propertyId,
+            version: room.version,
+          },
+          data: {
+            ...(isTodayCovered ? { serviceStatus: dto.type } : {}),
+            version: { increment: 1 },
+          },
+        });
+
+        if (updateRes.count === 0) {
+          throw new ConflictException(
+            `Optimistic concurrency conflict while updating room '${room.roomNumber}' for maintenance block`,
+          );
+        }
+
+        // Materialize room status log and event if today is covered
         if (isTodayCovered) {
-          const updateRes = await tx.room.updateMany({
-            where: {
-              id: room.id,
-              propertyId,
-              version: room.version,
-            },
-            data: {
-              serviceStatus: dto.type,
-              version: { increment: 1 },
-            },
-          });
-
-          if (updateRes.count === 0) {
-            throw new ConflictException(
-              `Optimistic concurrency conflict while updating room '${room.roomNumber}' service status`,
-            );
-          }
-
           await tx.roomStatusLog.create({
             data: {
               id: generateUuidV7(),

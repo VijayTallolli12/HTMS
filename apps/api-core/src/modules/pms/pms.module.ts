@@ -38,8 +38,11 @@ import { ReservationsModule } from './reservations/reservations.module';
 // Room Operations
 import { RoomOperationsModule } from './room-operations/room-operations.module';
 
+// Front Office
+import { FrontOfficeModule } from './front-office/front-office.module';
+
 @Module({
-  imports: [ReservationsModule, RoomOperationsModule],
+  imports: [ReservationsModule, RoomOperationsModule, FrontOfficeModule],
   controllers: [
     RoomTypeController,
     RoomController,
@@ -94,6 +97,7 @@ import { RoomOperationsModule } from './room-operations/room-operations.module';
     RATE_PLAN_DELETION_VALIDATOR,
     ReservationsModule,
     RoomOperationsModule,
+    FrontOfficeModule,
   ],
 })
 export class PmsModule {}

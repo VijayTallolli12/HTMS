@@ -41,15 +41,15 @@ model HotelGroup {
 // 2. REGION (Geographical / Cluster Tier)
 // ==============================================================================
 model Region {
-  id           String     @id
-  hotelGroupId String     @map("hotel_group_id")
+  id           String    @id
+  hotelGroupId String    @map("hotel_group_id")
   code         String
   name         String
   description  String?
-  status       String     @default("ACTIVE")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-  deletedAt    DateTime?  @map("deleted_at")
+  status       String    @default("ACTIVE")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
 
   hotelGroup     HotelGroup      @relation(fields: [hotelGroupId], references: [id], onDelete: Restrict)
   countries      Country[]
@@ -67,14 +67,14 @@ model Region {
 // 3. COUNTRY (Jurisdictional Tier)
 // ==============================================================================
 model Country {
-  id             String          @id
-  regionId       String          @map("region_id")
-  code           String          // ISO 3166-1 alpha-2 (e.g., 'JP', 'US', 'AE')
-  name           String
-  status         String          @default("ACTIVE")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
-  deletedAt      DateTime?       @map("deleted_at")
+  id        String    @id
+  regionId  String    @map("region_id")
+  code      String // ISO 3166-1 alpha-2 (e.g., 'JP', 'US', 'AE')
+  name      String
+  status    String    @default("ACTIVE")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   region         Region          @relation(fields: [regionId], references: [id], onDelete: Restrict)
   properties     Property[]
@@ -93,37 +93,38 @@ model Country {
 // 4. PROPERTY (Operational Hotel / Resort Unit Tier)
 // ==============================================================================
 model Property {
-  id            String     @id
-  countryId     String     @map("country_id")
-  code          String     @unique // Globally unique enterprise property code
+  id            String    @id
+  countryId     String    @map("country_id")
+  code          String    @unique // Globally unique enterprise property code
   name          String
-  legalName     String?    @map("legal_name")
-  status        String     @default("ACTIVE")
-  timeZone      String     @map("time_zone") // IANA format (e.g., 'Asia/Tokyo')
-  currency      String     @map("currency")  // ISO 4217 (e.g., 'JPY', 'USD')
-  addressLine1  String?    @map("address_line1")
-  addressLine2  String?    @map("address_line2")
-  city          String?    @map("city")
-  stateProvince String?    @map("state_province")
-  postalCode    String?    @map("postal_code")
-  phone         String?    @map("phone")
-  email         String?    @map("email")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
-  deletedAt     DateTime?  @map("deleted_at")
+  legalName     String?   @map("legal_name")
+  status        String    @default("ACTIVE")
+  timeZone      String    @map("time_zone") // IANA format (e.g., 'Asia/Tokyo')
+  currency      String    @map("currency") // ISO 4217 (e.g., 'JPY', 'USD')
+  addressLine1  String?   @map("address_line1")
+  addressLine2  String?   @map("address_line2")
+  city          String?   @map("city")
+  stateProvince String?   @map("state_province")
+  postalCode    String?   @map("postal_code")
+  phone         String?   @map("phone")
+  email         String?   @map("email")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
 
-  country        Country         @relation(fields: [countryId], references: [id], onDelete: Restrict)
-  buildings      Building[]
-  defaultUsers   User[]          @relation("UserDefaultProperty")
-  userRoleScopes UserRoleScope[]
-  roomTypes      RoomType[]
-  rooms          Room[]
-  ratePlans      RatePlan[]
-  dailyInventory    DailyInventory[]
-  guests            Guest[]
-  reservations      Reservation[]
-  maintenanceBlocks RoomMaintenanceBlock[]
-  roomStatusLogs    RoomStatusLog[]
+  country                   Country                    @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  buildings                 Building[]
+  defaultUsers              User[]                     @relation("UserDefaultProperty")
+  userRoleScopes            UserRoleScope[]
+  roomTypes                 RoomType[]
+  rooms                     Room[]
+  ratePlans                 RatePlan[]
+  dailyInventory            DailyInventory[]
+  guests                    Guest[]
+  reservations              Reservation[]
+  maintenanceBlocks         RoomMaintenanceBlock[]
+  roomStatusLogs            RoomStatusLog[]
+  reservationAssignmentLogs ReservationAssignmentLog[]
 
   @@index([countryId])
   @@index([status])
@@ -146,9 +147,9 @@ model Building {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
-  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
-  floors      Floor[]
-  rooms       Room[]
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  floors   Floor[]
+  rooms    Room[]
 
   @@unique([propertyId, code])
   @@unique([propertyId, id], name: "uq_buildings_property_id")
@@ -173,8 +174,8 @@ model Floor {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
-  building    Building  @relation(fields: [buildingId], references: [id], onDelete: Restrict)
-  rooms       Room[]
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Restrict)
+  rooms    Room[]
 
   @@unique([buildingId, code])
   @@unique([buildingId, id], name: "uq_floors_building_id")
@@ -486,29 +487,29 @@ model SecurityAuditLog {
 // 19. PMS ROOM TYPES (Accommodation Categories)
 // ==============================================================================
 model RoomType {
-  id              String    @id
-  propertyId      String    @map("property_id")
-  code            String    @db.VarChar(30)
-  name            String    @db.VarChar(100)
-  description     String?   @db.Text
-  roomClass       String    @map("room_class") @db.VarChar(50)
-  baseOccupancy   Int       @default(2) @map("base_occupancy")
-  maxOccupancy    Int       @default(3) @map("max_occupancy")
-  maxAdults       Int       @default(2) @map("max_adults")
-  maxChildren     Int       @default(1) @map("max_children")
-  bedConfiguration Json     @map("bed_configuration")
-  amenities       String[]  @default([])
-  isActive        Boolean   @default(true) @map("is_active")
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id               String    @id
+  propertyId       String    @map("property_id")
+  code             String    @db.VarChar(30)
+  name             String    @db.VarChar(100)
+  description      String?   @db.Text
+  roomClass        String    @map("room_class") @db.VarChar(50)
+  baseOccupancy    Int       @default(2) @map("base_occupancy")
+  maxOccupancy     Int       @default(3) @map("max_occupancy")
+  maxAdults        Int       @default(2) @map("max_adults")
+  maxChildren      Int       @default(1) @map("max_children")
+  bedConfiguration Json      @map("bed_configuration")
+  amenities        String[]  @default([])
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  property        Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
-  rooms           Room[]
-  ratePlans       RatePlanRoomType[]
-  dailyInventory  DailyInventory[]
-  dailyRates      DailyRate[]
-  reservations    Reservation[]
+  property       Property           @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  rooms          Room[]
+  ratePlans      RatePlanRoomType[]
+  dailyInventory DailyInventory[]
+  dailyRates     DailyRate[]
+  reservations   Reservation[]
 
   @@unique([propertyId, code], name: "uq_room_types_property_code")
   @@unique([propertyId, id], name: "uq_room_types_property_id")
@@ -521,29 +522,32 @@ model RoomType {
 // 20. PMS PHYSICAL ROOMS (Architectural Inventory Units)
 // ==============================================================================
 model Room {
-  id              String    @id
-  propertyId      String    @map("property_id")
-  buildingId      String    @map("building_id")
-  floorId         String    @map("floor_id")
-  roomTypeId      String    @map("room_type_id")
-  roomNumber      String    @map("room_number") @db.VarChar(30)
-  name                String?   @db.VarChar(100)
-  features            Json?     @map("features")
-  housekeepingStatus  String    @default("DIRTY") @map("housekeeping_status") @db.VarChar(20)
-  serviceStatus       String    @default("IN_SERVICE") @map("service_status") @db.VarChar(20)
-  occupancyStatus     String    @default("VACANT") @map("occupancy_status") @db.VarChar(20)
-  version             Int       @default(0)
-  isActive            Boolean   @default(true) @map("is_active")
-  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt           DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id                 String    @id
+  propertyId         String    @map("property_id")
+  buildingId         String    @map("building_id")
+  floorId            String    @map("floor_id")
+  roomTypeId         String    @map("room_type_id")
+  roomNumber         String    @map("room_number") @db.VarChar(30)
+  name               String?   @db.VarChar(100)
+  features           Json?     @map("features")
+  housekeepingStatus String    @default("DIRTY") @map("housekeeping_status") @db.VarChar(20)
+  serviceStatus      String    @default("IN_SERVICE") @map("service_status") @db.VarChar(20)
+  occupancyStatus    String    @default("VACANT") @map("occupancy_status") @db.VarChar(20)
+  version            Int       @default(0)
+  isActive           Boolean   @default(true) @map("is_active")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  property            Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
-  building            Building  @relation(fields: [propertyId, buildingId], references: [propertyId, id], onDelete: Restrict)
-  floor               Floor     @relation(fields: [buildingId, floorId], references: [buildingId, id], onDelete: Restrict)
-  roomType            RoomType  @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
-  maintenanceBlocks   RoomMaintenanceBlock[]
-  statusLogs          RoomStatusLog[]
+  property             Property                   @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  building             Building                   @relation(fields: [propertyId, buildingId], references: [propertyId, id], onDelete: Restrict)
+  floor                Floor                      @relation(fields: [buildingId, floorId], references: [buildingId, id], onDelete: Restrict)
+  roomType             RoomType                   @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+  maintenanceBlocks    RoomMaintenanceBlock[]
+  statusLogs           RoomStatusLog[]
+  assignedReservations Reservation[]              @relation("RoomAssignedReservations")
+  assignmentLogsFrom   ReservationAssignmentLog[] @relation("AssignmentLogsPrevRoom")
+  assignmentLogsTo     ReservationAssignmentLog[] @relation("AssignmentLogsNewRoom")
 
   @@unique([propertyId, id], name: "uq_rooms_property_id")
   @@unique([propertyId, roomNumber], name: "uq_rooms_property_room_number")
@@ -560,31 +564,31 @@ model Room {
 // 21. PMS RATE PLANS (Commercial Pricing Plans)
 // ==============================================================================
 model RatePlan {
-  id                    String    @id
-  propertyId            String    @map("property_id")
-  code                  String    @db.VarChar(30)
-  name                  String    @db.VarChar(100)
-  description           String?   @db.Text
-  currency              String    @db.VarChar(3)
-  mealPlanCode          String    @default("RO") @map("meal_plan_code") @db.VarChar(20)
-  pricingModel          String    @default("PER_ROOM") @map("pricing_model") @db.VarChar(30)
-  isClosed              Boolean   @default(false) @map("is_closed")
-  isClosedToArrival     Boolean   @default(false) @map("is_closed_to_arrival")
-  isClosedToDeparture   Boolean   @default(false) @map("is_closed_to_departure")
-  minStayDays           Int       @default(1) @map("min_stay_days")
-  maxStayDays           Int?      @map("max_stay_days")
-  validFrom             DateTime  @map("valid_from") @db.Date
-  validTo               DateTime  @map("valid_to") @db.Date
-  cancellationPolicy    Json?     @map("cancellation_policy")
-  isActive              Boolean   @default(true) @map("is_active")
-  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id                  String    @id
+  propertyId          String    @map("property_id")
+  code                String    @db.VarChar(30)
+  name                String    @db.VarChar(100)
+  description         String?   @db.Text
+  currency            String    @db.VarChar(3)
+  mealPlanCode        String    @default("RO") @map("meal_plan_code") @db.VarChar(20)
+  pricingModel        String    @default("PER_ROOM") @map("pricing_model") @db.VarChar(30)
+  isClosed            Boolean   @default(false) @map("is_closed")
+  isClosedToArrival   Boolean   @default(false) @map("is_closed_to_arrival")
+  isClosedToDeparture Boolean   @default(false) @map("is_closed_to_departure")
+  minStayDays         Int       @default(1) @map("min_stay_days")
+  maxStayDays         Int?      @map("max_stay_days")
+  validFrom           DateTime  @map("valid_from") @db.Date
+  validTo             DateTime  @map("valid_to") @db.Date
+  cancellationPolicy  Json?     @map("cancellation_policy")
+  isActive            Boolean   @default(true) @map("is_active")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt           DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  property              Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
-  roomTypes             RatePlanRoomType[]
-  dailyRates            DailyRate[]
-  reservations          Reservation[]
+  property     Property           @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  roomTypes    RatePlanRoomType[]
+  dailyRates   DailyRate[]
+  reservations Reservation[]
 
   @@unique([propertyId, code], name: "uq_rate_plans_property_code")
   @@unique([propertyId, id], name: "uq_rate_plans_property_id")
@@ -597,20 +601,20 @@ model RatePlan {
 // 22. PMS RATE PLAN ROOM TYPES (Room Type Mapping & Base Rates)
 // ==============================================================================
 model RatePlanRoomType {
-  id              String    @id
-  propertyId      String    @map("property_id")
-  ratePlanId      String    @map("rate_plan_id")
-  roomTypeId      String    @map("room_type_id")
-  baseRateAmount  Decimal   @map("base_rate_amount") @db.Decimal(12, 4)
-  extraAdultRate  Decimal   @default(0) @map("extra_adult_rate") @db.Decimal(12, 4)
-  extraChildRate  Decimal   @default(0) @map("extra_child_rate") @db.Decimal(12, 4)
-  isActive        Boolean   @default(true) @map("is_active")
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id             String    @id
+  propertyId     String    @map("property_id")
+  ratePlanId     String    @map("rate_plan_id")
+  roomTypeId     String    @map("room_type_id")
+  baseRateAmount Decimal   @map("base_rate_amount") @db.Decimal(12, 4)
+  extraAdultRate Decimal   @default(0) @map("extra_adult_rate") @db.Decimal(12, 4)
+  extraChildRate Decimal   @default(0) @map("extra_child_rate") @db.Decimal(12, 4)
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  ratePlan        RatePlan  @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
-  roomType        RoomType  @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+  ratePlan RatePlan @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
+  roomType RoomType @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
 
   @@index([ratePlanId, roomTypeId], name: "idx_rate_plan_room_types_plan_room")
   @@index([roomTypeId], name: "idx_rate_plan_room_types_room_type")
@@ -622,24 +626,24 @@ model RatePlanRoomType {
 // 23. PMS DAILY RATES (Date-Specific Price & Restriction Overrides)
 // ==============================================================================
 model DailyRate {
-  id                    String    @id
-  propertyId            String    @map("property_id")
-  ratePlanId            String    @map("rate_plan_id")
-  roomTypeId            String    @map("room_type_id")
-  businessDate          DateTime  @map("business_date") @db.Date
-  baseRateAmount        Decimal   @map("base_rate_amount") @db.Decimal(12, 4)
-  extraAdultRate        Decimal?  @map("extra_adult_rate") @db.Decimal(12, 4)
-  extraChildRate        Decimal?  @map("extra_child_rate") @db.Decimal(12, 4)
-  isClosed              Boolean   @default(false) @map("is_closed")
-  isClosedToArrival     Boolean?  @map("is_closed_to_arrival")
-  isClosedToDeparture   Boolean?  @map("is_closed_to_departure")
-  minStayDays           Int?      @map("min_stay_days")
-  maxStayDays           Int?      @map("max_stay_days")
-  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                  String   @id
+  propertyId          String   @map("property_id")
+  ratePlanId          String   @map("rate_plan_id")
+  roomTypeId          String   @map("room_type_id")
+  businessDate        DateTime @map("business_date") @db.Date
+  baseRateAmount      Decimal  @map("base_rate_amount") @db.Decimal(12, 4)
+  extraAdultRate      Decimal? @map("extra_adult_rate") @db.Decimal(12, 4)
+  extraChildRate      Decimal? @map("extra_child_rate") @db.Decimal(12, 4)
+  isClosed            Boolean  @default(false) @map("is_closed")
+  isClosedToArrival   Boolean? @map("is_closed_to_arrival")
+  isClosedToDeparture Boolean? @map("is_closed_to_departure")
+  minStayDays         Int?     @map("min_stay_days")
+  maxStayDays         Int?     @map("max_stay_days")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  ratePlan              RatePlan  @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
-  roomType              RoomType  @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+  ratePlan RatePlan @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
+  roomType RoomType @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
 
   @@unique([ratePlanId, roomTypeId, businessDate], name: "uq_daily_rates_plan_room_date")
   @@index([propertyId, businessDate], name: "idx_daily_rates_property_date")
@@ -651,22 +655,22 @@ model DailyRate {
 // 24. PMS DAILY INVENTORY (Operational Capacity Ledger)
 // ==============================================================================
 model DailyInventory {
-  id                    String    @id
-  propertyId            String    @map("property_id")
-  roomTypeId            String    @map("room_type_id")
-  businessDate          DateTime  @map("business_date") @db.Date
-  totalRooms            Int       @default(0) @map("total_rooms")
-  outOfOrderCount       Int       @default(0) @map("out_of_order_count")
-  outOfServiceCount     Int       @default(0) @map("out_of_service_count")
-  blockedCount          Int       @default(0) @map("blocked_count")
-  bookedCount           Int       @default(0) @map("booked_count")
-  overbookingLimit      Int       @default(0) @map("overbooking_limit")
-  version               Int       @default(0)
-  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                String   @id
+  propertyId        String   @map("property_id")
+  roomTypeId        String   @map("room_type_id")
+  businessDate      DateTime @map("business_date") @db.Date
+  totalRooms        Int      @default(0) @map("total_rooms")
+  outOfOrderCount   Int      @default(0) @map("out_of_order_count")
+  outOfServiceCount Int      @default(0) @map("out_of_service_count")
+  blockedCount      Int      @default(0) @map("blocked_count")
+  bookedCount       Int      @default(0) @map("booked_count")
+  overbookingLimit  Int      @default(0) @map("overbooking_limit")
+  version           Int      @default(0)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  property              Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
-  roomType              RoomType  @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  roomType RoomType @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
 
   @@unique([propertyId, roomTypeId, businessDate], name: "uq_daily_inventory_prop_type_date")
   @@index([propertyId, businessDate], name: "idx_daily_inventory_lookup")
@@ -678,21 +682,21 @@ model DailyInventory {
 // 25. PMS GUESTS (Operational Property-Local Guest Profiles)
 // ==============================================================================
 model Guest {
-  id                   String        @id
-  propertyId           String        @map("property_id")
-  firstName            String        @map("first_name") @db.VarChar(50)
-  lastName             String        @map("last_name") @db.VarChar(50)
-  email                String?       @map("email") @db.VarChar(100)
-  phone                String?       @map("phone") @db.VarChar(30)
-  identificationType   String?       @map("identification_type") @db.VarChar(30)
-  identificationNumber String?       @map("identification_number") @db.VarChar(50)
-  crmProfileId         String?       @map("crm_profile_id")
-  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt            DateTime?     @map("deleted_at") @db.Timestamptz(6)
+  id                   String    @id
+  propertyId           String    @map("property_id")
+  firstName            String    @map("first_name") @db.VarChar(50)
+  lastName             String    @map("last_name") @db.VarChar(50)
+  email                String?   @map("email") @db.VarChar(100)
+  phone                String?   @map("phone") @db.VarChar(30)
+  identificationType   String?   @map("identification_type") @db.VarChar(30)
+  identificationNumber String?   @map("identification_number") @db.VarChar(50)
+  crmProfileId         String?   @map("crm_profile_id")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt            DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  property             Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
-  reservations         Reservation[]
+  property     Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  reservations Reservation[]
 
   @@unique([propertyId, id], name: "uq_guests_property_id")
   @@index([propertyId, lastName], name: "idx_guests_property_name")
@@ -706,37 +710,48 @@ model Guest {
 // 26. PMS RESERVATIONS (Central Reservation Aggregate Root)
 // ==============================================================================
 model Reservation {
-  id                 String                 @id
-  propertyId         String                 @map("property_id")
-  confirmationNumber String                 @map("confirmation_number") @db.VarChar(30)
-  idempotencyKey     String?                @map("idempotency_key") @db.VarChar(64)
-  status             String                 @default("CONFIRMED") @map("status") @db.VarChar(20)
-  guestId            String                 @map("guest_id")
-  roomTypeId         String                 @map("room_type_id")
-  ratePlanId         String                 @map("rate_plan_id")
-  arrivalDate        DateTime               @map("arrival_date") @db.Date
-  departureDate      DateTime               @map("departure_date") @db.Date
-  adultsCount        Int                    @default(1) @map("adults_count")
-  childrenCount      Int                    @default(0) @map("children_count")
-  totalAmount        Decimal                @map("total_amount") @db.Decimal(12, 4)
-  currency           String                 @map("currency") @db.VarChar(3)
-  specialRequests    String?                @map("special_requests") @db.Text
-  cancellationReason String?                @map("cancellation_reason") @db.Text
-  cancelledAt        DateTime?              @map("cancelled_at") @db.Timestamptz(6)
-  version            Int                    @default(0)
-  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt          DateTime?              @map("deleted_at") @db.Timestamptz(6)
+  id                    String    @id
+  propertyId            String    @map("property_id")
+  confirmationNumber    String    @map("confirmation_number") @db.VarChar(30)
+  idempotencyKey        String?   @map("idempotency_key") @db.VarChar(64)
+  status                String    @default("CONFIRMED") @map("status") @db.VarChar(20)
+  guestId               String    @map("guest_id")
+  roomTypeId            String    @map("room_type_id")
+  ratePlanId            String    @map("rate_plan_id")
+  arrivalDate           DateTime  @map("arrival_date") @db.Date
+  departureDate         DateTime  @map("departure_date") @db.Date
+  adultsCount           Int       @default(1) @map("adults_count")
+  childrenCount         Int       @default(0) @map("children_count")
+  totalAmount           Decimal   @map("total_amount") @db.Decimal(12, 4)
+  currency              String    @map("currency") @db.VarChar(3)
+  specialRequests       String?   @map("special_requests") @db.Text
+  cancellationReason    String?   @map("cancellation_reason") @db.Text
+  cancelledAt           DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  assignedRoomId        String?   @map("assigned_room_id")
+  assignedAt            DateTime? @map("assigned_at") @db.Timestamptz(6)
+  assignedBy            String?   @map("assigned_by")
+  checkInAt             DateTime? @map("check_in_at") @db.Timestamptz(6)
+  checkedInBy           String?   @map("checked_in_by")
+  checkInIdempotencyKey String?   @map("check_in_idempotency_key") @db.VarChar(64)
+  checkInPayloadHash    String?   @map("check_in_payload_hash") @db.VarChar(64)
+  version               Int       @default(0)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  property           Property               @relation(fields: [propertyId], references: [id], onDelete: Restrict)
-  guest              Guest                  @relation(fields: [propertyId, guestId], references: [propertyId, id], onDelete: Restrict)
-  roomType           RoomType               @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
-  ratePlan           RatePlan               @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
-  rateNights         ReservationRateNight[]
+  property       Property                   @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  guest          Guest                      @relation(fields: [propertyId, guestId], references: [propertyId, id], onDelete: Restrict)
+  roomType       RoomType                   @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
+  ratePlan       RatePlan                   @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
+  rateNights     ReservationRateNight[]
+  assignedRoom   Room?                      @relation("RoomAssignedReservations", fields: [propertyId, assignedRoomId], references: [propertyId, id], onDelete: Restrict)
+  assignmentLogs ReservationAssignmentLog[]
 
   @@unique([propertyId, id], name: "uq_reservations_property_id")
   @@unique([propertyId, confirmationNumber], name: "uq_reservations_property_confirmation_number")
   @@unique([propertyId, idempotencyKey], name: "uq_reservations_property_idempotency_key")
+  @@unique([propertyId, checkInIdempotencyKey], name: "uq_reservations_checkin_idempotency")
+  @@index([propertyId, assignedRoomId], name: "idx_reservations_property_assigned_room")
   @@index([propertyId, status, arrivalDate], name: "idx_reservations_lookup")
   @@index([propertyId, guestId], name: "idx_reservations_guest")
   @@map("reservations")
@@ -747,18 +762,18 @@ model Reservation {
 // 27. PMS RESERVATION RATE NIGHTS (Immutable Nightly Pricing Snapshot)
 // ==============================================================================
 model ReservationRateNight {
-  id              String      @id
-  propertyId      String      @map("property_id")
-  reservationId   String      @map("reservation_id")
-  businessDate    DateTime    @map("business_date") @db.Date
-  baseRateAmount  Decimal     @map("base_rate_amount") @db.Decimal(12, 4)
-  extraAdultRate  Decimal     @default(0) @map("extra_adult_rate") @db.Decimal(12, 4)
-  extraChildRate  Decimal     @default(0) @map("extra_child_rate") @db.Decimal(12, 4)
-  totalAmount     Decimal     @map("total_amount") @db.Decimal(12, 4)
-  currency        String      @map("currency") @db.VarChar(3)
-  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  id             String   @id
+  propertyId     String   @map("property_id")
+  reservationId  String   @map("reservation_id")
+  businessDate   DateTime @map("business_date") @db.Date
+  baseRateAmount Decimal  @map("base_rate_amount") @db.Decimal(12, 4)
+  extraAdultRate Decimal  @default(0) @map("extra_adult_rate") @db.Decimal(12, 4)
+  extraChildRate Decimal  @default(0) @map("extra_child_rate") @db.Decimal(12, 4)
+  totalAmount    Decimal  @map("total_amount") @db.Decimal(12, 4)
+  currency       String   @map("currency") @db.VarChar(3)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  reservation     Reservation @relation(fields: [propertyId, reservationId], references: [propertyId, id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [propertyId, reservationId], references: [propertyId, id], onDelete: Cascade)
 
   @@unique([reservationId, businessDate], name: "uq_reservation_rate_nights_res_date")
   @@index([propertyId, businessDate], name: "idx_reservation_rate_nights_lookup")
@@ -788,8 +803,8 @@ model RoomMaintenanceBlock {
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  property           Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
-  room               Room      @relation(fields: [propertyId, roomId], references: [propertyId, id], onDelete: Restrict)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  room     Room     @relation(fields: [propertyId, roomId], references: [propertyId, id], onDelete: Restrict)
 
   @@unique([propertyId, id], name: "uq_room_maintenance_blocks_prop_id")
   @@index([propertyId, roomId, status], name: "idx_room_maintenance_lookup")
@@ -802,24 +817,47 @@ model RoomMaintenanceBlock {
 // 29. PMS ROOM STATUS LOGS (Immutable Room Status Audit Ledger)
 // ==============================================================================
 model RoomStatusLog {
-  id                         String    @id
-  propertyId                 String    @map("property_id")
-  roomId                     String    @map("room_id")
-  previousHousekeepingStatus String?   @map("previous_housekeeping_status") @db.VarChar(20)
-  newHousekeepingStatus      String?   @map("new_housekeeping_status") @db.VarChar(20)
-  previousServiceStatus      String?   @map("previous_service_status") @db.VarChar(20)
-  newServiceStatus           String?   @map("new_service_status") @db.VarChar(20)
-  reason                     String?   @db.VarChar(255)
-  source                     String    @default("MANUAL") @db.VarChar(30)
-  changedBy                  String    @map("changed_by")
-  createdAt                  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                         String   @id
+  propertyId                 String   @map("property_id")
+  roomId                     String   @map("room_id")
+  previousHousekeepingStatus String?  @map("previous_housekeeping_status") @db.VarChar(20)
+  newHousekeepingStatus      String?  @map("new_housekeeping_status") @db.VarChar(20)
+  previousServiceStatus      String?  @map("previous_service_status") @db.VarChar(20)
+  newServiceStatus           String?  @map("new_service_status") @db.VarChar(20)
+  reason                     String?  @db.VarChar(255)
+  source                     String   @default("MANUAL") @db.VarChar(30)
+  changedBy                  String   @map("changed_by")
+  createdAt                  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  property                   Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
-  room                       Room      @relation(fields: [propertyId, roomId], references: [propertyId, id], onDelete: Restrict)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  room     Room     @relation(fields: [propertyId, roomId], references: [propertyId, id], onDelete: Restrict)
 
   @@index([propertyId, roomId, createdAt], name: "idx_room_status_logs_lookup")
   @@map("room_status_logs")
   @@schema("pms_schema")
 }
 
+// ==============================================================================
+// 30. PMS RESERVATION ASSIGNMENT LOGS (Immutable Room Assignment Audit Ledger)
+// ==============================================================================
+model ReservationAssignmentLog {
+  id             String   @id
+  propertyId     String   @map("property_id")
+  reservationId  String   @map("reservation_id")
+  previousRoomId String?  @map("previous_room_id")
+  newRoomId      String?  @map("new_room_id")
+  action         String   @map("action") @db.VarChar(30)
+  reason         String?  @db.VarChar(255)
+  actorId        String   @map("actor_id")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
+  property     Property    @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  reservation  Reservation @relation(fields: [propertyId, reservationId], references: [propertyId, id], onDelete: Restrict)
+  previousRoom Room?       @relation("AssignmentLogsPrevRoom", fields: [propertyId, previousRoomId], references: [propertyId, id], onDelete: Restrict)
+  newRoom      Room?       @relation("AssignmentLogsNewRoom", fields: [propertyId, newRoomId], references: [propertyId, id], onDelete: Restrict)
+
+  @@index([propertyId, reservationId, createdAt], name: "idx_res_assignment_logs_lookup")
+  @@index([propertyId, newRoomId, createdAt], name: "idx_room_assignment_logs_lookup")
+  @@map("reservation_assignment_logs")
+  @@schema("pms_schema")
+}

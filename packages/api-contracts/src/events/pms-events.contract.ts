@@ -16,6 +16,10 @@ export enum PmsEventType {
   ROOM_STATUS_CHANGED = 'com.enterprise_hms.pms.room.status_changed.v1',
   ROOM_MAINTENANCE_CREATED = 'com.enterprise_hms.pms.room.maintenance_block_created.v1',
   ROOM_MAINTENANCE_ENDED = 'com.enterprise_hms.pms.room.maintenance_block_ended.v1',
+  ROOM_ASSIGNED = 'com.enterprise_hms.pms.reservation.room_assigned.v1',
+  ROOM_UNASSIGNED = 'com.enterprise_hms.pms.reservation.room_unassigned.v1',
+  GUEST_CHECKED_IN = 'com.enterprise_hms.pms.reservation.checked_in.v1',
+  ROOM_OCCUPANCY_CHANGED = 'com.enterprise_hms.pms.room.occupancy_changed.v1',
 }
 
 export interface RoomTypeCreatedData {
@@ -150,4 +154,49 @@ export interface RoomMaintenanceEndedData {
   reason?: string | null;
   cancelledBy?: string | null;
   cancelledAt?: string | null;
+}
+
+export interface RoomAssignedData {
+  propertyId: string;
+  reservationId: string;
+  confirmationNumber: string;
+  roomId: string;
+  roomNumber: string;
+  actorId: string;
+  assignedAt: string;
+  previousRoomId?: string | null;
+}
+
+export interface RoomUnassignedData {
+  propertyId: string;
+  reservationId: string;
+  confirmationNumber: string;
+  previousRoomId: string;
+  actorId: string;
+  unassignedAt: string;
+  reason?: string | null;
+}
+
+export interface GuestCheckedInData {
+  propertyId: string;
+  reservationId: string;
+  confirmationNumber: string;
+  guestId: string;
+  roomId: string;
+  roomNumber: string;
+  checkInAt: string;
+  actorId: string;
+  allowCleanOverride?: boolean;
+  identityVerified?: boolean;
+}
+
+export interface RoomOccupancyChangedData {
+  propertyId: string;
+  roomId: string;
+  roomNumber: string;
+  previousOccupancyStatus: string;
+  newOccupancyStatus: string;
+  source: string;
+  actorId: string;
+  timestamp: string;
 }

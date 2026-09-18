@@ -4,3 +4,4 @@ export * from './rate-plan.contract';
 export * from './inventory.contract';
 export * from './reservation.contract';
 export * from './room-operations.contract';
+export * from './front-office.contract';

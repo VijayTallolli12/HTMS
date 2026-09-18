@@ -1,3 +1,5 @@
+import { RoomDto } from './room.contract';
+
 export enum ReservationStatus {
   CONFIRMED = 'CONFIRMED',
   CANCELLED = 'CANCELLED',
@@ -78,6 +80,12 @@ export interface ReservationDto {
   specialRequests?: string | null;
   cancellationReason?: string | null;
   cancelledAt?: string | null;
+  assignedRoomId?: string | null;
+  assignedAt?: string | null;
+  assignedBy?: string | null;
+  checkInAt?: string | null;
+  checkedInBy?: string | null;
+  assignedRoom?: RoomDto | null;
   version: number;
   rateNights?: ReservationRateNightDto[];
   createdAt: string;

@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Room } from '@prisma/client';
 import { PrismaService } from '../../../../common/database/prisma.service';
 import { PropertyBusinessDateService } from '../../common/services/property-business-date.service';
 import { RoomStatusReconciliationService } from './room-status-reconciliation.service';
@@ -365,6 +365,173 @@ export class RoomStatusService {
     }));
 
     return { items, total, page: safePage, limit: safeLimit };
+  }
+
+  public async occupyRoom(
+    propertyId: string,
+    roomId: string,
+    options: {
+      allowCleanOverride?: boolean;
+      actorId: string;
+      reason?: string;
+    },
+    tx: Prisma.TransactionClient,
+  ): Promise<{ room: Room; effective: RoomStatusDto['effective'] }> {
+    const client = tx;
+
+    const property = await client.property.findFirst({
+      where: { id: propertyId, deletedAt: null },
+    });
+    if (!property) {
+      throw new NotFoundException(`Property '${propertyId}' not found`);
+    }
+
+    const currentBusinessDate = this.businessDateService.getCurrentBusinessDate(property.timeZone);
+
+    const room = await client.room.findFirst({
+      where: { id: roomId, propertyId, deletedAt: null },
+    });
+    if (!room) {
+      throw new NotFoundException(`Room '${roomId}' not found on property '${propertyId}'`);
+    }
+
+    // 1. Reconcile room projection using T06 reconciliation service inside tx
+    const reconciled = await this.reconciliationService.reconcileRoom(
+      propertyId,
+      room,
+      currentBusinessDate,
+      client,
+    );
+
+    // 2. Fetch active maintenance block covering current business date
+    const activeBlock = await client.roomMaintenanceBlock.findFirst({
+      where: {
+        propertyId,
+        roomId: reconciled.id,
+        status: 'ACTIVE',
+        deletedAt: null,
+        startDate: { lte: currentBusinessDate },
+        endDate: { gt: currentBusinessDate },
+      },
+    });
+
+    const effective = this.reconciliationService.resolveEffectiveState(
+      reconciled,
+      activeBlock,
+      currentBusinessDate,
+    );
+
+    // 3. Operational readiness checks
+    if (effective.serviceStatus !== RoomServiceStatus.IN_SERVICE || activeBlock) {
+      throw new ConflictException(
+        `Room '${reconciled.roomNumber}' is ${effective.serviceStatus} and cannot be checked in`,
+      );
+    }
+
+    if (reconciled.occupancyStatus !== RoomOccupancyStatus.VACANT) {
+      throw new ConflictException(
+        `Room '${reconciled.roomNumber}' is already ${reconciled.occupancyStatus}`,
+      );
+    }
+
+    const currentHK = reconciled.housekeepingStatus as HousekeepingStatus;
+    const isInspected = currentHK === HousekeepingStatus.INSPECTED;
+    const isCleanWithOverride =
+      currentHK === HousekeepingStatus.CLEAN && options.allowCleanOverride;
+
+    if (!isInspected && !isCleanWithOverride) {
+      if (currentHK === HousekeepingStatus.CLEAN) {
+        throw new ConflictException(
+          `Room '${reconciled.roomNumber}' is CLEAN but requires supervisor override to check in`,
+        );
+      }
+      throw new ConflictException(
+        `Room '${reconciled.roomNumber}' is in '${currentHK}' status and not ready for check-in`,
+      );
+    }
+
+    // 4. Atomically mutate room occupancyStatus = 'OCCUPIED' with OCC
+    const updateRes = await client.room.updateMany({
+      where: {
+        id: reconciled.id,
+        propertyId,
+        version: reconciled.version,
+        occupancyStatus: RoomOccupancyStatus.VACANT,
+        serviceStatus: RoomServiceStatus.IN_SERVICE,
+      },
+      data: {
+        occupancyStatus: RoomOccupancyStatus.OCCUPIED,
+        version: { increment: 1 },
+      },
+    });
+
+    if (updateRes.count === 0) {
+      throw new ConflictException(
+        `Optimistic concurrency conflict while occupying room '${reconciled.roomNumber}'`,
+      );
+    }
+
+    const updatedRoom = await client.room.findUniqueOrThrow({
+      where: { id: reconciled.id },
+    });
+
+    // 5. Append RoomStatusLog (source = CHECK_IN)
+    await client.roomStatusLog.create({
+      data: {
+        id: generateUuidV7(),
+        propertyId,
+        roomId: updatedRoom.id,
+        previousHousekeepingStatus: currentHK,
+        newHousekeepingStatus: currentHK,
+        previousServiceStatus: updatedRoom.serviceStatus,
+        newServiceStatus: updatedRoom.serviceStatus,
+        reason: options.reason || 'Guest Check-In',
+        source: 'CHECK_IN',
+        changedBy: options.actorId,
+      },
+    });
+
+    // 6. Emit CloudEvent ROOM_OCCUPANCY_CHANGED
+    const occEvent = createCloudEvent({
+      type: PmsEventType.ROOM_OCCUPANCY_CHANGED,
+      source: `https://pms.enterprise-hms.com/properties/${propertyId}/rooms/${updatedRoom.id}`,
+      subject: updatedRoom.id,
+      propertyId,
+      data: {
+        propertyId,
+        roomId: updatedRoom.id,
+        roomNumber: updatedRoom.roomNumber,
+        previousOccupancyStatus: RoomOccupancyStatus.VACANT,
+        newOccupancyStatus: RoomOccupancyStatus.OCCUPIED,
+        source: 'CHECK_IN',
+        actorId: options.actorId,
+        timestamp: new Date().toISOString(),
+      },
+    });
+
+    await client.outboxEvent.create({
+      data: {
+        id: occEvent.id,
+        specversion: occEvent.specversion,
+        type: occEvent.type,
+        source: occEvent.source,
+        subject: occEvent.subject,
+        propertyId,
+        datacontenttype: occEvent.datacontenttype,
+        time: new Date(occEvent.time),
+        data: occEvent.data as any,
+        correlationId: occEvent.correlationid,
+        causationId: occEvent.causationid,
+      },
+    });
+
+    const updatedEffective = this.reconciliationService.resolveEffectiveState(
+      updatedRoom,
+      null,
+      currentBusinessDate,
+    );
+
+    return { room: updatedRoom, effective: updatedEffective };
   }
 
   private mapToDto(
