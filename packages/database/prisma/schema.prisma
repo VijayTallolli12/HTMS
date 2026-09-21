@@ -10,7 +10,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["platform_schema", "audit_schema", "pms_schema"]
+  schemas  = ["platform_schema", "audit_schema", "pms_schema", "finance_schema"]
 }
 
 // ==============================================================================
@@ -710,34 +710,38 @@ model Guest {
 // 26. PMS RESERVATIONS (Central Reservation Aggregate Root)
 // ==============================================================================
 model Reservation {
-  id                    String    @id
-  propertyId            String    @map("property_id")
-  confirmationNumber    String    @map("confirmation_number") @db.VarChar(30)
-  idempotencyKey        String?   @map("idempotency_key") @db.VarChar(64)
-  status                String    @default("CONFIRMED") @map("status") @db.VarChar(20)
-  guestId               String    @map("guest_id")
-  roomTypeId            String    @map("room_type_id")
-  ratePlanId            String    @map("rate_plan_id")
-  arrivalDate           DateTime  @map("arrival_date") @db.Date
-  departureDate         DateTime  @map("departure_date") @db.Date
-  adultsCount           Int       @default(1) @map("adults_count")
-  childrenCount         Int       @default(0) @map("children_count")
-  totalAmount           Decimal   @map("total_amount") @db.Decimal(12, 4)
-  currency              String    @map("currency") @db.VarChar(3)
-  specialRequests       String?   @map("special_requests") @db.Text
-  cancellationReason    String?   @map("cancellation_reason") @db.Text
-  cancelledAt           DateTime? @map("cancelled_at") @db.Timestamptz(6)
-  assignedRoomId        String?   @map("assigned_room_id")
-  assignedAt            DateTime? @map("assigned_at") @db.Timestamptz(6)
-  assignedBy            String?   @map("assigned_by")
-  checkInAt             DateTime? @map("check_in_at") @db.Timestamptz(6)
-  checkedInBy           String?   @map("checked_in_by")
-  checkInIdempotencyKey String?   @map("check_in_idempotency_key") @db.VarChar(64)
-  checkInPayloadHash    String?   @map("check_in_payload_hash") @db.VarChar(64)
-  version               Int       @default(0)
-  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id                     String    @id
+  propertyId             String    @map("property_id")
+  confirmationNumber     String    @map("confirmation_number") @db.VarChar(30)
+  idempotencyKey         String?   @map("idempotency_key") @db.VarChar(64)
+  status                 String    @default("CONFIRMED") @map("status") @db.VarChar(20)
+  guestId                String    @map("guest_id")
+  roomTypeId             String    @map("room_type_id")
+  ratePlanId             String    @map("rate_plan_id")
+  arrivalDate            DateTime  @map("arrival_date") @db.Date
+  departureDate          DateTime  @map("departure_date") @db.Date
+  adultsCount            Int       @default(1) @map("adults_count")
+  childrenCount          Int       @default(0) @map("children_count")
+  totalAmount            Decimal   @map("total_amount") @db.Decimal(12, 4)
+  currency               String    @map("currency") @db.VarChar(3)
+  specialRequests        String?   @map("special_requests") @db.Text
+  cancellationReason     String?   @map("cancellation_reason") @db.Text
+  cancelledAt            DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  assignedRoomId         String?   @map("assigned_room_id")
+  assignedAt             DateTime? @map("assigned_at") @db.Timestamptz(6)
+  assignedBy             String?   @map("assigned_by")
+  checkInAt              DateTime? @map("check_in_at") @db.Timestamptz(6)
+  checkedInBy            String?   @map("checked_in_by")
+  checkInIdempotencyKey  String?   @map("check_in_idempotency_key") @db.VarChar(64)
+  checkInPayloadHash     String?   @map("check_in_payload_hash") @db.VarChar(64)
+  checkOutAt             DateTime? @map("check_out_at") @db.Timestamptz(6)
+  checkedOutBy           String?   @map("checked_out_by")
+  checkOutIdempotencyKey String?   @map("check_out_idempotency_key") @db.VarChar(64)
+  checkOutPayloadHash    String?   @map("check_out_payload_hash") @db.VarChar(64)
+  version                Int       @default(0)
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt              DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   property       Property                   @relation(fields: [propertyId], references: [id], onDelete: Restrict)
   guest          Guest                      @relation(fields: [propertyId, guestId], references: [propertyId, id], onDelete: Restrict)
@@ -751,6 +755,7 @@ model Reservation {
   @@unique([propertyId, confirmationNumber], name: "uq_reservations_property_confirmation_number")
   @@unique([propertyId, idempotencyKey], name: "uq_reservations_property_idempotency_key")
   @@unique([propertyId, checkInIdempotencyKey], name: "uq_reservations_checkin_idempotency")
+  @@unique([propertyId, checkOutIdempotencyKey], name: "uq_reservations_checkout_idempotency")
   @@index([propertyId, assignedRoomId], name: "idx_reservations_property_assigned_room")
   @@index([propertyId, status, arrivalDate], name: "idx_reservations_lookup")
   @@index([propertyId, guestId], name: "idx_reservations_guest")
@@ -860,4 +865,89 @@ model ReservationAssignmentLog {
   @@index([propertyId, newRoomId, createdAt], name: "idx_room_assignment_logs_lookup")
   @@map("reservation_assignment_logs")
   @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 31. FINANCE FOLIOS (Guest Billing Ledger Aggregate Root)
+// ==============================================================================
+model Folio {
+  id             String    @id
+  tenantId       String    @map("tenant_id")
+  propertyId     String    @map("property_id")
+  reservationId  String    @map("reservation_id")
+  guestId        String    @map("guest_id")
+  folioNumber    String    @map("folio_number") @db.VarChar(30)
+  status         String    @default("OPEN") @map("status") @db.VarChar(20)
+  currency       String    @map("currency") @db.VarChar(3)
+  balance        Decimal   @default(0) @map("balance") @db.Decimal(12, 4)
+  idempotencyKey String    @map("idempotency_key") @db.VarChar(64)
+  version        Int       @default(0)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdBy      String    @map("created_by")
+  closedAt       DateTime? @map("closed_at") @db.Timestamptz(6)
+  closedBy       String?   @map("closed_by")
+
+  transactions FolioTransaction[]
+  payments     Payment[]
+
+  @@unique([propertyId, reservationId, folioNumber], name: "uq_folio_property_res_number")
+  @@unique([propertyId, idempotencyKey], name: "uq_folio_property_idempotency")
+  @@index([propertyId, reservationId], name: "idx_folio_property_reservation")
+  @@index([propertyId, status], name: "idx_folio_property_status")
+  @@map("folios")
+  @@schema("finance_schema")
+}
+
+// ==============================================================================
+// 32. FINANCE FOLIO TRANSACTIONS (Immutable Ledger Posting Entries)
+// ==============================================================================
+model FolioTransaction {
+  id              String   @id
+  tenantId        String   @map("tenant_id")
+  propertyId      String   @map("property_id")
+  folioId         String   @map("folio_id")
+  transactionCode String   @map("transaction_code") @db.VarChar(50)
+  description     String   @db.VarChar(255)
+  amount          Decimal  @map("amount") @db.Decimal(12, 4)
+  taxAmount       Decimal  @default(0) @map("tax_amount") @db.Decimal(12, 4)
+  reasonCode      String?  @map("reason_code") @db.VarChar(50)
+  idempotencyKey  String   @map("idempotency_key") @db.VarChar(64)
+  payloadHash     String   @map("payload_hash") @db.VarChar(64)
+  postedAt        DateTime @map("posted_at") @db.Timestamptz(6)
+  postedBy        String   @map("posted_by")
+
+  folio Folio @relation(fields: [folioId], references: [id], onDelete: Restrict)
+
+  @@unique([propertyId, idempotencyKey], name: "uq_folio_tx_property_idempotency")
+  @@index([propertyId, folioId], name: "idx_folio_tx_property_folio")
+  @@index([folioId, postedAt], name: "idx_folio_tx_folio_posted")
+  @@map("folio_transactions")
+  @@schema("finance_schema")
+}
+
+// ==============================================================================
+// 33. FINANCE PAYMENTS (Immutable Payment Records)
+// ==============================================================================
+model Payment {
+  id              String   @id
+  tenantId        String   @map("tenant_id")
+  propertyId      String   @map("property_id")
+  folioId         String   @map("folio_id")
+  amount          Decimal  @map("amount") @db.Decimal(12, 4)
+  currency        String   @map("currency") @db.VarChar(3)
+  paymentMethod   String   @map("payment_method") @db.VarChar(30)
+  referenceNumber String?  @map("reference_number") @db.VarChar(100)
+  status          String   @default("COMPLETED") @map("status") @db.VarChar(20)
+  idempotencyKey  String   @map("idempotency_key") @db.VarChar(64)
+  payloadHash     String   @map("payload_hash") @db.VarChar(64)
+  processedAt     DateTime @map("processed_at") @db.Timestamptz(6)
+  processedBy     String   @map("processed_by")
+
+  folio Folio @relation(fields: [folioId], references: [id], onDelete: Restrict)
+
+  @@unique([propertyId, idempotencyKey], name: "uq_payment_property_idempotency")
+  @@index([propertyId, folioId], name: "idx_payment_property_folio")
+  @@map("payments")
+  @@schema("finance_schema")
 }

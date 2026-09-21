@@ -41,8 +41,11 @@ import { RoomOperationsModule } from './room-operations/room-operations.module';
 // Front Office
 import { FrontOfficeModule } from './front-office/front-office.module';
 
+// Finance
+import { FinanceModule } from './finance/finance.module';
+
 @Module({
-  imports: [ReservationsModule, RoomOperationsModule, FrontOfficeModule],
+  imports: [ReservationsModule, RoomOperationsModule, FrontOfficeModule, FinanceModule],
   controllers: [
     RoomTypeController,
     RoomController,
@@ -98,6 +101,7 @@ import { FrontOfficeModule } from './front-office/front-office.module';
     ReservationsModule,
     RoomOperationsModule,
     FrontOfficeModule,
+    FinanceModule,
   ],
 })
 export class PmsModule {}

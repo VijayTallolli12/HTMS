@@ -6,34 +6,25 @@ This is the living context file for the active development session. It must be c
 
 ## 1. Current Repository State
 
-- **Active Git Branch**: `feature/pms/w1-t06-room-operations`
-- **Current HEAD Commit**: `bb2a119` (`feat(pms): implement W1-T06 room operations status engine`)
-- **T06 Commit Status**: **COMMITTED LOCALLY** (`bb2a119`) — Unpushed
-- **Working Tree**: Clean (all changes staged and committed cleanly; documentation context layer in progress)
+- **Active Git Branch**: `feature/pms/w1-t08-checkout-folio`
+- **Current HEAD Commit**: `363b252` (`feat(pms): implement W1-T07 front office room assignment and arrival processing`)
+- **T07 Commit Status**: **COMMITTED LOCALLY** (`363b252`) — Unpushed
+- **T08 Implementation Status**: **IMPLEMENTED & VERIFIED** (All unit, integration, and monorepo quality gates passed; verification complete, ready for commit review)
 
 ---
 
 ## 2. Current Task
 
-- **Task**: **HMS AI Context & Token Optimization Layer**
-- **Type**: Documentation / Context Optimization Only
-- **Constraints**:
-  - Zero application source code modifications.
-  - Zero database schema or migration changes.
-  - Zero T07 / future task implementation.
-  - Zero commits or pushes without explicit human authorization.
-- **Status**: **IN PROGRESS**
+- **Task**: **W1-T08 — Checkout & Folio Settlement**
+- **Type**: Feature Implementation & Controlled T06 Extension
+- **Status**: **COMPLETE — PENDING HUMAN COMMIT APPROVAL**
 
 ---
 
 ## 3. Next Planned Task
 
-- **Task**: **W1-T07 — Room Assignment & Arrival / Check-In Processing**
-- **Status**: **QUEUED — NOT YET APPROVED FOR PLANNING OR IMPLEMENTATION**
-- **Boundary Rules**:
-  - Do NOT implement T07 logic, schemas, endpoints, or contracts.
-  - Do NOT create a branch for T07.
-  - Await explicit user instruction and produce a dedicated T07 implementation plan before writing any T07 code.
+- **Task**: **W1-T09 — Night Audit & Business Day Transition Engine**
+- **Status**: **QUEUED**
 
 ---
 

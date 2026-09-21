@@ -20,6 +20,10 @@ export enum PmsEventType {
   ROOM_UNASSIGNED = 'com.enterprise_hms.pms.reservation.room_unassigned.v1',
   GUEST_CHECKED_IN = 'com.enterprise_hms.pms.reservation.checked_in.v1',
   ROOM_OCCUPANCY_CHANGED = 'com.enterprise_hms.pms.room.occupancy_changed.v1',
+  GUEST_CHECKED_OUT = 'com.enterprise_hms.pms.guest.checked_out.v1',
+  FOLIO_CLOSED = 'com.enterprise_hms.finance.folio.closed.v1',
+  CHARGE_POSTED_TO_FOLIO = 'com.enterprise_hms.finance.folio.charge_posted.v1',
+  PAYMENT_RECORDED = 'com.enterprise_hms.finance.payment.recorded.v1',
 }
 
 export interface RoomTypeCreatedData {
@@ -199,4 +203,45 @@ export interface RoomOccupancyChangedData {
   source: string;
   actorId: string;
   timestamp: string;
+}
+
+export interface GuestCheckedOutData {
+  propertyId: string;
+  reservationId: string;
+  confirmationNumber: string;
+  guestId: string;
+  roomId: string;
+  roomNumber: string;
+  checkOutAt: string;
+  actorId: string;
+}
+
+export interface FolioClosedData {
+  propertyId: string;
+  folioId: string;
+  reservationId: string;
+  folioNumber: string;
+  finalBalance: number;
+  closedAt: string;
+  closedBy: string;
+}
+
+export interface ChargePostedToFolioData {
+  propertyId: string;
+  folioId: string;
+  transactionId: string;
+  transactionCode: string;
+  amount: number;
+  taxAmount: number;
+  postedBy: string;
+}
+
+export interface PaymentRecordedData {
+  propertyId: string;
+  folioId: string;
+  paymentId: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  processedBy: string;
 }
