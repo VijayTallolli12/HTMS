@@ -78,6 +78,7 @@ export async function seedIamBaseline() {
 
   // 2. Canonical Granular Permissions
   const permissions = [
+    // ── Front Office ──────────────────────────────────────────────────
     {
       code: 'front_office.reservation.read',
       name: 'View Reservations',
@@ -91,11 +92,111 @@ export async function seedIamBaseline() {
       module: 'FRONT_OFFICE',
     },
     {
+      code: 'front_office.reservation.cancel',
+      name: 'Cancel Reservations',
+      description: 'Cancel an existing reservation',
+      module: 'FRONT_OFFICE',
+    },
+    {
+      code: 'front_office.room_assignment.manage',
+      name: 'Manage Room Assignment',
+      description: 'Assign or reassign rooms to reservations',
+      module: 'FRONT_OFFICE',
+    },
+    {
+      code: 'front_office.room_assignment.upgrade',
+      name: 'Upgrade Room Assignment',
+      description: 'Upgrade a room assignment to a higher category',
+      module: 'FRONT_OFFICE',
+    },
+    {
       code: 'front_office.checkin.execute',
       name: 'Execute Check-In',
       description: 'Execute guest check-in and room key issuance',
       module: 'FRONT_OFFICE',
     },
+    {
+      code: 'front_office.checkin.clean_override',
+      name: 'Override Clean Check-In',
+      description: 'Check in a guest to a room that has not passed inspection',
+      module: 'FRONT_OFFICE',
+    },
+    // ── Room Types ────────────────────────────────────────────────────
+    {
+      code: 'room-type:read',
+      name: 'View Room Types',
+      description: 'View room type definitions and rate configurations',
+      module: 'ROOM_TYPES',
+    },
+    {
+      code: 'room-type:create',
+      name: 'Create Room Types',
+      description: 'Create new room type definitions',
+      module: 'ROOM_TYPES',
+    },
+    {
+      code: 'room-type:update',
+      name: 'Update Room Types',
+      description: 'Update existing room type definitions',
+      module: 'ROOM_TYPES',
+    },
+    {
+      code: 'room-type:delete',
+      name: 'Delete Room Types',
+      description: 'Delete room type definitions',
+      module: 'ROOM_TYPES',
+    },
+    // ── Room Operations ───────────────────────────────────────────────
+    {
+      code: 'room_operations.status.read',
+      name: 'View Room Status',
+      description: 'View current room operational status and housekeeping state',
+      module: 'ROOM_OPERATIONS',
+    },
+    {
+      code: 'room_operations.status.update',
+      name: 'Update Room Status',
+      description: 'Update room operational status (e.g. out-of-order, inspection)',
+      module: 'ROOM_OPERATIONS',
+    },
+    {
+      code: 'room_operations.maintenance.create',
+      name: 'Create Maintenance Request',
+      description: 'Create a maintenance work order for a room',
+      module: 'ROOM_OPERATIONS',
+    },
+    {
+      code: 'room_operations.maintenance.cancel',
+      name: 'Cancel Maintenance Request',
+      description: 'Cancel an in-progress maintenance work order',
+      module: 'ROOM_OPERATIONS',
+    },
+    // ── Finance / Folio ───────────────────────────────────────────────
+    {
+      code: 'folio:view',
+      name: 'View Folio',
+      description: 'Inspect guest charges, tax breakdown, and open balances',
+      module: 'FINANCE',
+    },
+    {
+      code: 'folio:post_charge',
+      name: 'Post Folio Charge',
+      description: 'Post a charge entry to a guest folio',
+      module: 'FINANCE',
+    },
+    {
+      code: 'folio:post_payment',
+      name: 'Post Folio Payment',
+      description: 'Post a payment or credit entry to a guest folio',
+      module: 'FINANCE',
+    },
+    {
+      code: 'frontdesk:checkout',
+      name: 'Execute Checkout',
+      description: 'Execute guest checkout and close the folio',
+      module: 'FINANCE',
+    },
+    // ── Housekeeping ──────────────────────────────────────────────────
     {
       code: 'housekeeping.room.update',
       name: 'Update Room Cleaning State',
@@ -108,18 +209,14 @@ export async function seedIamBaseline() {
       description: 'Inspect and certify room readiness for guest arrival',
       module: 'HOUSEKEEPING',
     },
+    // ── Maintenance ───────────────────────────────────────────────────
     {
       code: 'maintenance.ticket.create',
       name: 'Create Maintenance Ticket',
       description: 'Report physical defects or equipment breakdowns',
       module: 'MAINTENANCE',
     },
-    {
-      code: 'finance.folio.read',
-      name: 'View Folio',
-      description: 'Inspect guest charges, tax breakdown, and open balances',
-      module: 'FINANCE',
-    },
+    // ── Platform ──────────────────────────────────────────────────────
     {
       code: 'platform.audit_log.read',
       name: 'View Audit Log',
@@ -161,11 +258,19 @@ export async function seedIamBaseline() {
       permCodes: [
         'front_office.reservation.read',
         'front_office.reservation.create',
+        'front_office.reservation.cancel',
+        'front_office.room_assignment.manage',
         'front_office.checkin.execute',
+        'room-type:read',
+        'room_operations.status.read',
+        'room_operations.status.update',
         'housekeeping.room.update',
         'housekeeping.room.inspect',
         'maintenance.ticket.create',
-        'finance.folio.read',
+        'folio:view',
+        'folio:post_charge',
+        'folio:post_payment',
+        'frontdesk:checkout',
       ],
     },
     {
@@ -173,7 +278,17 @@ export async function seedIamBaseline() {
       permCodes: [
         'front_office.reservation.read',
         'front_office.reservation.create',
+        'front_office.reservation.cancel',
+        'front_office.room_assignment.manage',
         'front_office.checkin.execute',
+        'front_office.checkin.clean_override',
+        'room-type:read',
+        'room_operations.status.read',
+        'room_operations.status.update',
+        'folio:view',
+        'folio:post_charge',
+        'folio:post_payment',
+        'frontdesk:checkout',
       ],
     },
     {
