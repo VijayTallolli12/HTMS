@@ -125,6 +125,7 @@ model Property {
   maintenanceBlocks         RoomMaintenanceBlock[]
   roomStatusLogs            RoomStatusLog[]
   reservationAssignmentLogs ReservationAssignmentLog[]
+  housekeepingTasks         HousekeepingTask[]
 
   @@index([countryId])
   @@index([status])
@@ -548,6 +549,7 @@ model Room {
   assignedReservations Reservation[]              @relation("RoomAssignedReservations")
   assignmentLogsFrom   ReservationAssignmentLog[] @relation("AssignmentLogsPrevRoom")
   assignmentLogsTo     ReservationAssignmentLog[] @relation("AssignmentLogsNewRoom")
+  housekeepingTasks    HousekeepingTask[]
 
   @@unique([propertyId, id], name: "uq_rooms_property_id")
   @@unique([propertyId, roomNumber], name: "uq_rooms_property_room_number")
@@ -750,6 +752,7 @@ model Reservation {
   rateNights     ReservationRateNight[]
   assignedRoom   Room?                      @relation("RoomAssignedReservations", fields: [propertyId, assignedRoomId], references: [propertyId, id], onDelete: Restrict)
   assignmentLogs ReservationAssignmentLog[]
+  housekeepingTasks HousekeepingTask[]
 
   @@unique([propertyId, id], name: "uq_reservations_property_id")
   @@unique([propertyId, confirmationNumber], name: "uq_reservations_property_confirmation_number")
@@ -843,7 +846,44 @@ model RoomStatusLog {
 }
 
 // ==============================================================================
-// 30. PMS RESERVATION ASSIGNMENT LOGS (Immutable Room Assignment Audit Ledger)
+// 30. PMS HOUSEKEEPING TASKS (Operational Workflow Layer — Departure Cleaning Loop)
+// ==============================================================================
+model HousekeepingTask {
+  id                  String    @id
+  propertyId          String    @map("property_id")
+  roomId              String    @map("room_id")
+  reservationId       String?   @map("reservation_id")
+  taskType            String    @map("task_type") @db.VarChar(20)
+  priority            String    @default("NORMAL") @map("priority") @db.VarChar(10)
+  status              String    @default("PENDING") @map("status") @db.VarChar(20)
+  assignedAttendantId String?   @map("assigned_attendant_id")
+  assignedBy          String?   @map("assigned_by")
+  inspectionResult    String?   @map("inspection_result") @db.VarChar(10)
+  inspectionNotes     String?   @map("inspection_notes") @db.Text
+  rejectionReason     String?   @map("rejection_reason") @db.Text
+  startedAt           DateTime? @map("started_at") @db.Timestamptz(6)
+  completedAt         DateTime? @map("completed_at") @db.Timestamptz(6)
+  inspectedAt         DateTime? @map("inspected_at") @db.Timestamptz(6)
+  inspectedBy         String?   @map("inspected_by")
+  version             Int       @default(0)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt           DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property   Property    @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  room       Room        @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@unique([propertyId, reservationId, taskType], name: "uq_hk_task_reservation_type")
+  @@index([propertyId, status], name: "idx_hk_task_property_status")
+  @@index([propertyId, roomId], name: "idx_hk_task_property_room")
+  @@index([propertyId, assignedAttendantId, status], name: "idx_hk_task_attendant_status")
+  @@map("housekeeping_tasks")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 31. PMS RESERVATION ASSIGNMENT LOGS (Immutable Room Assignment Audit Ledger)
 // ==============================================================================
 model ReservationAssignmentLog {
   id             String   @id

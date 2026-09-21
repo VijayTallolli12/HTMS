@@ -6,3 +6,4 @@ export * from './reservation.contract';
 export * from './room-operations.contract';
 export * from './front-office.contract';
 export * from './finance.contract';
+export * from './housekeeping.contract';

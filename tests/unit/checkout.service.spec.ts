@@ -141,6 +141,10 @@ describe('CheckoutService (W1-T08 Departure Checkout & Folio Settlement)', () =>
       $transaction: jest.fn().mockImplementation(async (cb) => cb(mockPrisma)),
     };
 
+    const mockHousekeepingTaskService = {
+      createDepartureTask: jest.fn().mockResolvedValue({ task: { id: 'hk-task-1' }, isNew: true }),
+    };
+
     mockRoomStatusService = {
       findById: jest.fn().mockResolvedValue({
         roomId,
@@ -172,7 +176,7 @@ describe('CheckoutService (W1-T08 Departure Checkout & Folio Settlement)', () =>
       }),
     };
 
-    service = new CheckoutService(mockPrisma, mockRoomStatusService);
+    service = new CheckoutService(mockPrisma, mockRoomStatusService, mockHousekeepingTaskService as any);
   });
 
   describe('STRICT ZERO-BALANCE Policy', () => {

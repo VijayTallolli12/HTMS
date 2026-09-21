@@ -106,7 +106,9 @@ describe('W1-T08: Checkout & Folio Settlement Integration Tests', () => {
     );
     checkInService = new CheckInService(prismaService, dateService, roomStatusService);
     folioService = new FolioService(prismaService);
-    checkoutService = new CheckoutService(prismaService, roomStatusService);
+    checkoutService = new CheckoutService(prismaService, roomStatusService, {
+      createDepartureTask: jest.fn().mockResolvedValue({ task: { id: 'hk-task-mock' }, isNew: true }),
+    } as any);
 
     // Organization Hierarchy
     hotelGroupId = generateUuidV7();

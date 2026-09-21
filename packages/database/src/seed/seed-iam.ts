@@ -209,6 +209,42 @@ export async function seedIamBaseline() {
       description: 'Inspect and certify room readiness for guest arrival',
       module: 'HOUSEKEEPING',
     },
+    {
+      code: 'housekeeping.task.view',
+      name: 'View Housekeeping Tasks',
+      description: 'View housekeeping task list and details',
+      module: 'HOUSEKEEPING',
+    },
+    {
+      code: 'housekeeping.task.assign',
+      name: 'Assign Housekeeping Tasks',
+      description: 'Assign or reassign housekeeping tasks to attendants',
+      module: 'HOUSEKEEPING',
+    },
+    {
+      code: 'housekeeping.task.claim',
+      name: 'Claim Housekeeping Task',
+      description: 'Self-claim an unassigned housekeeping task',
+      module: 'HOUSEKEEPING',
+    },
+    {
+      code: 'housekeeping.task.start',
+      name: 'Start Cleaning',
+      description: 'Mark housekeeping task as in-progress (start cleaning)',
+      module: 'HOUSEKEEPING',
+    },
+    {
+      code: 'housekeeping.task.complete',
+      name: 'Complete Cleaning',
+      description: 'Mark housekeeping task as cleaned',
+      module: 'HOUSEKEEPING',
+    },
+    {
+      code: 'housekeeping.task.inspect',
+      name: 'Inspect Housekeeping Task',
+      description: 'Inspect a cleaned room and pass or reject',
+      module: 'HOUSEKEEPING',
+    },
     // ── Maintenance ───────────────────────────────────────────────────
     {
       code: 'maintenance.ticket.create',
@@ -293,11 +329,23 @@ export async function seedIamBaseline() {
     },
     {
       roleCode: 'HK_SUPERVISOR',
-      permCodes: ['housekeeping.room.update', 'housekeeping.room.inspect'],
+      permCodes: [
+        'housekeeping.room.update',
+        'housekeeping.room.inspect',
+        'housekeeping.task.view',
+        'housekeeping.task.assign',
+        'housekeeping.task.inspect',
+      ],
     },
     {
       roleCode: 'ROOM_ATTENDANT',
-      permCodes: ['housekeeping.room.update'],
+      permCodes: [
+        'housekeeping.room.update',
+        'housekeeping.task.view',
+        'housekeeping.task.claim',
+        'housekeeping.task.start',
+        'housekeeping.task.complete',
+      ],
     },
   ];
 

@@ -10,6 +10,7 @@ import * as crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/database/prisma.service';
 import { RoomStatusService } from '../../room-operations/services/room-status.service';
+import { HousekeepingTaskService } from '../../housekeeping/services/housekeeping-task.service';
 import {
   CheckoutResponseDto,
   CheckoutSummaryItemDto,
@@ -37,6 +38,7 @@ export class CheckoutService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly roomStatusService: RoomStatusService,
+    private readonly housekeepingTaskService: HousekeepingTaskService,
   ) {}
 
   /**
@@ -355,6 +357,19 @@ export class CheckoutService {
               actorId: actor.userId,
               reason: 'Guest Checkout Departure',
             },
+            tx,
+          );
+
+          // Phase C.5: Create DEPARTURE housekeeping task (atomic with checkout)
+          await this.housekeepingTaskService.createDepartureTask(
+            propertyId,
+            {
+              roomId: assignedRoomId,
+              reservationId: reservation.id,
+              roomNumber: departed.room.roomNumber,
+              confirmationNumber: reservation.confirmationNumber,
+            },
+            actor.userId,
             tx,
           );
 

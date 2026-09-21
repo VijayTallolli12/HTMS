@@ -24,6 +24,10 @@ export enum PmsEventType {
   FOLIO_CLOSED = 'com.enterprise_hms.finance.folio.closed.v1',
   CHARGE_POSTED_TO_FOLIO = 'com.enterprise_hms.finance.folio.charge_posted.v1',
   PAYMENT_RECORDED = 'com.enterprise_hms.finance.payment.recorded.v1',
+  // Housekeeping
+  HOUSEKEEPING_TASK_CREATED = 'com.enterprise_hms.pms.housekeeping.task_created.v1',
+  HOUSEKEEPING_TASK_COMPLETED = 'com.enterprise_hms.pms.housekeeping.task_completed.v1',
+  HOUSEKEEPING_TASK_INSPECTED = 'com.enterprise_hms.pms.housekeeping.task_inspected.v1',
 }
 
 export interface RoomTypeCreatedData {
@@ -244,4 +248,36 @@ export interface PaymentRecordedData {
   currency: string;
   paymentMethod: string;
   processedBy: string;
+}
+
+export interface HousekeepingTaskCreatedData {
+  propertyId: string;
+  taskId: string;
+  roomId: string;
+  roomNumber: string;
+  reservationId: string;
+  confirmationNumber: string;
+  taskType: string;
+  assignedAttendantId: string | null;
+  createdAt: string;
+}
+
+export interface HousekeepingTaskCompletedData {
+  propertyId: string;
+  taskId: string;
+  roomId: string;
+  roomNumber: string;
+  completedBy: string;
+  completedAt: string;
+}
+
+export interface HousekeepingTaskInspectedData {
+  propertyId: string;
+  taskId: string;
+  roomId: string;
+  roomNumber: string;
+  result: string;
+  inspectedBy: string;
+  inspectedAt: string;
+  rejectionReason?: string | null;
 }

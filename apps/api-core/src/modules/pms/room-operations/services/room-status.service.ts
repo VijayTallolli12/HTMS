@@ -696,6 +696,148 @@ export class RoomStatusService {
     return { room: updatedRoom, effective };
   }
 
+  /**
+   * Transition housekeeping status within an existing transaction.
+   * Used by HousekeepingTask service to atomically update room status
+   * alongside task status changes.
+   *
+   * This method does NOT create its own transaction — it uses the provided `tx`.
+   * The state machine rules (validTransitions) are enforced identically to
+   * updateHousekeepingStatus().
+   */
+  public async transitionHousekeepingStatus(
+    propertyId: string,
+    roomId: string,
+    targetHK: HousekeepingStatus,
+    options: {
+      actorId: string;
+      source: string;
+      reason?: string;
+    },
+    tx: Prisma.TransactionClient,
+  ): Promise<Room> {
+    const client = tx;
+
+    const property = await client.property.findFirst({
+      where: { id: propertyId, deletedAt: null },
+    });
+    if (!property) {
+      throw new NotFoundException(`Property '${propertyId}' not found`);
+    }
+
+    const currentBusinessDate = this.businessDateService.getCurrentBusinessDate(property.timeZone);
+
+    const room = await client.room.findFirst({
+      where: { id: roomId, propertyId, deletedAt: null },
+    });
+    if (!room) {
+      throw new NotFoundException(`Room '${roomId}' not found on property '${propertyId}'`);
+    }
+
+    const reconciled = await this.reconciliationService.reconcileRoom(
+      propertyId,
+      room,
+      currentBusinessDate,
+      client,
+    );
+
+    const currentHK = reconciled.housekeepingStatus as HousekeepingStatus;
+
+    // Idempotent if already in target status
+    if (currentHK === targetHK) {
+      return reconciled;
+    }
+
+    // Validate state transition rule
+    const allowed = this.validTransitions[currentHK] || [];
+    if (!allowed.includes(targetHK)) {
+      throw new BadRequestException(
+        `Invalid housekeeping status transition from '${currentHK}' to '${targetHK}'. Allowed next states: [${allowed.join(', ')}]`,
+      );
+    }
+
+    // Apply OCC update on Room
+    const res = await client.room.updateMany({
+      where: {
+        id: reconciled.id,
+        propertyId,
+        version: reconciled.version,
+      },
+      data: {
+        housekeepingStatus: targetHK,
+        version: { increment: 1 },
+      },
+    });
+
+    if (res.count === 0) {
+      throw new ConflictException(
+        `Optimistic concurrency conflict while transitioning room '${reconciled.roomNumber}' housekeeping status`,
+      );
+    }
+
+    const updatedRoom = await client.room.findUniqueOrThrow({
+      where: { id: reconciled.id },
+    });
+
+    // Append RoomStatusLog
+    await client.roomStatusLog.create({
+      data: {
+        id: generateUuidV7(),
+        propertyId,
+        roomId: updatedRoom.id,
+        previousHousekeepingStatus: currentHK,
+        newHousekeepingStatus: targetHK,
+        previousServiceStatus: updatedRoom.serviceStatus,
+        newServiceStatus: updatedRoom.serviceStatus,
+        reason: options.reason || `Housekeeping task status transition`,
+        source: options.source,
+        changedBy: options.actorId,
+      },
+    });
+
+    // Emit CloudEvent ROOM_STATUS_CHANGED
+    const statusEvent = createCloudEvent({
+      type: PmsEventType.ROOM_STATUS_CHANGED,
+      source: `https://pms.enterprise-hms.com/properties/${propertyId}/rooms/${updatedRoom.id}`,
+      subject: updatedRoom.id,
+      propertyId,
+      data: {
+        propertyId,
+        roomId: updatedRoom.id,
+        roomNumber: updatedRoom.roomNumber,
+        previousHousekeepingStatus: currentHK,
+        newHousekeepingStatus: targetHK,
+        previousServiceStatus: updatedRoom.serviceStatus,
+        newServiceStatus: updatedRoom.serviceStatus,
+        reason: options.reason || `Housekeeping task status transition`,
+        source: options.source,
+        updatedBy: options.actorId,
+      },
+    });
+
+    await client.outboxEvent.create({
+      data: {
+        id: statusEvent.id,
+        specversion: statusEvent.specversion,
+        type: statusEvent.type,
+        source: statusEvent.source,
+        subject: statusEvent.subject,
+        propertyId,
+        datacontenttype: statusEvent.datacontenttype,
+        time: new Date(statusEvent.time),
+        data: statusEvent.data as any,
+        correlationId: statusEvent.correlationid,
+        causationId: statusEvent.causationid,
+      },
+    });
+
+    this.logger.log(
+      `Room ${updatedRoom.roomNumber} housekeeping: ${currentHK} -> ${targetHK} by ${options.actorId} [${options.source}]`,
+    );
+
+    return updatedRoom;
+  }
+
   private mapToDto(
     room: Prisma.RoomGetPayload<object>,
     effective: RoomStatusDto['effective'],
