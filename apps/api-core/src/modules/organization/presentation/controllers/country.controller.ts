@@ -19,6 +19,7 @@ import { CreateCountryDto } from '../dto/create-country.dto';
 import { UpdateCountryDto } from '../dto/update-country.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { CountryDto, ApiSuccessResponse } from '@hms/api-contracts';
+import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Countries')
 @Controller('v1/organization/countries')
@@ -26,6 +27,7 @@ export class CountryController {
   constructor(private readonly service: CountryService) {}
 
   @Get()
+  @Authenticated()
   @ApiOperation({ summary: 'List countries (optionally filtered by regionId)' })
   @ApiQuery({ name: 'regionId', required: false, description: 'Filter by parent Region ID' })
   @ApiQuery({ name: 'includeDeleted', required: false })

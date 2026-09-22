@@ -31,17 +31,20 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    this.orgService.loadInitialProperty();
+    // Validate session via /auth/me
+    this.authService.validateSession().subscribe(() => {
+      this.orgService.loadInitialProperty();
 
-    this.orgService.getProperties().subscribe({
-      next: (res) => {
-        const list = res.data || [];
-        this.properties.set(list);
-        if (!this.activeProperty() && list.length > 0) {
-          this.orgService.setActiveProperty(list[0]);
-        }
-      },
-      error: () => {},
+      this.orgService.getProperties().subscribe({
+        next: (res) => {
+          const list = res.data || [];
+          this.properties.set(list);
+          if (!this.activeProperty() && list.length > 0) {
+            this.orgService.setActiveProperty(list[0]);
+          }
+        },
+        error: () => {},
+      });
     });
   }
 

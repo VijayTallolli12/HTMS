@@ -19,6 +19,7 @@ import { CreateRegionDto } from '../dto/create-region.dto';
 import { UpdateRegionDto } from '../dto/update-region.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { RegionDto, ApiSuccessResponse } from '@hms/api-contracts';
+import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Regions')
 @Controller('v1/organization/regions')
@@ -26,6 +27,7 @@ export class RegionController {
   constructor(private readonly service: RegionService) {}
 
   @Get()
+  @Authenticated()
   @ApiOperation({ summary: 'List regions (optionally filtered by hotelGroupId)' })
   @ApiQuery({
     name: 'hotelGroupId',

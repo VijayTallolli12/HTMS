@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RoomTypeDto, CreateRoomTypeRequest } from '@hms/api-contracts';
@@ -300,6 +300,7 @@ export class RoomTypesComponent implements OnInit {
   private readonly pmsApi = inject(PmsApiService);
   private readonly orgService = inject(OrganizationService);
 
+  readonly activeProperty = this.orgService.activePropertyContext;
   readonly roomTypes = signal<RoomTypeDto[]>([]);
   readonly isLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -315,18 +316,35 @@ export class RoomTypesComponent implements OnInit {
   newMaxAdults = 2;
   newMaxChildren = 1;
 
-  get currentPropertyId(): string {
-    return this.orgService.activePropertyContext()?.id || '00000000-0000-7000-0000-000000000001';
+  constructor() {
+    effect(
+      () => {
+        const prop = this.activeProperty();
+        if (prop) {
+          this.loadRoomTypes();
+        }
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   ngOnInit() {
-    this.loadRoomTypes();
+    const prop = this.activeProperty();
+    if (prop) {
+      this.loadRoomTypes();
+    }
   }
 
   loadRoomTypes() {
+    const prop = this.activeProperty();
+    if (!prop) {
+      this.errorMessage.set('No property selected. Please select a property first.');
+      return;
+    }
+
     this.isLoading.set(true);
     this.errorMessage.set(null);
-    this.pmsApi.getRoomTypes(this.currentPropertyId, true).subscribe({
+    this.pmsApi.getRoomTypes(prop.id, true).subscribe({
       next: (res) => {
         this.roomTypes.set(res.data || []);
         this.isLoading.set(false);
@@ -350,6 +368,9 @@ export class RoomTypesComponent implements OnInit {
   }
 
   saveRoomType() {
+    const prop = this.activeProperty();
+    if (!prop) return;
+
     const dto: CreateRoomTypeRequest = {
       code: this.newCode.trim().toUpperCase(),
       name: this.newName.trim(),
@@ -362,7 +383,7 @@ export class RoomTypesComponent implements OnInit {
       amenities: ['WIFI', 'AC'],
     };
 
-    this.pmsApi.createRoomType(this.currentPropertyId, dto).subscribe({
+    this.pmsApi.createRoomType(prop.id, dto).subscribe({
       next: () => {
         this.successMessage.set(
           'Room type created successfully with 365-day inventory initialization',
@@ -377,8 +398,11 @@ export class RoomTypesComponent implements OnInit {
   }
 
   deleteRoomType(id: string) {
+    const prop = this.activeProperty();
+    if (!prop) return;
+
     if (!confirm('Are you sure you want to deactivate/delete this room type?')) return;
-    this.pmsApi.deleteRoomType(this.currentPropertyId, id).subscribe({
+    this.pmsApi.deleteRoomType(prop.id, id).subscribe({
       next: () => {
         this.successMessage.set('Room type deleted successfully');
         this.loadRoomTypes();

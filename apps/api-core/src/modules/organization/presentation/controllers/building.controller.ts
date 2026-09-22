@@ -19,6 +19,7 @@ import { CreateBuildingDto } from '../dto/create-building.dto';
 import { UpdateBuildingDto } from '../dto/update-building.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { BuildingDto, ApiSuccessResponse } from '@hms/api-contracts';
+import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Buildings')
 @Controller('v1/organization/buildings')
@@ -26,6 +27,7 @@ export class BuildingController {
   constructor(private readonly service: BuildingService) {}
 
   @Get()
+  @Authenticated()
   @ApiOperation({ summary: 'List buildings (optionally filtered by propertyId)' })
   @ApiQuery({ name: 'propertyId', required: false, description: 'Filter by parent Property ID' })
   @ApiQuery({ name: 'includeDeleted', required: false })

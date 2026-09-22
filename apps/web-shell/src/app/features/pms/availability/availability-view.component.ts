@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DailyInventoryDto, StayQuoteResponse } from '@hms/api-contracts';
@@ -347,6 +347,7 @@ export class AvailabilityViewComponent implements OnInit {
   private readonly pmsApi = inject(PmsApiService);
   private readonly orgService = inject(OrganizationService);
 
+  readonly activeProperty = this.orgService.activePropertyContext;
   readonly activeTab = signal<'calendar' | 'quote'>('calendar');
   readonly calendarRecords = signal<DailyInventoryDto[]>([]);
   readonly quoteResult = signal<StayQuoteResponse | null>(null);
@@ -363,19 +364,36 @@ export class AvailabilityViewComponent implements OnInit {
   quoteAdults = 2;
   quoteChildren = 0;
 
-  get currentPropertyId(): string {
-    return this.orgService.activePropertyContext()?.id || '00000000-0000-7000-0000-000000000001';
+  constructor() {
+    effect(
+      () => {
+        const prop = this.activeProperty();
+        if (prop) {
+          this.loadCalendar();
+        }
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   ngOnInit() {
-    this.loadCalendar();
+    const prop = this.activeProperty();
+    if (prop) {
+      this.loadCalendar();
+    }
   }
 
   loadCalendar() {
+    const prop = this.activeProperty();
+    if (!prop) {
+      this.errorMessage.set('No property selected. Please select a property first.');
+      return;
+    }
+
     this.isLoading.set(true);
     this.errorMessage.set(null);
     this.pmsApi
-      .getInventoryCalendar(this.currentPropertyId, this.calendarStartDate, this.calendarEndDate)
+      .getInventoryCalendar(prop.id, this.calendarStartDate, this.calendarEndDate)
       .subscribe({
         next: (res) => {
           this.calendarRecords.set(res.data || []);
@@ -389,11 +407,17 @@ export class AvailabilityViewComponent implements OnInit {
   }
 
   loadQuote() {
+    const prop = this.activeProperty();
+    if (!prop) {
+      this.errorMessage.set('No property selected. Please select a property first.');
+      return;
+    }
+
     this.isLoading.set(true);
     this.errorMessage.set(null);
     this.pmsApi
       .getStayQuote(
-        this.currentPropertyId,
+        prop.id,
         this.quoteArrivalDate,
         this.quoteDepartureDate,
         this.quoteAdults,

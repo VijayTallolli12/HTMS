@@ -183,9 +183,25 @@ export class LoginComponent {
         };
 
         this.authService.setSession(data.accessToken, user);
-        this.orgService.setActiveProperty(null);
 
-        this.router.navigate(['/dashboard']);
+        // Load properties to find and set the active property from activeContext
+        const propertyId = data.activeContext?.propertyId;
+        if (propertyId) {
+          this.orgService.getProperties().subscribe({
+            next: (propRes) => {
+              const property = (propRes.data || []).find((p) => p.id === propertyId);
+              if (property) {
+                this.orgService.setActiveProperty(property);
+              }
+              this.router.navigate(['/dashboard']);
+            },
+            error: () => {
+              this.router.navigate(['/dashboard']);
+            },
+          });
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
       },
       error: (err) => {
         this.loading.set(false);

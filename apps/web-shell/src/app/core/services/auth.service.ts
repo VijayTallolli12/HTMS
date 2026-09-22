@@ -1,7 +1,9 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { Observable, tap, catchError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
+import { ApiSuccessResponse, AuthenticationResponse, MeResponse } from '@hms/api-contracts';
 
 export interface UserProfile {
   id: string;
@@ -17,6 +19,7 @@ export interface UserProfile {
 })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
   private readonly baseUrl = `${environment.apiBaseUrl}/v1/auth`;
 
   private readonly tokenKey = 'hms_access_token';
@@ -46,6 +49,32 @@ export class AuthService {
       password,
       clientType: 'web',
     });
+  }
+
+  validateSession(): Observable<ApiSuccessResponse<MeResponse> | null> {
+    const token = this._token();
+    if (!token) {
+      return of(null as ApiSuccessResponse<MeResponse> | null);
+    }
+    return this.http.get<ApiSuccessResponse<MeResponse>>(`${this.baseUrl}/me`).pipe(
+      tap((res) => {
+        const data = res.data;
+        const user: UserProfile = {
+          id: data.user.id,
+          email: data.user.email,
+          firstName: data.user.firstName,
+          lastName: data.user.lastName,
+          defaultPropertyId: data.activeContext?.propertyId,
+        };
+        this.currentUser.set(user);
+        localStorage.setItem(this.userKey, JSON.stringify(user));
+      }),
+      catchError(() => {
+        this.logout();
+        this.router.navigate(['/login']);
+        return of(null as ApiSuccessResponse<MeResponse> | null);
+      }),
+    );
   }
 
   setSession(token: string, user: UserProfile): void {

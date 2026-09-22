@@ -19,6 +19,7 @@ import { CreateHotelGroupDto } from '../dto/create-hotel-group.dto';
 import { UpdateHotelGroupDto } from '../dto/update-hotel-group.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { HotelGroupDto, ApiSuccessResponse } from '@hms/api-contracts';
+import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Hotel Groups')
 @Controller('v1/organization/groups')
@@ -26,6 +27,7 @@ export class HotelGroupController {
   constructor(private readonly service: HotelGroupService) {}
 
   @Get()
+  @Authenticated()
   @ApiOperation({ summary: 'List all hotel groups' })
   @ApiResponse({ status: 200, description: 'List of hotel groups returned successfully' })
   async findAll(

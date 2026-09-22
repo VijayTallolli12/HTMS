@@ -1,11 +1,14 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpInterceptorFn, HttpErrorResponse, HttpEvent } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { catchError, throwError, Observable } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { OrganizationService } from '../services/organization.service';
 
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
+export const authInterceptor: HttpInterceptorFn = (req, next): Observable<HttpEvent<unknown>> => {
   const authService = inject(AuthService);
   const orgService = inject(OrganizationService);
+  const router = inject(Router);
 
   const token = authService.getAccessToken();
   const activeProperty = orgService.activePropertyContext();
@@ -16,12 +19,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  // Inject property context header if property is selected or extract from URL
   if (!req.headers.has('x-property-id')) {
     if (activeProperty?.id) {
       headers['x-property-id'] = activeProperty.id;
     } else {
-      // Try to parse propertyId from URL pattern: /properties/:propertyId/
       const match = req.url.match(/\/properties\/([0-9a-fA-F-]{36}|[A-Za-z0-9_-]+)/);
       if (match && match[1]) {
         headers['x-property-id'] = match[1];
@@ -29,7 +30,6 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // Ensure Idempotency-Key header is present on financial POST mutations
   if (req.method === 'POST' && !req.headers.has('Idempotency-Key') && !req.headers.has('idempotency-key')) {
     const isFinancialMutation =
       req.url.includes('/finance/folios') ||
@@ -46,5 +46,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     setHeaders: headers,
   });
 
-  return next(cloned);
+  return next(cloned).pipe(
+    catchError((error: HttpErrorResponse): Observable<never> => {
+      if (error.status === 401 && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
+        authService.logout();
+        orgService.setActiveProperty(null);
+        router.navigate(['/login']);
+      }
+      return throwError(() => error);
+    }),
+  );
 };
