@@ -14,7 +14,7 @@
     "skipLibCheck": true,
     "strict": true,
     "paths": {
-      "@hms/api-contracts": ["../../packages/api-contracts/dist/index"],
+      "@hms/api-contracts": ["../../packages/api-contracts/dist/cjs/index"],
       "@hms/shared": ["../../packages/shared/dist/index"],
       "@hms/database": ["../../packages/database/dist/index"],
       "@hms/config": ["../../packages/config/dist/index"],
