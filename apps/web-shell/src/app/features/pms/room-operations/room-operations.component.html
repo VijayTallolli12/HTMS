@@ -1,0 +1,211 @@
+<div class="room-ops-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <div class="luxury-badge">HOUSEKEEPING &amp; MAINTENANCE</div>
+      <h1 class="page-title">Room Operations Board</h1>
+      <p class="page-subtitle">Visual tape chart, cleanliness state transitions, and out-of-order controls</p>
+    </div>
+  </div>
+
+  <!-- Error & Success Messages -->
+  <div class="error-banner" *ngIf="errorMessage()">
+    <span>⚠️ {{ errorMessage() }}</span>
+  </div>
+  <div class="success-banner" *ngIf="successMessage()">
+    <span>✓ {{ successMessage() }}</span>
+  </div>
+
+  <!-- Filter Toolbar -->
+  <div class="toolbar-card">
+    <div class="status-chips">
+      <button
+        class="chip-btn"
+        [class.active-chip]="selectedStatusFilter() === 'ALL'"
+        (click)="setStatusFilter('ALL')"
+      >
+        All Rooms ({{ rooms().length }})
+      </button>
+      <button
+        class="chip-btn chip-clean"
+        [class.active-chip]="selectedStatusFilter() === 'VACANT_CLEAN'"
+        (click)="setStatusFilter('VACANT_CLEAN')"
+      >
+        Vacant Clean / Inspected
+      </button>
+      <button
+        class="chip-btn chip-dirty"
+        [class.active-chip]="selectedStatusFilter() === 'VACANT_DIRTY'"
+        (click)="setStatusFilter('VACANT_DIRTY')"
+      >
+        Vacant Dirty
+      </button>
+      <button
+        class="chip-btn chip-occupied"
+        [class.active-chip]="selectedStatusFilter() === 'OCCUPIED'"
+        (click)="setStatusFilter('OCCUPIED')"
+      >
+        Occupied
+      </button>
+      <button
+        class="chip-btn chip-maint"
+        [class.active-chip]="selectedStatusFilter() === 'MAINTENANCE'"
+        (click)="setStatusFilter('MAINTENANCE')"
+      >
+        Maintenance / OOO
+      </button>
+    </div>
+  </div>
+
+  <!-- Room Grid -->
+  <div class="grid-container">
+    <div class="loading-state" *ngIf="isLoading()">
+      <span class="spinner"></span> Loading physical rooms state...
+    </div>
+
+    <div class="empty-state" *ngIf="!isLoading() && filteredRooms().length === 0">
+      <p>No rooms matching the selected filter criteria.</p>
+    </div>
+
+    <div class="rooms-grid" *ngIf="!isLoading() && filteredRooms().length > 0">
+      <div
+        class="room-card"
+        *ngFor="let room of filteredRooms()"
+        (click)="openRoomCommand(room)"
+        [class.card-occupied]="room.effective?.occupancyStatus === 'OCCUPIED' || room.occupancyStatus === 'OCCUPIED'"
+        [class.card-clean]="(room.effective?.housekeepingStatus === 'CLEAN' || room.effective?.housekeepingStatus === 'INSPECTED') && room.effective?.occupancyStatus === 'VACANT'"
+        [class.card-dirty]="room.effective?.housekeepingStatus === 'DIRTY' && room.effective?.occupancyStatus === 'VACANT'"
+        [class.card-ooo]="room.effective?.serviceStatus === 'OUT_OF_ORDER' || room.effective?.serviceStatus === 'OUT_OF_SERVICE'"
+      >
+        <div class="room-card-top">
+          <span class="room-number font-mono">{{ room.roomNumber }}</span>
+          <span
+            class="ready-indicator"
+            *ngIf="room.effective?.isCheckInReady"
+            title="Ready for Guest Arrival"
+          >
+            ✓ Ready
+          </span>
+        </div>
+
+        <div class="room-card-status">
+          <div class="status-tag">
+            <span class="dot-hk" [attr.data-status]="room.effective?.housekeepingStatus || room.housekeepingStatus"></span>
+            {{ room.effective?.housekeepingStatus || room.housekeepingStatus }}
+          </div>
+          <div class="status-tag">
+            <span class="dot-occ" [attr.data-occ]="room.effective?.occupancyStatus || room.occupancyStatus"></span>
+            {{ room.effective?.occupancyStatus || room.occupancyStatus }}
+          </div>
+        </div>
+
+        <div class="room-card-footer">
+          <span class="service-tag" *ngIf="room.effective?.serviceStatus !== 'IN_SERVICE'">
+            {{ room.effective?.serviceStatus }}
+          </span>
+          <span class="click-prompt">Click to manage &rarr;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room Command Slide-Over / Modal -->
+  <div class="modal-backdrop" *ngIf="selectedRoom()">
+    <div class="command-card">
+      <div class="command-header">
+        <div>
+          <div class="luxury-badge">ROOM COMMAND PANEL</div>
+          <h2 class="command-title font-mono">Room {{ selectedRoom()!.roomNumber }}</h2>
+        </div>
+        <button class="close-btn" (click)="closeRoomCommand()">&times;</button>
+      </div>
+
+      <div class="command-body">
+        <!-- Current State Overview -->
+        <div class="state-overview">
+          <div class="state-item">
+            <span class="state-label">Occupancy</span>
+            <span class="state-val font-bold">
+              {{ selectedRoom()!.effective?.occupancyStatus || selectedRoom()!.occupancyStatus }}
+            </span>
+          </div>
+          <div class="state-item">
+            <span class="state-label">Housekeeping</span>
+            <span class="state-val text-gold font-bold">
+              {{ selectedRoom()!.effective?.housekeepingStatus || selectedRoom()!.housekeepingStatus }}
+            </span>
+          </div>
+          <div class="state-item">
+            <span class="state-label">Service Status</span>
+            <span class="state-val">
+              {{ selectedRoom()!.effective?.serviceStatus || selectedRoom()!.serviceStatus }}
+            </span>
+          </div>
+          <div class="state-item">
+            <span class="state-label">Check-In Ready</span>
+            <span class="state-val" [class.text-clean]="selectedRoom()!.effective?.isCheckInReady">
+              {{ selectedRoom()!.effective?.isCheckInReady ? 'YES' : 'NO' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Action Reason Input -->
+        <div class="form-group mt-1">
+          <label class="form-label">Action Reason (Optional / Audit Note)</label>
+          <input
+            type="text"
+            [(ngModel)]="transitionReason"
+            placeholder="e.g. Daily checkout turnover completed by Floor Attendant"
+            class="form-control"
+          />
+        </div>
+
+        <!-- Housekeeping Transition Commands -->
+        <div class="actions-section mt-1">
+          <h3 class="section-title">Change Cleanliness Status</h3>
+          <div class="actions-grid">
+            <button
+              class="action-btn btn-clean"
+              [disabled]="isUpdating() || selectedRoom()!.effective?.housekeepingStatus === 'CLEAN'"
+              (click)="changeHousekeepingStatus('CLEAN')"
+            >
+              🧹 Mark Clean
+            </button>
+            <button
+              class="action-btn btn-inspect"
+              [disabled]="isUpdating() || selectedRoom()!.effective?.housekeepingStatus === 'INSPECTED'"
+              (click)="changeHousekeepingStatus('INSPECTED')"
+            >
+              ⭐ Inspect (Supervisor)
+            </button>
+            <button
+              class="action-btn btn-dirty"
+              [disabled]="isUpdating() || selectedRoom()!.effective?.housekeepingStatus === 'DIRTY'"
+              (click)="changeHousekeepingStatus('DIRTY')"
+            >
+              🧺 Mark Dirty
+            </button>
+            <button
+              class="action-btn btn-cleaning"
+              [disabled]="isUpdating() || selectedRoom()!.effective?.housekeepingStatus === 'CLEANING'"
+              (click)="changeHousekeepingStatus('CLEANING')"
+            >
+              ⏳ Cleaning In Progress
+            </button>
+            <button
+              class="action-btn btn-pickup"
+              [disabled]="isUpdating() || selectedRoom()!.effective?.housekeepingStatus === 'PICKUP'"
+              (click)="changeHousekeepingStatus('PICKUP')"
+            >
+              📦 Touch-Up / Pickup
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="command-footer">
+        <button class="btn btn-outline" (click)="closeRoomCommand()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

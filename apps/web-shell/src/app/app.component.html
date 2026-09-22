@@ -1,47 +1,86 @@
-<div class="app-layout">
-  <!-- Top Global Header -->
-  <header class="app-header">
-    <div class="brand-area">
-      <div class="brand-mark">HMS</div>
-      <div class="brand-info">
-        <span class="brand-name">ENTERPRISE HMS</span>
-        <span class="brand-sub">Hospitality Operating Platform</span>
-      </div>
+<!-- Header: only visible when authenticated -->
+<header class="app-header" *ngIf="isAuthenticated()">
+  <div class="brand-area" routerLink="/dashboard">
+    <div class="brand-mark">HMS</div>
+    <div class="brand-info">
+      <span class="brand-name">ENTERPRISE HMS</span>
+      <span class="brand-sub">Hospitality Operating Platform</span>
     </div>
+  </div>
 
-    <div class="header-center">
-      <nav class="header-nav">
-        <a routerLink="/health" routerLinkActive="active-nav" class="nav-link">System Status</a>
-        <a routerLink="/organization" routerLinkActive="active-nav" class="nav-link"
-          >Organization</a
-        >
-      </nav>
+  <!-- Main Navigation Bar -->
+  <div class="header-center">
+    <nav class="header-nav">
+      <a routerLink="/dashboard" routerLinkActive="active-nav" class="nav-link">
+        Dashboard
+      </a>
+      <a routerLink="/pms/reservations" routerLinkActive="active-nav" class="nav-link">
+        Reservations
+      </a>
+      <a routerLink="/pms/front-office" routerLinkActive="active-nav" class="nav-link">
+        Front Desk
+      </a>
+      <a routerLink="/pms/room-operations" routerLinkActive="active-nav" class="nav-link">
+        Room Ops
+      </a>
+      <a routerLink="/pms/housekeeping" routerLinkActive="active-nav" class="nav-link">
+        Housekeeping
+      </a>
+      <a routerLink="/pms/folios" routerLinkActive="active-nav" class="nav-link">
+        Cashiering
+      </a>
+      <a routerLink="/pms/availability" routerLinkActive="active-nav" class="nav-link">
+        Inventory ATS
+      </a>
+      <a routerLink="/organization" routerLinkActive="active-nav" class="nav-link">
+        Organization
+      </a>
+      <a routerLink="/health" routerLinkActive="active-nav" class="nav-link">
+        Status
+      </a>
+    </nav>
 
-      <div class="property-selector">
-        <span class="selector-label">ACTIVE CONTEXT</span>
-        <span class="selector-value" *ngIf="activeProperty()">
-          🏨 {{ activeProperty()!.name }} ({{ activeProperty()!.code }})
+    <!-- Active Property Selector -->
+    <div class="property-selector">
+      <span class="selector-label">ACTIVE PROPERTY CONTEXT</span>
+      <select
+        *ngIf="properties().length > 0"
+        [ngModel]="activeProperty()?.id"
+        (ngModelChange)="onPropertyChange($event)"
+        class="property-dropdown"
+      >
+        <option *ngFor="let p of properties()" [value]="p.id">
+          {{ p.name }} ({{ p.code }})
+        </option>
+      </select>
+      <span class="selector-value" *ngIf="properties().length === 0 && activeProperty()">
+        {{ activeProperty()!.name }} ({{ activeProperty()!.code }})
+      </span>
+      <span class="selector-value text-muted" *ngIf="properties().length === 0 && !activeProperty()">
+        Portfolio Master (All Properties)
+      </span>
+    </div>
+  </div>
+
+  <!-- User Profile & Mode -->
+  <div class="header-right">
+    <span class="env-tag">DEMO MODE</span>
+    <div class="user-profile">
+      <div class="user-avatar">
+        {{ (currentUser()?.firstName || 'F')[0] }}{{ (currentUser()?.lastName || 'A')[0] }}
+      </div>
+      <div class="user-details">
+        <span class="user-name">
+          {{ currentUser()?.firstName || 'Front Desk' }} {{ currentUser()?.lastName || 'Agent' }}
         </span>
-        <span class="selector-value" *ngIf="!activeProperty()">
-          🌐 Portfolio Master (All Properties)
-        </span>
+        <span class="user-role">{{ currentUser()?.role || 'Operations Lead' }}</span>
       </div>
     </div>
+    <button class="logout-btn" (click)="onLogout()" title="Sign Out">X</button>
+  </div>
+</header>
 
-    <div class="header-right">
-      <span class="env-tag">DEVELOPMENT</span>
-      <div class="user-profile">
-        <div class="user-avatar">SA</div>
-        <div class="user-details">
-          <span class="user-name">System Administrator</span>
-          <span class="user-role">Platform Lead</span>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main View Area -->
-  <main class="app-main">
-    <router-outlet></router-outlet>
-  </main>
-</div>
+<!-- Single router-outlet: login renders without header, everything else renders with header -->
+<main class="app-main" [class.with-header]="isAuthenticated()">
+  <router-outlet></router-outlet>
+</main>

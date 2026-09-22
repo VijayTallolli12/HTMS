@@ -4,6 +4,10 @@
   min-height: 100vh;
 }
 
+.app-main:not(.with-header) {
+  min-height: 100vh;
+}
+
 .app-header {
   display: flex;
   align-items: center;
@@ -103,6 +107,22 @@
   font-weight: 500;
 }
 
+.property-dropdown {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  padding: 0.1rem 0;
+}
+
+.property-dropdown option {
+  background: var(--navy-secondary);
+  color: var(--text-primary);
+}
+
 .header-right {
   display: flex;
   align-items: center;
@@ -159,4 +179,22 @@
 
 .app-main {
   flex: 1;
+}
+
+.logout-btn {
+  background: none;
+  border: 1px solid var(--surface-border);
+  color: var(--text-muted);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: 12px;
+  transition: all 0.15s;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
 }

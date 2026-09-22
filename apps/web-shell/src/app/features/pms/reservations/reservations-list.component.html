@@ -1,0 +1,157 @@
+<div class="reservations-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="luxury-badge">PMS &bull; FRONT OFFICE</div>
+      <h1 class="page-title">Reservations Registry</h1>
+      <p class="page-subtitle">Central guest booking management and stay lifecycle tracking</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-gold" (click)="navigateTo('/pms/reservations/new')">
+        <span class="btn-icon">＋</span> New Reservation
+      </button>
+    </div>
+  </div>
+
+  <!-- Error Banner -->
+  <div class="error-banner" *ngIf="errorMessage()">
+    <span>⚠️ {{ errorMessage() }}</span>
+  </div>
+
+  <!-- Filters & Search Toolbar -->
+  <div class="toolbar-card">
+    <div class="status-tabs">
+      <button
+        class="tab-btn"
+        [class.active-tab]="selectedStatus() === 'ALL'"
+        (click)="setStatusFilter('ALL')"
+      >
+        All Bookings ({{ reservations().length }})
+      </button>
+      <button
+        class="tab-btn"
+        [class.active-tab]="selectedStatus() === 'CONFIRMED'"
+        (click)="setStatusFilter('CONFIRMED')"
+      >
+        Confirmed
+      </button>
+      <button
+        class="tab-btn"
+        [class.active-tab]="selectedStatus() === 'CHECKED_IN'"
+        (click)="setStatusFilter('CHECKED_IN')"
+      >
+        Checked In
+      </button>
+      <button
+        class="tab-btn"
+        [class.active-tab]="selectedStatus() === 'CHECKED_OUT'"
+        (click)="setStatusFilter('CHECKED_OUT')"
+      >
+        Checked Out
+      </button>
+      <button
+        class="tab-btn"
+        [class.active-tab]="selectedStatus() === 'CANCELLED'"
+        (click)="setStatusFilter('CANCELLED')"
+      >
+        Cancelled
+      </button>
+    </div>
+
+    <div class="search-box">
+      <input
+        type="text"
+        placeholder="Search confirmation #, guest name, room type..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="onSearchChange($event)"
+        class="search-input"
+      />
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="table-card">
+    <div class="loading-state" *ngIf="isLoading()">
+      <span class="spinner"></span> Loading reservations registry...
+    </div>
+
+    <div class="empty-state" *ngIf="!isLoading() && filteredReservations().length === 0">
+      <p>No reservations matching the current criteria.</p>
+      <button class="btn btn-gold btn-sm" (click)="navigateTo('/pms/reservations/new')">
+        Create Reservation
+      </button>
+    </div>
+
+    <table class="data-table" *ngIf="!isLoading() && filteredReservations().length > 0">
+      <thead>
+        <tr>
+          <th>Conf #</th>
+          <th>Guest</th>
+          <th>Room Type</th>
+          <th>Stay Period</th>
+          <th>Nights</th>
+          <th>Assigned Room</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of filteredReservations()">
+          <td class="font-mono text-gold font-bold">
+            <a [routerLink]="['/pms/reservations', r.id]" class="conf-link">
+              {{ r.confirmationNumber }}
+            </a>
+          </td>
+          <td>
+            <div class="guest-name">{{ r.guest?.firstName }} {{ r.guest?.lastName }}</div>
+            <div class="guest-contact" *ngIf="r.guest?.email">{{ r.guest?.email }}</div>
+          </td>
+          <td>
+            <span class="badge-subtle">{{ r.roomTypeCode || 'ROOM' }}</span>
+          </td>
+          <td class="stay-dates">
+            <span>{{ r.arrivalDate }}</span> &rarr; <span>{{ r.departureDate }}</span>
+          </td>
+          <td class="text-center">{{ r.nightsCount }}</td>
+          <td>
+            <span *ngIf="r.assignedRoom" class="badge-assigned">
+              🚪 Room {{ r.assignedRoom.roomNumber }}
+            </span>
+            <span *ngIf="!r.assignedRoom" class="text-muted text-xs">
+              Unassigned
+            </span>
+          </td>
+          <td class="amount-cell">
+            {{ r.currency }} {{ r.totalAmount | number: '1.2-2' }}
+          </td>
+          <td>
+            <span class="status-pill status-{{ r.status.toLowerCase() }}">
+              {{ r.status }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <a [routerLink]="['/pms/reservations', r.id]" class="btn-action">Details</a>
+            <a
+              *ngIf="r.status === 'CONFIRMED'"
+              [routerLink]="['/pms/front-office']"
+              [queryParams]="{ reservationId: r.id }"
+              class="btn-action btn-action-gold"
+            >
+              Front Desk
+            </a>
+            <a
+              *ngIf="r.status === 'CHECKED_IN' || r.status === 'CHECKED_OUT'"
+              [routerLink]="['/pms/folios']"
+              [queryParams]="{ reservationId: r.id }"
+              class="btn-action btn-action-info"
+            >
+              Folio
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -252,6 +252,13 @@ export async function seedIamBaseline() {
       description: 'Report physical defects or equipment breakdowns',
       module: 'MAINTENANCE',
     },
+    // ── Inventory ────────────────────────────────────────────────────
+    {
+      code: 'inventory:read',
+      name: 'Read Inventory & Availability',
+      description: 'View daily inventory calendar and stay availability quotes',
+      module: 'INVENTORY',
+    },
     // ── Platform ──────────────────────────────────────────────────────
     {
       code: 'platform.audit_log.read',
@@ -303,6 +310,7 @@ export async function seedIamBaseline() {
         'housekeeping.room.update',
         'housekeeping.room.inspect',
         'maintenance.ticket.create',
+        'inventory:read',
         'folio:view',
         'folio:post_charge',
         'folio:post_payment',
@@ -321,6 +329,7 @@ export async function seedIamBaseline() {
         'room-type:read',
         'room_operations.status.read',
         'room_operations.status.update',
+        'inventory:read',
         'folio:view',
         'folio:post_charge',
         'folio:post_payment',

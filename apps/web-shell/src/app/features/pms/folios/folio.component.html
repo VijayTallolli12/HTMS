@@ -1,0 +1,408 @@
+<div class="folio-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="luxury-badge">CASHIERING &amp; SETTLEMENT</div>
+      <h1 class="page-title">Guest Folio &amp; Financial Ledger</h1>
+      <p class="page-subtitle">Immutable charge posting, payment collections, and strict zero-balance departure settlement</p>
+    </div>
+
+    <!-- Switch Reservation Selector -->
+    <div class="reservation-selector" *ngIf="reservationsList().length > 0">
+      <label class="selector-title">Select In-House Booking:</label>
+      <select
+        [ngModel]="activeReservation()?.id"
+        (ngModelChange)="onSelectReservation($event)"
+        class="form-control"
+      >
+        <option *ngFor="let r of reservationsList()" [value]="r.id">
+          {{ r.confirmationNumber }} &bull; {{ r.guest?.firstName }} {{ r.guest?.lastName }} ({{ r.status }})
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="error-banner" *ngIf="errorMessage()">
+    <span>⚠️ {{ errorMessage() }}</span>
+  </div>
+  <div class="success-banner" *ngIf="successMessage()">
+    <span>✓ {{ successMessage() }}</span>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading()">
+    <span class="spinner"></span> Loading guest ledger and transactions...
+  </div>
+
+  <!-- Empty / No Folio State -->
+  <div class="empty-card" *ngIf="!isLoading() && !activeFolio() && activeReservation()">
+    <div class="empty-icon">💳</div>
+    <h2 class="empty-title">No Billing Folio Open</h2>
+    <p class="empty-desc">
+      A billing folio has not yet been initialized for reservation
+      <strong>{{ activeReservation()?.confirmationNumber }}</strong> ({{ activeReservation()?.guest?.firstName }} {{ activeReservation()?.guest?.lastName }}).
+    </p>
+    <button class="btn btn-gold mt-1" (click)="createFolioForReservation()">
+      Open Master Billing Folio Now
+    </button>
+  </div>
+
+  <!-- Active Folio Content -->
+  <div class="folio-content" *ngIf="!isLoading() && activeFolio()">
+    <!-- Top Summary Card: Status & Outstanding Balance -->
+    <div class="folio-summary-card">
+      <div class="folio-meta">
+        <div class="meta-row">
+          <span class="meta-label">FOLIO NUMBER</span>
+          <span class="meta-val font-mono text-gold font-bold">#{{ activeFolio()!.folioNumber }}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">GUEST</span>
+          <span class="meta-val font-bold">
+            {{ activeReservation()?.guest?.firstName }} {{ activeReservation()?.guest?.lastName }}
+          </span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">CONFIRMATION #</span>
+          <span class="meta-val font-mono">
+            <a [routerLink]="['/pms/reservations', activeReservation()?.id]" class="conf-link">
+              {{ activeReservation()?.confirmationNumber }}
+            </a>
+          </span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">ROOM ALLOCATION</span>
+          <span class="meta-val font-bold">
+            {{ activeReservation()?.assignedRoom ? 'Room ' + activeReservation()?.assignedRoom?.roomNumber : 'Unassigned' }}
+          </span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">FOLIO STATUS</span>
+          <span class="status-pill status-{{ activeFolio()!.status.toLowerCase() }}">
+            {{ activeFolio()!.status }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Large Balance Display -->
+      <div class="balance-display-box" [class.settled]="isZeroBalance()" [class.unsettled]="!isZeroBalance()">
+        <span class="balance-label">CURRENT BALANCE DUE</span>
+        <span class="balance-amount font-mono">
+          {{ activeFolio()!.currency }} {{ activeFolio()!.balance }}
+        </span>
+        <div class="balance-status-tag">
+          <span *ngIf="isZeroBalance()" class="text-success font-bold">
+            ✓ ZERO BALANCE &bull; READY FOR CHECKOUT
+          </span>
+          <span *ngIf="!isZeroBalance()" class="text-warning font-bold">
+            ⚠️ OUTSTANDING BALANCE MUST BE SETTLED PRIOR TO DEPARTURE
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Folio Actions Bar -->
+    <div class="folio-actions-bar">
+      <div class="left-actions">
+        <button
+          class="btn btn-outline"
+          [disabled]="activeFolio()!.status === 'CLOSED'"
+          (click)="openPostChargeModal()"
+        >
+          ＋ Post Room Charge / Service
+        </button>
+        <button
+          class="btn btn-outline btn-payment"
+          [disabled]="activeFolio()!.status === 'CLOSED'"
+          (click)="openRecordPaymentModal()"
+        >
+          💵 Record Guest Payment
+        </button>
+      </div>
+
+      <!-- Departure Checkout Action (Strict Zero-Balance Enforced) -->
+      <div class="right-actions">
+        <button
+          class="btn btn-gold checkout-btn"
+          [disabled]="!isZeroBalance() || activeFolio()!.status === 'CLOSED' || isCheckingOut()"
+          (click)="executeCheckout()"
+        >
+          <span *ngIf="!isCheckingOut()">🚪 Execute Zero-Balance Checkout</span>
+          <span *ngIf="isCheckingOut()">Processing Departure...</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Ledger & Payments Two-Column / Tabs Layout -->
+    <div class="ledger-grid">
+      <!-- Posted Charges Table -->
+      <div class="ledger-card">
+        <div class="card-header">
+          <div class="header-text">
+            <h2 class="card-title">Charges &amp; Service Debits</h2>
+            <span class="card-sub">{{ activeFolio()!.transactions.length }} posted items</span>
+          </div>
+          <button
+            class="btn btn-sm btn-outline"
+            [disabled]="activeFolio()!.status === 'CLOSED'"
+            (click)="openPostChargeModal()"
+          >
+            ＋ Charge
+          </button>
+        </div>
+
+        <div class="card-body p-0">
+          <div class="empty-state" *ngIf="activeFolio()!.transactions.length === 0">
+            <p>No charges posted to this folio ledger yet.</p>
+          </div>
+
+          <table class="data-table" *ngIf="activeFolio()!.transactions.length > 0">
+            <thead>
+              <tr>
+                <th>Date / Time</th>
+                <th>Tx Code</th>
+                <th>Description</th>
+                <th>Tax</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let t of activeFolio()!.transactions">
+                <td class="text-xs text-muted">
+                  {{ t.postedAt | date: 'short' }}
+                </td>
+                <td>
+                  <span class="badge-subtle font-mono">{{ t.transactionCode }}</span>
+                </td>
+                <td class="font-bold">{{ t.description }}</td>
+                <td class="text-secondary font-mono">{{ activeFolio()!.currency }} {{ t.taxAmount }}</td>
+                <td class="amount-cell text-gold font-mono">
+                  {{ activeFolio()!.currency }} {{ t.amount }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Payments Table -->
+      <div class="ledger-card">
+        <div class="card-header">
+          <div class="header-text">
+            <h2 class="card-title">Payments &amp; Credits</h2>
+            <span class="card-sub">{{ activeFolio()!.payments.length }} recorded receipts</span>
+          </div>
+          <button
+            class="btn btn-sm btn-outline btn-payment"
+            [disabled]="activeFolio()!.status === 'CLOSED'"
+            (click)="openRecordPaymentModal()"
+          >
+            💵 Payment
+          </button>
+        </div>
+
+        <div class="card-body p-0">
+          <div class="empty-state" *ngIf="activeFolio()!.payments.length === 0">
+            <p>No payments recorded against this folio yet.</p>
+          </div>
+
+          <table class="data-table" *ngIf="activeFolio()!.payments.length > 0">
+            <thead>
+              <tr>
+                <th>Date / Time</th>
+                <th>Method</th>
+                <th>Reference #</th>
+                <th>Status</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of activeFolio()!.payments">
+                <td class="text-xs text-muted">
+                  {{ p.processedAt | date: 'short' }}
+                </td>
+                <td>
+                  <span class="method-tag">{{ p.paymentMethod }}</span>
+                </td>
+                <td class="text-secondary font-mono text-xs">
+                  {{ p.referenceNumber || 'N/A' }}
+                </td>
+                <td>
+                  <span class="badge-success-sm">{{ p.status }}</span>
+                </td>
+                <td class="amount-cell text-clean font-mono">
+                  -{{ p.currency }} {{ p.amount }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Post Charge Modal -->
+  <div class="modal-backdrop" *ngIf="showChargeModal()">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="luxury-badge">LEDGER POSTING</div>
+          <h2 class="modal-title">Post Incidental Charge</h2>
+        </div>
+        <button class="close-btn" (click)="closePostChargeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Transaction Code <span class="required">*</span></label>
+          <select [(ngModel)]="chargeTxCode" class="form-control">
+            <option value="ROOM_SERVICE">ROOM_SERVICE &bull; In-Room Dining</option>
+            <option value="MINIBAR">MINIBAR &bull; Minibar Refreshment</option>
+            <option value="SPA">SPA &bull; Spa &amp; Wellness Sanctuary</option>
+            <option value="RESTAURANT">RESTAURANT &bull; Royal Dining</option>
+            <option value="LAUNDRY">LAUNDRY &bull; Valet &amp; Laundry</option>
+            <option value="PARKING">PARKING &bull; Valet Parking</option>
+          </select>
+        </div>
+
+        <div class="form-group mt-1">
+          <label class="form-label">Charge Description <span class="required">*</span></label>
+          <input
+            type="text"
+            [(ngModel)]="chargeDescription"
+            placeholder="e.g. Signature Dinner Experience"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-grid mt-1">
+          <div class="form-group">
+            <label class="form-label">Charge Amount ({{ activeFolio()?.currency }}) <span class="required">*</span></label>
+            <input
+              type="text"
+              [(ngModel)]="chargeAmount"
+              placeholder="0.00"
+              class="form-control font-mono"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tax Portion (Informational)</label>
+            <input
+              type="text"
+              [(ngModel)]="chargeTaxAmount"
+              placeholder="0.00"
+              class="form-control font-mono"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closePostChargeModal()">Cancel</button>
+        <button
+          class="btn btn-gold"
+          [disabled]="isPostingCharge()"
+          (click)="submitPostCharge()"
+        >
+          <span *ngIf="!isPostingCharge()">Post Immutable Charge</span>
+          <span *ngIf="isPostingCharge()">Posting...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Record Payment Modal -->
+  <div class="modal-backdrop" *ngIf="showPaymentModal()">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="luxury-badge">CASHIERING RECEIPT</div>
+          <h2 class="modal-title">Record Guest Settlement Payment</h2>
+        </div>
+        <button class="close-btn" (click)="closeRecordPaymentModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Payment Method <span class="required">*</span></label>
+          <select [(ngModel)]="paymentMethod" class="form-control">
+            <option value="CREDIT_CARD">CREDIT_CARD &bull; Visa / MasterCard / Amex</option>
+            <option value="CASH">CASH &bull; Cash Settlement</option>
+            <option value="CITY_LEDGER">CITY_LEDGER &bull; Corporate Billing</option>
+          </select>
+        </div>
+
+        <div class="form-group mt-1">
+          <label class="form-label">Settlement Amount ({{ activeFolio()?.currency }}) <span class="required">*</span></label>
+          <input
+            type="text"
+            [(ngModel)]="paymentAmount"
+            placeholder="0.00"
+            class="form-control font-mono"
+          />
+        </div>
+
+        <div class="form-group mt-1">
+          <label class="form-label">Authorization / Transaction Reference</label>
+          <input
+            type="text"
+            [(ngModel)]="paymentReference"
+            placeholder="e.g. AUTH-VISA-99214"
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeRecordPaymentModal()">Cancel</button>
+        <button
+          class="btn btn-gold"
+          [disabled]="isRecordingPayment()"
+          (click)="submitRecordPayment()"
+        >
+          <span *ngIf="!isRecordingPayment()">Record Settlement Payment</span>
+          <span *ngIf="isRecordingPayment()">Recording...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout Departure Receipt Modal -->
+  <div class="modal-backdrop" *ngIf="checkoutReceipt()">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="luxury-badge">DEPARTURE COMPLETE</div>
+          <h2 class="modal-title">Checkout Settlement Receipt</h2>
+        </div>
+        <button class="close-btn" (click)="closeReceiptModal()">&times;</button>
+      </div>
+
+      <div class="modal-body text-center">
+        <div class="success-icon">🌟</div>
+        <h3 class="success-title">Guest Departure Finalized</h3>
+        <p class="receipt-text mt-1">
+          Reservation <strong>{{ checkoutReceipt()!.reservation.confirmationNumber }}</strong> is now <strong>CHECKED_OUT</strong>.
+        </p>
+        <div class="receipt-summary-box mt-1">
+          <div class="receipt-row">
+            <span>Room {{ checkoutReceipt()!.room.roomNumber }} State:</span>
+            <strong class="text-warning">VACANT / DIRTY (Turnover required)</strong>
+          </div>
+          <div class="receipt-row">
+            <span>Settlement Time:</span>
+            <span>{{ checkoutReceipt()!.checkOutAt | date: 'medium' }}</span>
+          </div>
+          <div class="receipt-row">
+            <span>Final Folio Balance:</span>
+            <strong class="text-success font-mono">0.00 (Fully Settled)</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-gold" (click)="closeReceiptModal()">Done</button>
+      </div>
+    </div>
+  </div>
+</div>

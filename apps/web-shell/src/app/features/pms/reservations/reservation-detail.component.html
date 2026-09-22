@@ -1,0 +1,254 @@
+<div class="detail-container">
+  <!-- Back Button & Breadcrumbs -->
+  <div class="top-nav">
+    <a routerLink="/pms/reservations" class="back-link">&larr; Back to Reservations Registry</a>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading()">
+    <span class="spinner"></span> Loading reservation details...
+  </div>
+
+  <div class="error-banner" *ngIf="errorMessage()">
+    <span>⚠️ {{ errorMessage() }}</span>
+  </div>
+
+  <div class="success-banner" *ngIf="successMessage()">
+    <span>✓ {{ successMessage() }}</span>
+  </div>
+
+  <div *ngIf="!isLoading() && reservation()" class="detail-content">
+    <!-- Header Card -->
+    <div class="header-card">
+      <div class="header-left">
+        <div class="luxury-badge">CONFIRMED BOOKING</div>
+        <h1 class="conf-title font-mono">{{ reservation()!.confirmationNumber }}</h1>
+        <p class="guest-title font-bold">
+          {{ reservation()!.guest?.firstName }} {{ reservation()!.guest?.lastName }}
+        </p>
+      </div>
+
+      <div class="header-right">
+        <div class="status-box">
+          <span class="status-label">STATUS</span>
+          <span class="status-pill status-{{ reservation()!.status.toLowerCase() }}">
+            {{ reservation()!.status }}
+          </span>
+        </div>
+        <div class="amount-box">
+          <span class="amount-label">TOTAL AMOUNT</span>
+          <span class="amount-value font-mono">
+            {{ reservation()!.currency }} {{ reservation()!.totalAmount | number: '1.2-2' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Workflow Action Banner -->
+    <div class="workflow-banner">
+      <div class="banner-text">
+        <span class="banner-title">Stay Lifecycle Progression</span>
+        <span class="banner-desc" *ngIf="reservation()!.status === 'CONFIRMED'">
+          Guest is awaiting arrival. Assign a physical room and execute front desk check-in.
+        </span>
+        <span class="banner-desc" *ngIf="reservation()!.status === 'CHECKED_IN'">
+          Guest is in-house. Access folio ledger to post incidental charges or record payments.
+        </span>
+        <span class="banner-desc" *ngIf="reservation()!.status === 'CHECKED_OUT'">
+          Guest has departed. Folio settlement completed.
+        </span>
+        <span class="banner-desc" *ngIf="reservation()!.status === 'CANCELLED'">
+          Reservation cancelled. Inventory hold released.
+        </span>
+      </div>
+
+      <div class="banner-actions">
+        <!-- If Confirmed -->
+        <button
+          *ngIf="reservation()!.status === 'CONFIRMED'"
+          class="btn btn-gold"
+          (click)="navigateTo('/pms/front-office', { reservationId: reservation()!.id })"
+        >
+          🛎️ Front Desk Check-In
+        </button>
+        <button
+          *ngIf="reservation()!.status === 'CONFIRMED'"
+          class="btn btn-outline btn-danger-hover"
+          (click)="openCancelModal()"
+        >
+          Cancel Booking
+        </button>
+
+        <!-- If Checked In or Checked Out -->
+        <button
+          *ngIf="reservation()!.status === 'CHECKED_IN' || reservation()!.status === 'CHECKED_OUT'"
+          class="btn btn-gold"
+          (click)="navigateTo('/pms/folios', { reservationId: reservation()!.id })"
+        >
+          💳 View Folio & Cashiering
+        </button>
+      </div>
+    </div>
+
+    <!-- 3-Column Info Cards -->
+    <div class="cards-grid">
+      <!-- Guest Profile Card -->
+      <div class="info-card">
+        <div class="card-header">
+          <h2 class="card-title">Guest Profile</h2>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Full Name</span>
+            <span class="info-value font-bold">
+              {{ reservation()!.guest?.firstName }} {{ reservation()!.guest?.lastName }}
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Email</span>
+            <span class="info-value">{{ reservation()!.guest?.email || 'None recorded' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Phone</span>
+            <span class="info-value">{{ reservation()!.guest?.phone || 'None recorded' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Party Size</span>
+            <span class="info-value">
+              {{ reservation()!.adultsCount }} Adults, {{ reservation()!.childrenCount }} Children
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stay Details Card -->
+      <div class="info-card">
+        <div class="card-header">
+          <h2 class="card-title">Stay & Rate Details</h2>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Room Category</span>
+            <span class="info-value font-bold">{{ reservation()!.roomTypeName || reservation()!.roomTypeCode }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Rate Plan</span>
+            <span class="info-value">{{ reservation()!.ratePlanName || reservation()!.ratePlanCode }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Arrival Date</span>
+            <span class="info-value text-gold font-bold">{{ reservation()!.arrivalDate }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Departure Date</span>
+            <span class="info-value font-bold">{{ reservation()!.departureDate }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Total Duration</span>
+            <span class="info-value">{{ reservation()!.nightsCount }} Nights</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assigned Room Card -->
+      <div class="info-card">
+        <div class="card-header">
+          <h2 class="card-title">Physical Room Allocation</h2>
+        </div>
+        <div class="card-body">
+          <div *ngIf="reservation()!.assignedRoom" class="assigned-box">
+            <div class="room-number-large font-mono">
+              Room {{ reservation()!.assignedRoom!.roomNumber }}
+            </div>
+            <div class="info-row mt-1">
+              <span class="info-label">Assignment Time</span>
+              <span class="info-value">{{ reservation()!.assignedAt | date: 'medium' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Check-In Status</span>
+              <span class="info-value text-gold font-bold" *ngIf="reservation()!.checkInAt">
+                Checked in at {{ reservation()!.checkInAt | date: 'shortTime' }}
+              </span>
+              <span class="info-value text-muted" *ngIf="!reservation()!.checkInAt">
+                Pending arrival
+              </span>
+            </div>
+          </div>
+
+          <div *ngIf="!reservation()!.assignedRoom" class="unassigned-box">
+            <div class="unassigned-icon">🚪</div>
+            <p class="unassigned-text">No physical room assigned yet.</p>
+            <button
+              *ngIf="reservation()!.status === 'CONFIRMED'"
+              class="btn btn-sm btn-gold mt-1"
+              (click)="navigateTo('/pms/front-office', { reservationId: reservation()!.id })"
+            >
+              Assign Room Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rate Breakdown Table if present -->
+    <div class="info-card mt-1" *ngIf="reservation()!.rateNights && reservation()!.rateNights!.length > 0">
+      <div class="card-header">
+        <h2 class="card-title">Nightly Rate Breakdown</h2>
+      </div>
+      <div class="card-body p-0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Business Date</th>
+              <th>Base Rate</th>
+              <th>Extra Adult</th>
+              <th>Extra Child</th>
+              <th>Night Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let n of reservation()!.rateNights">
+              <td class="font-mono">{{ n.businessDate }}</td>
+              <td>{{ n.currency }} {{ n.baseRateAmount | number: '1.2-2' }}</td>
+              <td>{{ n.currency }} {{ n.extraAdultRate | number: '1.2-2' }}</td>
+              <td>{{ n.currency }} {{ n.extraChildRate | number: '1.2-2' }}</td>
+              <td class="font-bold text-gold font-mono">
+                {{ n.currency }} {{ n.totalAmount | number: '1.2-2' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancellation Dialog Modal -->
+  <div class="modal-backdrop" *ngIf="showCancelModal()">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">Cancel Reservation</h2>
+        <button class="close-btn" (click)="closeCancelModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-warn">
+          Cancelling reservation <strong>{{ reservation()?.confirmationNumber }}</strong> will release held inventory immediately.
+        </p>
+        <div class="form-group mt-1">
+          <label class="form-label">Cancellation Reason <span class="required">*</span></label>
+          <textarea
+            [(ngModel)]="cancellationReason"
+            rows="3"
+            placeholder="e.g. Guest requested cancellation via phone call"
+            class="form-control"
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeCancelModal()">Dismiss</button>
+        <button class="btn btn-danger" [disabled]="isCancelling()" (click)="confirmCancellation()">
+          <span *ngIf="!isCancelling()">Confirm Cancellation</span>
+          <span *ngIf="isCancelling()">Processing...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

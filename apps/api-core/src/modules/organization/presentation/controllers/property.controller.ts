@@ -19,6 +19,7 @@ import { CreatePropertyDto } from '../dto/create-property.dto';
 import { UpdatePropertyDto } from '../dto/update-property.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { PropertyDto, ApiSuccessResponse } from '@hms/api-contracts';
+import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Properties')
 @Controller('v1/organization/properties')
@@ -26,6 +27,7 @@ export class PropertyController {
   constructor(private readonly service: PropertyService) {}
 
   @Get()
+  @Authenticated()
   @ApiOperation({ summary: 'List properties (with optional countryId or status filters)' })
   @ApiQuery({ name: 'countryId', required: false, description: 'Filter by parent Country ID' })
   @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
@@ -46,6 +48,7 @@ export class PropertyController {
   }
 
   @Get(':id')
+  @Authenticated()
   @ApiOperation({ summary: 'Get a property by ID' })
   @ApiResponse({ status: 200, description: 'Property found' })
   @ApiResponse({ status: 404, description: 'Property not found' })

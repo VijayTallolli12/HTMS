@@ -19,6 +19,7 @@ import { CreateFloorDto } from '../dto/create-floor.dto';
 import { UpdateFloorDto } from '../dto/update-floor.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { FloorDto, ApiSuccessResponse } from '@hms/api-contracts';
+import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Floors')
 @Controller('v1/organization/floors')
@@ -26,6 +27,7 @@ export class FloorController {
   constructor(private readonly service: FloorService) {}
 
   @Get()
+  @Authenticated()
   @ApiOperation({ summary: 'List floors (optionally filtered by buildingId)' })
   @ApiQuery({ name: 'buildingId', required: false, description: 'Filter by parent Building ID' })
   @ApiQuery({ name: 'includeDeleted', required: false })

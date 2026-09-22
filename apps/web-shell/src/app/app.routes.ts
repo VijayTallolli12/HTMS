@@ -1,16 +1,30 @@
 import { Routes } from '@angular/router';
-import { HealthDashboardComponent } from './features/health/health-dashboard.component';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
+    path: 'login',
+    loadComponent: () =>
+      import('./features/auth/login.component').then((m) => m.LoginComponent),
+    title: 'Enterprise HMS — Sign In',
+  },
+  {
     path: '',
-    redirectTo: 'health',
+    redirectTo: 'dashboard',
     pathMatch: 'full',
   },
   {
-    path: 'health',
-    component: HealthDashboardComponent,
-    title: 'Enterprise HMS — System Status',
+    path: 'dashboard',
+    loadComponent: () =>
+      import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+    title: 'Enterprise HMS — Executive Dashboard',
+    canActivate: [authGuard],
+  },
+  {
+    path: 'pms',
+    loadChildren: () => import('./features/pms/pms.routes').then((m) => m.PMS_ROUTES),
+    title: 'Enterprise HMS — Property Management System',
+    canActivate: [authGuard],
   },
   {
     path: 'organization',
@@ -19,14 +33,17 @@ export const routes: Routes = [
         (m) => m.OrganizationManagementComponent,
       ),
     title: 'Enterprise HMS — Organization Architecture',
+    canActivate: [authGuard],
   },
   {
-    path: 'pms',
-    loadChildren: () => import('./features/pms/pms.routes').then((m) => m.PMS_ROUTES),
-    title: 'Enterprise HMS — Property Management System',
+    path: 'health',
+    loadComponent: () =>
+      import('./features/health/health-dashboard.component').then((m) => m.HealthDashboardComponent),
+    title: 'Enterprise HMS — System Status',
+    canActivate: [authGuard],
   },
   {
     path: '**',
-    redirectTo: 'health',
+    redirectTo: 'dashboard',
   },
 ];

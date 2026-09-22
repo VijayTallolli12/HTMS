@@ -31,7 +31,41 @@ export class OrganizationService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiBaseUrl}/v1/organization`;
 
-  readonly activePropertyContext = signal<PropertyDto | null>(null);
+  private readonly activePropertyKey = 'hms_active_property';
+
+  private getStoredProperty(): PropertyDto | null {
+    try {
+      const item = localStorage.getItem(this.activePropertyKey);
+      if (!item || item === 'null' || item === 'undefined') {
+        return null;
+      }
+      const parsed = JSON.parse(item);
+      return parsed && parsed.id ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  readonly activePropertyContext = signal<PropertyDto | null>(this.getStoredProperty());
+
+  loadInitialProperty(): void {
+    const stored = this.getStoredProperty();
+    if (stored) {
+      this.activePropertyContext.set(stored);
+    }
+    this.getProperties().subscribe({
+      next: (res) => {
+        if (res.data && res.data.length > 0) {
+          const current = this.activePropertyContext();
+          const match = (current ? res.data.find((p) => p.id === current.id) : null) || res.data[0];
+          this.setActiveProperty(match);
+        }
+      },
+      error: () => {
+        // Preserves active demo property context if API lacks read permission
+      },
+    });
+  }
 
   getHierarchyTree() {
     return this.http.get<ApiSuccessResponse<OrganizationHierarchyTree>>(
@@ -154,6 +188,11 @@ export class OrganizationService {
   }
 
   setActiveProperty(property: PropertyDto | null): void {
+    if (property) {
+      localStorage.setItem(this.activePropertyKey, JSON.stringify(property));
+    } else {
+      localStorage.removeItem(this.activePropertyKey);
+    }
     this.activePropertyContext.set(property);
   }
 }

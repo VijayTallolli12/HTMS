@@ -1,0 +1,294 @@
+<div class="front-office-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="luxury-badge">FRONT OFFICE OPERATIONS</div>
+      <h1 class="page-title">Front Desk Arrivals &amp; Check-In</h1>
+      <p class="page-subtitle">Arrival processing, room inventory assignment, and guest registration</p>
+    </div>
+
+    <div class="header-actions">
+      <a routerLink="/pms/reservations/new" class="btn btn-gold">
+        <span class="btn-icon">＋</span> New Walk-In / Reservation
+      </a>
+    </div>
+  </div>
+
+  <!-- Banners -->
+  <div class="error-banner" *ngIf="errorMessage()">
+    <span>⚠️ {{ errorMessage() }}</span>
+  </div>
+  <div class="success-banner" *ngIf="successMessage()">
+    <span>✓ {{ successMessage() }}</span>
+  </div>
+
+  <!-- Search / Filter Bar -->
+  <div class="toolbar-card">
+    <div class="search-box">
+      <input
+        type="text"
+        placeholder="Filter arrivals by guest name, confirmation #..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="onSearchChange($event)"
+        class="search-input"
+      />
+    </div>
+  </div>
+
+  <!-- Arrivals Table -->
+  <div class="table-card">
+    <div class="loading-state" *ngIf="isLoading()">
+      <span class="spinner"></span> Loading arrivals queue...
+    </div>
+
+    <div class="empty-state" *ngIf="!isLoading() && filteredArrivals().length === 0">
+      <p>No arrivals matching the criteria.</p>
+    </div>
+
+    <table class="data-table" *ngIf="!isLoading() && filteredArrivals().length > 0">
+      <thead>
+        <tr>
+          <th>Conf #</th>
+          <th>Guest Name</th>
+          <th>Room Category</th>
+          <th>Stay Period</th>
+          <th>Allocated Room</th>
+          <th>Status</th>
+          <th>Front Desk Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of filteredArrivals()">
+          <td class="font-mono text-gold font-bold">
+            <a [routerLink]="['/pms/reservations', r.id]" class="conf-link">
+              {{ r.confirmationNumber }}
+            </a>
+          </td>
+          <td class="font-bold">
+            {{ r.guest?.firstName }} {{ r.guest?.lastName }}
+          </td>
+          <td>
+            <span class="badge-subtle">{{ r.roomTypeCode || 'ROOM' }}</span>
+          </td>
+          <td class="stay-dates">
+            {{ r.arrivalDate }} &rarr; {{ r.departureDate }}
+            <span class="nights-tag">({{ r.nightsCount }}n)</span>
+          </td>
+          <td>
+            <span *ngIf="r.assignedRoom" class="badge-assigned font-mono">
+              🚪 Room {{ r.assignedRoom.roomNumber }}
+            </span>
+            <span *ngIf="!r.assignedRoom" class="badge-unassigned">
+              Unassigned
+            </span>
+          </td>
+          <td>
+            <span class="status-pill status-{{ r.status.toLowerCase() }}">
+              {{ r.status }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <!-- If Confirmed and not assigned -->
+            <button
+              *ngIf="r.status === 'CONFIRMED' && !r.assignedRoom"
+              class="btn-action btn-action-gold"
+              (click)="openAssignModal(r)"
+            >
+              Assign Room
+            </button>
+
+            <!-- If Confirmed and assigned -->
+            <button
+              *ngIf="r.status === 'CONFIRMED' && r.assignedRoom"
+              class="btn-action btn-action-success"
+              (click)="openCheckInModal(r)"
+            >
+              Execute Check-In
+            </button>
+            <button
+              *ngIf="r.status === 'CONFIRMED' && r.assignedRoom"
+              class="btn-action"
+              (click)="openAssignModal(r)"
+            >
+              Change Room
+            </button>
+
+            <!-- If Checked In -->
+            <a
+              *ngIf="r.status === 'CHECKED_IN'"
+              [routerLink]="['/pms/folios']"
+              [queryParams]="{ reservationId: r.id }"
+              class="btn-action btn-action-info"
+            >
+              Billing Folio
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Room Assignment Modal -->
+  <div class="modal-backdrop" *ngIf="showAssignModal()">
+    <div class="modal-card wide-modal">
+      <div class="modal-header">
+        <div>
+          <div class="luxury-badge">FRONT OFFICE INVENTORY ALLOCATION</div>
+          <h2 class="modal-title">
+            Assign Physical Room &bull; Conf #{{ selectedReservation()?.confirmationNumber }}
+          </h2>
+        </div>
+        <button class="close-btn" (click)="closeAssignModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="guest-summary" *ngIf="selectedReservation()">
+          <span>Guest: <strong>{{ selectedReservation()!.guest?.firstName }} {{ selectedReservation()!.guest?.lastName }}</strong></span>
+          <span>Booked Category: <strong class="text-gold">{{ selectedReservation()!.roomTypeCode }}</strong></span>
+          <span>Dates: <strong>{{ selectedReservation()!.arrivalDate }} &rarr; {{ selectedReservation()!.departureDate }}</strong></span>
+        </div>
+
+        <div class="loading-state" *ngIf="isLoadingEligibleRooms()">
+          <span class="spinner"></span> Querying eligible physical inventory...
+        </div>
+
+        <div class="empty-state" *ngIf="!isLoadingEligibleRooms() && eligibleRooms().length === 0">
+          <p>No eligible rooms available matching this category and stay dates.</p>
+        </div>
+
+        <!-- Eligible Rooms List -->
+        <div class="eligible-rooms-list" *ngIf="!isLoadingEligibleRooms() && eligibleRooms().length > 0">
+          <div
+            class="eligible-room-item"
+            *ngFor="let room of eligibleRooms()"
+            [class.selected-room]="selectedRoomId() === room.id"
+            (click)="selectEligibleRoom(room)"
+          >
+            <div class="room-top">
+              <span class="room-number font-mono">Room {{ room.roomNumber }}</span>
+              <span class="upgrade-badge" *ngIf="room.isUpgrade">UPGRADE AVAILABLE</span>
+              <span class="ready-badge" *ngIf="room.isCheckInReady">Ready for Arrival</span>
+            </div>
+
+            <div class="room-details">
+              <span>Category: <strong>{{ room.roomTypeCode || 'Standard' }}</strong></span>
+              <span>Cleanliness: <strong>{{ room.housekeepingStatus }}</strong></span>
+              <span>Floor: <strong>{{ room.floorId }}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upgrade and Reason options -->
+        <div class="assignment-options mt-1">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="allowUpgrade" />
+            <span>Allow Room Type Upgrade Authorization</span>
+          </label>
+
+          <div class="form-group mt-1">
+            <label class="form-label">Assignment Reason / Concierge Note</label>
+            <input
+              type="text"
+              [(ngModel)]="assignmentReason"
+              placeholder="e.g. VIP guest requested high floor quiet corner"
+              class="form-control"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeAssignModal()">Cancel</button>
+        <button
+          class="btn btn-gold"
+          [disabled]="isAssigning() || !selectedRoomId()"
+          (click)="confirmRoomAssignment()"
+        >
+          <span *ngIf="!isAssigning()">Confirm Room Assignment</span>
+          <span *ngIf="isAssigning()">Allocating Room...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Check-In Modal -->
+  <div class="modal-backdrop" *ngIf="showCheckInModal()">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="luxury-badge">ARRIVAL VERIFICATION</div>
+          <h2 class="modal-title">Execute Guest Check-In</h2>
+        </div>
+        <button class="close-btn" (click)="closeCheckInModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Success State -->
+        <div class="checkin-success" *ngIf="checkInSuccessData()">
+          <div class="success-icon">🎉</div>
+          <h3 class="success-title">Guest Checked In Successfully!</h3>
+          <p class="success-desc">
+            Room <strong>{{ checkInSuccessData()!.room.roomNumber }}</strong> is now marked <strong>OCCUPIED</strong>.
+            Folio ledger is active for cashiering.
+          </p>
+          <div class="mt-1">
+            <button
+              class="btn btn-gold"
+              (click)="navigateToFolio(selectedReservation()!.id)"
+            >
+              💳 Go to Guest Folio & Cashiering &rarr;
+            </button>
+          </div>
+        </div>
+
+        <!-- Form State -->
+        <div *ngIf="!checkInSuccessData()">
+          <div class="guest-summary" *ngIf="selectedReservation()">
+            <span>Guest: <strong>{{ selectedReservation()!.guest?.firstName }} {{ selectedReservation()!.guest?.lastName }}</strong></span>
+            <span>Allocated Room: <strong class="text-gold">Room {{ selectedReservation()!.assignedRoom?.roomNumber }}</strong></span>
+          </div>
+
+          <div class="check-list mt-1">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="identityVerified" />
+              <span>Guest Passport / National ID Verified</span>
+            </label>
+
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="registrationCardSigned" />
+              <span>Digital Registration Card & Terms Signed</span>
+            </label>
+
+            <!-- Clean override option -->
+            <label class="checkbox-label text-warning">
+              <input type="checkbox" [(ngModel)]="allowCleanOverride" />
+              <span>Clean Room State Override (Supervisor authorization required)</span>
+            </label>
+
+            <div class="form-group mt-1" *ngIf="allowCleanOverride">
+              <label class="form-label">Clean Override Reason <span class="required">*</span></label>
+              <input
+                type="text"
+                [(ngModel)]="cleanOverrideReason"
+                placeholder="e.g. VIP arrived early, attendant finalizing minibar"
+                class="form-control"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" *ngIf="!checkInSuccessData()">
+        <button class="btn btn-outline" (click)="closeCheckInModal()">Cancel</button>
+        <button
+          class="btn btn-success"
+          [disabled]="isCheckingIn() || (!identityVerified && !registrationCardSigned)"
+          (click)="confirmCheckIn()"
+        >
+          <span *ngIf="!isCheckingIn()">Complete Check-In & Issue Key</span>
+          <span *ngIf="isCheckingIn()">Checking In...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,182 @@
+<div class="create-container">
+  <div class="page-header">
+    <div>
+      <div class="luxury-badge">PMS &bull; BOOKING ENGINE</div>
+      <h1 class="page-title">New Guest Reservation</h1>
+      <p class="page-subtitle">Reserve property inventory with atomic hold and pricing verification</p>
+    </div>
+    <button class="btn btn-outline" (click)="cancel()">Cancel</button>
+  </div>
+
+  <div class="error-banner" *ngIf="errorMessage()">
+    <span>⚠️ {{ errorMessage() }}</span>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading()">
+    <span class="spinner"></span> Loading inventory configuration and rates...
+  </div>
+
+  <form (ngSubmit)="onSubmit()" *ngIf="!isLoading()" class="booking-form">
+    <!-- Section 1: Guest Information -->
+    <div class="form-section">
+      <div class="section-header">
+        <h2 class="section-title">1. Primary Guest Details</h2>
+        <span class="section-subtitle">Identity profile for registration and folio settlement</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">First Name <span class="required">*</span></label>
+          <input
+            type="text"
+            [(ngModel)]="firstName"
+            name="firstName"
+            required
+            placeholder="e.g. Tariq"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Last Name <span class="required">*</span></label>
+          <input
+            type="text"
+            [(ngModel)]="lastName"
+            name="lastName"
+            required
+            placeholder="e.g. Al-Mansoor"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input
+            type="email"
+            [(ngModel)]="email"
+            name="email"
+            placeholder="guest@luxuryhotels.com"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input
+            type="tel"
+            [(ngModel)]="phone"
+            name="phone"
+            placeholder="+971 50 123 4567"
+            class="form-control"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Room & Rate Selection -->
+    <div class="form-section">
+      <div class="section-header">
+        <h2 class="section-title">2. Accommodation & Rate Plan</h2>
+        <span class="section-subtitle">Select room category and rate structure</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Room Type <span class="required">*</span></label>
+          <select [(ngModel)]="selectedRoomTypeId" name="roomTypeId" class="form-control" required>
+            <option *ngFor="let rt of roomTypes()" [value]="rt.id">
+              {{ rt.name }} ({{ rt.code }}) &bull; Max {{ rt.baseOccupancy }} Guests
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Rate Plan <span class="required">*</span></label>
+          <select [(ngModel)]="selectedRatePlanId" name="ratePlanId" class="form-control" required>
+            <option *ngFor="let rp of ratePlans()" [value]="rp.id">
+              {{ rp.name }} ({{ rp.code }}) &bull; {{ rp.currency }} {{ rp.baseRate }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Stay Dates & Occupancy -->
+    <div class="form-section">
+      <div class="section-header">
+        <h2 class="section-title">3. Stay Schedule & Guests</h2>
+        <span class="section-subtitle">Arrival, departure, and party count</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Arrival Date <span class="required">*</span></label>
+          <input
+            type="date"
+            [(ngModel)]="arrivalDate"
+            name="arrivalDate"
+            required
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Departure Date <span class="required">*</span></label>
+          <input
+            type="date"
+            [(ngModel)]="departureDate"
+            name="departureDate"
+            required
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Adults</label>
+          <input
+            type="number"
+            min="1"
+            max="10"
+            [(ngModel)]="adultsCount"
+            name="adultsCount"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Children</label>
+          <input
+            type="number"
+            min="0"
+            max="10"
+            [(ngModel)]="childrenCount"
+            name="childrenCount"
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <div class="form-group full-width mt-1">
+        <label class="form-label">Special Requests / VIP Amenities</label>
+        <textarea
+          [(ngModel)]="specialRequests"
+          name="specialRequests"
+          rows="3"
+          placeholder="e.g. High floor, quiet room, late arrival, anniversary amenity"
+          class="form-control"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-outline" (click)="cancel()">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-gold" [disabled]="isSubmitting()">
+        <span *ngIf="!isSubmitting()">Confirm & Book Reservation</span>
+        <span *ngIf="isSubmitting()">Processing Hold...</span>
+      </button>
+    </div>
+  </form>
+</div>
