@@ -3,27 +3,49 @@
 ## 1. Architectural Vision & Design Philosophy
 The Enterprise Hotel Management System (HMS) is engineered for **ultra-luxury hotels, grand resorts, and multi-property hospitality groups**, with primary operational focus on the **Middle East and global luxury markets**.
 
-The design philosophy harmonizes three demanding paradigms:
-$$\text{LUXURY HOSPITALITY} \quad + \quad \text{ENTERPRISE SOFTWARE} \quad + \quad \text{MODERN OPERATIONAL CLARITY}$$
+The canonical visual direction is:
+$$\text{LIGHT PREMIUM HOSPITALITY}$$
+
+The design philosophy harmonizes three demanding operational paradigms:
+$$\text{LIGHT REFINED SURFACES} \quad + \quad \text{ENTERPRISE SPEED} \quad + \quad \text{CALM OPERATIONAL CLARITY}$$
 
 ```
 +---------------------------------------------------------------------------------------+
-|                                 ENTERPRISE HMS UI/UX                                 |
+|                       ENTERPRISE HMS — LIGHT PREMIUM HOSPITALITY                      |
 |                                                                                       |
-|   [ LUXURY HOSPITALITY ]            [ ENTERPRISE SPEED ]         [ OPERATIONAL CALM ]  |
-|   Refined, elegant, tailored,       Glanceable, high-density,    Intuitive, uncluttered,|
-|   calm, and deeply respectful       instant response,            exception-focused,     |
-|   of guest dignity & service.       zero lag under shift load.   zero alarm fatigue.    |
+|   [ LIGHT-FIRST SYSTEM ]            [ HIGH INFORMATION DENSITY ] [ OPERATIONAL CALM ]  |
+|   Crisp, warm neutral surfaces,     Glanceable, compact KPIs,    "The HMS should feel   |
+|   charcoal typography, restrained   scannable tabular data,      calm, clear, and       |
+|   camel/bronze accents.             meaningful whitespace.       operational — not flashy."
 +---------------------------------------------------------------------------------------+
 ```
 
-### 1.1 The Definition of "Premium"
+### 1.1 Core Design Principles
+
+> **Core Principle 1: System Complexity vs. User Cognitive Load**  
+> *"The complexity belongs in the system, not in the user's head."*  
+> The backend orchestrates multi-tenant isolation, distributed event outboxes, ledger balancing, and concurrency locks. The UI must hide this underlying plumbing and surface only the immediate operational reality.
+
+> **Core Principle 2: Emotional Demeanor of the Workspace**  
+> *"The HMS should feel calm, clear and operational — not flashy."*  
+> Hotel shifts are demanding, noisy, and fast-paced. The software workspace must be a calming, steady instrument—never a distraction with garish visual effects or decorative analytics.
+
+### 1.2 The Definition of "Premium"
 In enterprise software, **premium does NOT mean visually decorative or complicated**.
 $$\text{PREMIUM} = \text{CLARITY} + \text{CONSISTENCY} + \text{REFINEMENT} + \text{SPEED} + \text{EASE OF USE}$$
 
-### 1.2 Anti-Patterns Strictly Banned
+* **Light/Neutral Surfaces**: Soft pearl, warm off-white, and clean white cards that feel fresh, modern, and legible under high ambient lobby and desk lighting.
+* **Charcoal & Slate Typography**: High-contrast, fatigue-free reading using deep slate and charcoal instead of harsh pure black or illegible faint grays.
+* **Restrained Accent Color**: Refined warm bronze/camel gold applied with extreme discipline for active states, key focus rings, and primary actions.
+* **Subtle Borders & Soft Elevation**: Fine 1px architectural lines and soft, natural shadows rather than heavy outlines or thick drop shadows.
+* **Moderate Radius**: Clean 6px–10px radii delivering contemporary polish without toy-like pill distortion.
+
+### 1.3 Anti-Patterns Strictly Banned
 * **Generic Admin Dashboard Aesthetic**: No generic Bootstrap-style metric cards crammed with decorative circular charts.
 * **Excessive Gold ("Gold-Washing")**: Gold is a restrained accent for brand identity, active selection, and VIP distinctions. It is never used as background fills or ubiquitous borders.
+* **Heavy Glassmorphism & Blurs**: No glassmorphism-heavy UI, backdrop filters, or illegible semi-transparent cards that compromise data scannability.
+* **Excessive Gradients & Neons**: No rainbow gradients, neon glowing borders, or cyberpunk-inspired dashboard panels.
+* **Decorative Visual Noise**: No purely ornamental icons, ambient illustrations, or decorative widgets that do not serve an immediate shift task.
 * **Everything Bold**: Visual hierarchy must come from size, color contrast, and spatial placement—not from setting every heading and label to font-weight 700.
 * **Card Nesting Overload**: Do not nest cards inside cards inside cards with heavy borders.
 * **Desktop UI Squeezed onto Mobile**: Mobile views must be purpose-built task views, not shrunken 12-column desktop tables.
@@ -86,6 +108,21 @@ Show what is needed right now; disclose details on demand:
 $$\text{ESSENTIAL SUMMARY} \quad \longrightarrow \quad \text{PRIMARY ACTION} \quad \longrightarrow \quad \text{CONTEXT DETAILS} \quad \longrightarrow \quad \text{AUDIT TRAIL}$$
 Use slide-over drawers, expandable accordion rows, and contextual popovers rather than cluttering the initial viewport.
 
+### Principle 6: Contextual Operations (SELECT → INSPECT → ACT)
+Operational efficiency relies on staying in spatial flow without jarring navigation cycles:
+$$\text{SELECT} \quad \longrightarrow \quad \text{INSPECT} \quad \longrightarrow \quad \text{ACT}$$
+
+* **Select**: The user clicks or taps a room card, reservation row, folio entry, or maintenance ticket in the active grid.
+* **Inspect**: A slide-over drawer or command panel opens on the contextual side, presenting current details, audit history, and relevant metadata without navigating away.
+* **Act**: Primary operational mutations (`[ Check In ]`, `[ Mark Inspected ]`, `[ Post Charge ]`) are executed directly inside the contextual panel. Upon completion, the background grid updates reactively, maintaining the user's scroll position and mental orientation.
+
+### Principle 7: The Operational Dashboard Purpose
+> *"The dashboard is an operational workspace, not a module directory."*  
+Every pixel on the dashboard must directly answer:
+$$\text{"What does this user need to know or act on right now?"}$$
+* Avoid vanity analytics, decorative sparklines, and sprawling graphs that do not inform immediate shift actions.
+* Prioritize live bottlenecks: impending arrivals without assigned rooms, departures awaiting billing settlement, priority dirty rooms blocking check-in, and maintenance blocks (OOO/OOS).
+
 ---
 
 ## 4. Complexity Reduction & Operational Calm
@@ -93,7 +130,7 @@ Use slide-over drawers, expandable accordion rows, and contextual popovers rathe
 To maintain operational calm during high-stress hotel shifts:
 1. **Glanceable Status Cards**: Summarize shift state in at most 4 concise metrics (e.g., *Arrivals Remaining*, *Rooms Dirty*, *VIPs In-House*, *Open Exceptions*).
 2. **Banish False Urgency**: Warnings and critical alerts must reflect genuine hotel emergencies (fire panel, system offline, VIP room unassigned 15 minutes before arrival). Routine notifications must never create alarm fatigue.
-3. **Zero Visual Noise**: Avoid gradients, 3D shadows, ornamental icons, or decorative textures. Surfaces are clean matte navy, slate, or warm white.
+3. **Zero Visual Noise**: Avoid gradients, 3D shadows, ornamental icons, heavy glassmorphism, or decorative textures. Surfaces are clean matte light pearl, warm off-white, and crisp white cards with fine 1px neutral borders.
 4. **Sensible Form Density**: Group related fields logically (Guest Information, Stay Details, Billing Arrangement) with clear separation, rather than endless single-column forms.
 
 ---
@@ -177,24 +214,53 @@ To guarantee reliable operation on physical touchscreens across all hotel depart
 
 ## 10. Navigation Architecture & Global Shell
 
+The global shell organizes navigation around **real hotel workflows and shifts**, rather than generic software modules or database tables:
+
 ```
-+---------------------------------------------------------------------------------------+
-| [HMS] Tokyo Grandeur Palace [v]  | [Q Search guests, rooms, bookings... Cmd+K] | [SA] |
-+---------------------------------------------------------------------------------------+
-| < Back to Properties  /  Tokyo Grandeur Palace  /  Main Wing  /  Floor 01             |
-|                                                                                       |
-| Room Operations                                              [ + Add Room ] [Filter]  |
-+---------------------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------------------+
+| [HMS] Tokyo Grandeur Palace [v]  | [Q Search guests, rooms, bookings... Cmd+K] | [AR] [Admin User] |
++---------------------------------------------------------------------------------------------------+
+| < Breadcrumbs: Portfolio  /  Tokyo Grandeur Palace  /  Front Office                               |
+|                                                                                                   |
+| Front Desk & Arrivals                                                 [ + New Booking ] [Filter]  |
++---------------------------------------------------------------------------------------------------+
 ```
 
 1. **Global Header (Height: 56px)**:
-   * **Brand Mark**: Restrained luxury brand identity.
-   * **Active Context Switcher**: Displays current operational scope (e.g., `Tokyo Grandeur Palace` or `Portfolio Master`).
+   * **Brand Mark**: Restrained luxury brand mark with clear visual anchor.
+   * **Active Property Context Switcher**: Displays and selects active property scope (e.g. `Tokyo Grandeur Palace (TYO-01)` or `Portfolio Master`).
    * **Search / Command Bar**: Global search trigger for guest names, confirmation numbers, room numbers.
    * **Language & RTL Toggle**: Rapid switch between English (LTR) and Arabic (RTL).
-   * **User Profile & Active Role**: Identifies current staff member and operational department.
+   * **User Profile & Active Role**: Identifies current staff member and server-assigned role.
 2. **Breadcrumb Navigation**: Persistent hierarchical trail across all multi-level resources.
-3. **Command Palette (`Cmd/Ctrl + K`)**: Architectural pattern reserved for future power-user navigation across rooms, folios, and guest records without traversing menus.
+3. **Workflow-First Navigation Taxonomy**:
+   Navigation sections reflect the operational cadence of hotel shifts:
+
+```
++---------------------------------------------------------------------------------------+
+|                       WORKFLOW-BASED NAVIGATION ARCHITECTURE                         |
+|                                                                                       |
+|   TODAY                     FRONT OFFICE              ROOM OPERATIONS                 |
+|   - Operations Briefing     - Arrivals                - Tape Chart                    |
+|   - Exceptions & Blocks     - Departures              - Room Status Board             |
+|                             - Reservations            - Availability (ATS)            |
+|                             - Guests Dossier                                          |
+|                             - Folio & Cashiering                                      |
+|                                                                                       |
+|   HOUSEKEEPING              ENGINEERING & FACILITIES  SYSTEM / PLATFORM               |
+|   - Daily Cleaning Tasks    - Maintenance Tickets     - Property Architecture         |
+|   - Supervisor Inspections  - Out of Order (OOO/OOS)  - Audit Logs & Security         |
++---------------------------------------------------------------------------------------+
+```
+
+> **UX Documentation Note**:  
+> The navigation groupings above represent the canonical UX architecture. They are documented as workflow examples; no feature is claimed as implemented unless confirmed by existing active route definitions and API contracts.
+
+### 10.1 Tri-Factor Navigation Governance
+Navigation visibility is strictly governed by three independent contextual boundaries:
+1. **Role-Aware**: Staff only see navigation sections and action triggers relevant to their operational duties.
+2. **Permission-Aware**: Visibility of each route and action is controlled server-authoritatively by real IAM permission codes returned by `/auth/me` (e.g., `front_office.reservation.read`, `housekeeping.task.view`, `folio:view`).
+3. **Property-Aware**: All active data, inventory quotas, and room boards are strictly partitioned by the user's active property context.
 
 ---
 
@@ -206,19 +272,22 @@ The platform adapts its visible interface to the user's authenticated role, dras
 +---------------------------------------------------------------------------------------+
 |                                ROLE-AWARE WORKSPACES                                 |
 |                                                                                       |
-|   FRONT DESK AGENT:                                                                   |
-|   Today's Arrivals (42)  |  In-House Guests (184)  |  Departures (38)  |  Room Rack   |
+|   FRONT DESK AGENT (FDA):                                                             |
+|   Today's Arrivals  |  Departures  |  In-House Folios  |  Tape Chart  |  Room Rack    |
 |                                                                                       |
-|   EXECUTIVE HOUSEKEEPER:                                                              |
-|   Dirty Rooms (28)  |  In Cleaning (6)  |  Awaiting Inspection (11) |  Attendant Board|
+|   EXECUTIVE HOUSEKEEPER / SUPERVISOR (HK_SUPERVISOR):                                 |
+|   Dirty Departures  |  In Cleaning  |  Awaiting Inspection  |  Attendant Dispatch     |
 |                                                                                       |
-|   MAINTENANCE ENGINEER:                                                               |
-|   Urgent HVAC (2)  |  Plumbing Work Orders (4)  |  Preventive Tasks (8) |  Out of Order|
+|   MAINTENANCE TECHNICIAN (MAINT_TECH):                                                |
+|   High-Severity HVAC  |  Plumbing Work Orders  |  Preventive Rounds  |  OOO Blocks    |
+|                                                                                       |
+|   CORPORATE / GENERAL MANAGER (CORP_ADMIN / PROPERTY_GM):                             |
+|   Executive KPI Briefing  |  Portfolio Scope  |  Cashiering Audit  |  Governance      |
 +---------------------------------------------------------------------------------------+
 ```
 
 * Staff only see navigation nodes relevant to their department.
-* Cross-departmental staff (e.g., Duty Managers) can switch between role workspaces via a single workspace selector.
+* Users without permissions for a specific module see clean departmental workspaces or fallback orientation rather than jarring error walls or 403 Forbidden alert banners.
 
 ---
 
@@ -271,29 +340,40 @@ The typography system enforces clear operational hierarchy without relying on he
 
 ---
 
-## 15. Color Tokens & Visual Hierarchy
+## 15. Light-First Color Tokens & Visual System
 
-The Enterprise HMS palette evokes the serene luxury of high-end Middle Eastern resorts and metropolitan luxury towers:
+The canonical visual system of Enterprise HMS is **Light Premium Hospitality**. It is optimized for daytime lobby daylight, counter lighting, and long operational shifts:
 
 ```
-[ Navy Primary #0B132B ]  [ Navy Secondary #1C2541 ]  [ Slate Accent #3A506B ]  [ Gold Accent #C5A880 ]
-Deep background depth     Card & surface container    Borders & dividers        Restrained luxury accent
+[ Canvas #F8FAFC ]    [ Surface Card #FFFFFF ]  [ Slate Border #E2E8F0 ]  [ Restrained Accent #9A7B38 ]
+Light neutral base    Crisp operational card    Fine architectural divider Warm bronze/camel accent
 ```
 
 ### 15.1 Palette Tokens (`packages/ui`)
-* **Surfaces & Backgrounds**:
-  * `navyPrimary`: `#0B132B` (Root viewport background)
-  * `navySecondary`: `#1C2541` (Sidebars, global headers, secondary panels)
-  * `surfaceCard`: `#131D3B` (Primary operational card background)
-  * `surfaceBorder`: `#233154` (Clean, subtle border separation)
-* **Brand Accents (Restrained Gold)**:
-  * `goldAccent`: `#C5A880` (Primary active tab indicator, VIP crown badge, focus rings)
-  * `goldLight`: `#E0CCA9` (Hover states on gold elements)
-  * `goldDark`: `#9E8257` (Active pressed states)
-* **Typography Colors**:
-  * `textPrimary`: `#F8FAFC` (High-contrast readability, WCAG 14:1 ratio on navy)
-  * `textSecondary`: `#94A3B8` (Metadata, field labels, timestamps)
-  * `textMuted`: `#64748B` (Disabled placeholders, subtle dividers)
+* **Surfaces & Neutral Bases**:
+  * `surfaceRoot`: `#F8FAFC` (Root application viewport background; light neutral canvas)
+  * `surfaceCard`: `#FFFFFF` (Primary operational card background; crisp white)
+  * `surfaceRaised`: `#F1F5F9` (Subtle contrast panels, table header strips, side navigation)
+  * `surfaceSunken`: `#E2E8F0` (Input wells, progress tracks, active selection tracks)
+  * `surfaceBorder`: `#E2E8F0` (Clean, subtle 1px border separation)
+  * `surfaceBorderSubtle`: `#F1F5F9` (Fine internal table row dividers)
+* **Charcoal & Slate Typography**:
+  * `textPrimary`: `#0F172A` (Slate 900; crisp readability, WCAG > 14:1 contrast on white)
+  * `textSecondary`: `#334155` (Slate 700; secondary labels, table headers, column descriptors)
+  * `textMuted`: `#64748B` (Slate 500; helper text, timestamps, disabled indicators)
+  * `textInverse`: `#FFFFFF` (White text for primary action buttons and dark badge accents)
+* **Brand Accents (Restrained Luxury Warm Camel/Bronze)**:
+  * `accentPrimary`: `#9A7B38` (Deep warm camel bronze for primary buttons, active indicator lines)
+  * `accentHover`: `#83672E` (Hover interaction on accent elements)
+  * `accentLight`: `#FDF8EE` (Light background tint for active tabs, selected rows)
+  * `accentRing`: `rgba(154, 123, 56, 0.25)` (Accessible 2px focus ring with offset)
+* **Semantic Status Palette (Calibrated for Light Surfaces)**:
+  * **Success / Ready / Clean**: `#059669` (text/icon), `#ECFDF5` (tint background), `#A7F3D0` (border)
+  * **Info / Occupied / In-House**: `#2563EB` (text/icon), `#EFF6FF` (tint background), `#BFDBFE` (border)
+  * **Warning / Cleaning / Pending**: `#D97706` (text/icon), `#FFFBEB` (tint background), `#FDE68A` (border)
+  * **Critical / Dirty / OOO**: `#DC2626` (text/icon), `#FEF2F2` (tint background), `#FECACA` (border)
+  * **Inspection / VIP**: `#7C3AED` (text/icon), `#F5F3FF` (tint background), `#DDD6FE` (border)
+  * **Muted / Vacant / Out of Service**: `#64748B` (text/icon), `#F8FAFC` (tint background), `#E2E8F0` (border)
 
 ---
 
@@ -306,15 +386,16 @@ Deep background depth     Card & surface container    Borders & dividers        
   * `space-4 (16px)`: Standard card padding; form field vertical spacing.
   * `space-6 (24px)`: Section padding; modal dialog padding.
   * `space-8 (32px)`: Major workspace grid gaps.
-* **Border Radii**:
-  * `sm (4px)`: Badges, status tags.
-  * `md (8px)`: Buttons, text inputs, dropdown selects.
-  * `lg (12px)`: Cards, drawers, modal cards.
+* **Moderate Border Radii**:
+  * `sm (4px)`: Micro-badges, status tags.
+  * `md (6px)`: Buttons, text inputs, dropdown selects.
+  * `lg (8px)`: Cards, data table containers, panel cards.
+  * `xl (12px)`: Modal dialogs, slide-over drawers.
   * `full (9999px)`: Circular avatars, pill chips.
-* **Subtle Elevation Shadows**:
-  * `sm`: `0 1px 2px 0 rgba(0, 0, 0, 0.25)` (cards).
-  * `md`: `0 4px 6px -1px rgba(0, 0, 0, 0.3)` (dropdown menus).
-  * `modal`: `0 20px 25px -5px rgba(0, 0, 0, 0.5)` (dialogs & slide-over drawers).
+* **Soft Natural Elevation Shadows**:
+  * `sm`: `0 1px 2px 0 rgba(0, 0, 0, 0.05)` (operational cards).
+  * `md`: `0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.04)` (popovers, dropdowns).
+  * `modal`: `0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)` (dialogs & drawers).
 * **Restrained Motion**:
   * Durations: `150ms` (hover/focus), `200ms` (dropdowns/drawers), `250ms` (modal entrance).
   * Timing: `cubic-bezier(0.16, 1, 0.3, 1)` (ease-out deceleration).
@@ -370,7 +451,25 @@ $$\text{WHAT WENT WRONG} \quad + \quad \text{HOW TO FIX IT}$$
 
 ---
 
-## 20. The 13 Canonical Operational Status Tokens
+## 20. Room Operations & The Canonical Status Language
+
+Room status visualization is a **core visual language of the Enterprise HMS**. Whether viewed on the high-density desktop Tape Chart, the curbside tablet check-in board, or the room attendant's mobile priority list, room state must be instantly legible across languages and lighting conditions.
+
+### 20.1 Core Room Operational Semantic States
+Every physical room in the property resolves to a combination of occupancy, housekeeping, and service status:
+
+| Semantic Room State | Symbol / Icon | Light UI Color Treatment | Operational Meaning & Actionable Trigger |
+| :--- | :--- | :--- | :--- |
+| **AVAILABLE** | `✓ READY` | Emerald `#059669` text on `#ECFDF5` | Room is clean, inspected, in service, and ready for immediate guest check-in. |
+| **OCCUPIED** | `● OCCUPIED` | Sapphire `#2563EB` text on `#EFF6FF` | Guest is registered and in-house. Action: Folio post, service request, departure settlement. |
+| **DIRTY** | `✕ DIRTY` | Crimson `#DC2626` text on `#FEF2F2` | Room requires cleaning (departure or stayover). Action: Dispatch attendant, prioritize for arrival. |
+| **CLEANING** | `⟳ CLEANING` | Amber `#D97706` text on `#FFFBEB` | Attendant is actively cleaning. Action: Live progress monitoring, timer tracking. |
+| **CLEAN** | `✓ CLEAN` | Teal `#0D9488` text on `#F0FDFA` | Attendant completed cleaning; room is awaiting supervisory certification. |
+| **INSPECTED** | `🔍 INSPECTED` | Purple `#7C3AED` text on `#F5F3FF` | Supervisor certified room readiness. Safe for VIP allocation and key issuance. |
+| **OOO** (Out of Order) | `⛔ OOO` | Rose `#BE123C` text on `#FFF1F2` | Physical room defect removing room from sellable inventory. Affects hotel ATS. |
+| **OOS** (Out of Service) | `⚙ OOS` | Slate `#475569` text on `#F8FAFC` | Minor cosmetic or maintenance issue; does not reduce inventory capacity. |
+
+### 20.2 The 13 Canonical Operational Status Tokens
 
 Per the ratified enterprise hotel architecture, all operational states across PMS, Housekeeping, Front Office, and Maintenance map into **exactly 13 canonical statuses**:
 
@@ -379,20 +478,21 @@ Per the ratified enterprise hotel architecture, all operational states across PM
 |                              13 CANONICAL STATUS TOKENS (ICON + LABEL)                            |
 |                                                                                                   |
 |  [✓ READY]         [● OCCUPIED]       [○ VACANT]         [✕ DIRTY]           [⟳ CLEANING]         |
-|  #10B981           #3B82F6            #94A3B8            #EF4444             #F59E0B              |
+|  #059669           #2563EB            #64748B            #DC2626             #D97706              |
 |                                                                                                   |
 |  [🔍 INSPECTION]   [⚙ MAINTENANCE]    [⛔ OUT OF ORDER]   [⏳ PENDING]        [✓ COMPLETED]        |
-|  #8B5CF6           #F97316            #DC2626            #EAB308             #10B981              |
+|  #7C3AED           #EA580C            #BE123C            #CA8A04             #059669              |
 |                                                                                                   |
 |  [⊘ CANCELLED]     [⚠ WARNING]        [🚨 CRITICAL]                                               |
-|  #64748B           #F59E0B            #EF4444                                                     |
+|  #64748B           #D97706            #DC2626                                                     |
 +---------------------------------------------------------------------------------------------------+
 ```
 
-### Strict Status Accessibility Rule:
-**Status must NEVER be communicated through color alone.**  
-Every status badge or table cell must combine:
-$$\text{SYMBOL ICON} \quad + \quad \text{TEXT LABEL} \quad + \quad \text{COLOR BACKGROUND/BORDER}$$
+### 20.3 Strict Status Accessibility Mandate:
+> **Zero Color-Only Meaning Rule**:  
+> **Status must NEVER be communicated through color alone.**  
+> Every status indicator (whether on tape chart cells, room cards, table rows, or mobile lists) must combine:
+$$\text{SYMBOL ICON} \quad + \quad \text{TEXT LABEL} \quad + \quad \text{STATE PILL / BORDER}$$
 
 ---
 
@@ -507,3 +607,32 @@ Before any future HMS screen or pull request is accepted, it must pass every ite
 * [ ] 15. Are all colors, typography, spacing, and shadows imported from `@hms/ui`?
 * [ ] 16. Is WCAG 2.1 AA contrast ($\ge 4.5:1$) and visible keyboard focus ring maintained?
 * [ ] 17. Does the screen avoid decorative bloat, gold-washing, and unnecessary animations?
+
+---
+
+## 27. Reference Principle & External Inspiration Governance
+
+To ensure originality, legal compliance, and architectural cohesion, strict governance applies to all external design references and benchmarks:
+
+### 27.1 UX Inspiration Only
+Hospitality platforms (such as the YowStay Hotel Management Dashboard reference and leading modern PMS solutions) serve strictly as **functional and ergonomic UX inspiration**:
+* Study glanceability patterns (how dense information is surfaced to the eye).
+* Study operational grouping (grouping arrivals, departures, and turnaround states).
+* Study spatial density (table row heights, sidebar width, card groupings).
+
+### 27.2 Absolute Prohibitions: Zero Copying
+Developers and designers are strictly forbidden from copying:
+* **Branding & Identity**: No replication of logos, product names, or stylistic identity.
+* **Exact Colors & Hex Values**: Never extract or reuse proprietary color palettes. All colors must derive from the sovereign `@hms/ui` Light Premium Hospitality palette.
+* **Screenshots & Graphic Assets**: No bundling, embedding, or copying of third-party imagery or UI assets.
+* **Proprietary Layouts & Structural Geometry**: Layouts must derive from Enterprise HMS architectural requirements, not clones of third-party templates.
+* **Custom Typography**: Typography is anchored on the ratified dual Latin/Arabic stack (`Inter`, `IBM Plex Sans Arabic`, `JetBrains Mono`).
+
+### 27.3 Architectural Coherence
+Enterprise HMS is a specialized enterprise platform with strict requirements:
+* Middle East luxury hospitality focus.
+* Bidirectional English/Arabic RTL architectural foundation.
+* Role-aware, permission-aware, and property-scoped multi-tenancy.
+* High-throughput operational robustness.
+
+External references must inspire clarity and speed, but must always yield to Enterprise HMS architectural commandments.
