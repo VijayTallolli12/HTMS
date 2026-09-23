@@ -192,10 +192,29 @@ export interface RefreshRequest {
   refreshToken?: string;
 }
 
+export interface UserRoleSummaryDto {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface UserRoleScopeSummaryDto {
+  scopeType: ScopeType;
+  hotelGroupId: string | null;
+  regionId: string | null;
+  countryId: string | null;
+  propertyId: string | null;
+  departmentCode: DepartmentCode | string | null;
+  roleCode?: string;
+}
+
 export interface MeResponse {
   user: SafeUserDto;
   activeContext: ActiveAuthContext;
   sessionId: string;
+  roles?: UserRoleSummaryDto[];
+  roleScopes?: UserRoleScopeSummaryDto[];
+  permissions?: string[];
 }
 
 export interface LogoutResponse {

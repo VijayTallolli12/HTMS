@@ -22,6 +22,7 @@ import {
   AuthenticationResponse,
   MeResponse,
   LogoutResponse,
+  SecurityContext,
 } from '@hms/api-contracts';
 import { Public, Authenticated } from '../decorators/authz.decorators';
 
@@ -167,7 +168,8 @@ export class AuthController {
 
     const token = authHeader.slice(7).trim();
     const claims = await this.tokenService.validateAccessToken(token);
-    const data = await this.authService.getMe(claims.sub, claims.sid);
+    const securityContext: SecurityContext | undefined = (req as any).securityContext;
+    const data = await this.authService.getMe(claims.sub, claims.sid, securityContext);
 
     return createApiResponse(data, req);
   }

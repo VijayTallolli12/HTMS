@@ -14,22 +14,22 @@
       <a routerLink="/dashboard" routerLinkActive="active-nav" class="nav-link">
         Dashboard
       </a>
-      <a routerLink="/pms/reservations" routerLinkActive="active-nav" class="nav-link">
+      <a routerLink="/pms/reservations" *ngIf="hasPermission('front_office.reservation.read')" routerLinkActive="active-nav" class="nav-link">
         Reservations
       </a>
-      <a routerLink="/pms/front-office" routerLinkActive="active-nav" class="nav-link">
+      <a routerLink="/pms/front-office" *ngIf="hasPermission('front_office.reservation.read')" routerLinkActive="active-nav" class="nav-link">
         Front Desk
       </a>
-      <a routerLink="/pms/room-operations" routerLinkActive="active-nav" class="nav-link">
+      <a routerLink="/pms/room-operations" *ngIf="hasPermission('room_operations.status.read')" routerLinkActive="active-nav" class="nav-link">
         Room Ops
       </a>
-      <a routerLink="/pms/housekeeping" routerLinkActive="active-nav" class="nav-link">
+      <a routerLink="/pms/housekeeping" *ngIf="hasPermission('housekeeping.task.view')" routerLinkActive="active-nav" class="nav-link">
         Housekeeping
       </a>
-      <a routerLink="/pms/folios" routerLinkActive="active-nav" class="nav-link">
+      <a routerLink="/pms/folios" *ngIf="hasPermission('folio:view')" routerLinkActive="active-nav" class="nav-link">
         Cashiering
       </a>
-      <a routerLink="/pms/availability" routerLinkActive="active-nav" class="nav-link">
+      <a routerLink="/pms/availability" *ngIf="hasPermission('inventory:read')" routerLinkActive="active-nav" class="nav-link">
         Inventory ATS
       </a>
       <a routerLink="/organization" routerLinkActive="active-nav" class="nav-link">
@@ -73,7 +73,7 @@
         <span class="user-name">
           {{ currentUser()?.firstName || 'Front Desk' }} {{ currentUser()?.lastName || 'Agent' }}
         </span>
-        <span class="user-role">{{ currentUser()?.role || 'Operations Lead' }}</span>
+        <span class="user-role">{{ primaryRole }}</span>
       </div>
     </div>
     <button class="logout-btn" (click)="onLogout()" title="Sign Out">X</button>

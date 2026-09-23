@@ -25,6 +25,15 @@ export class AppComponent implements OnInit {
 
   title = 'Enterprise HMS';
 
+  hasPermission(permission: string): boolean {
+    return this.authService.hasPermission(permission);
+  }
+
+  get primaryRole(): string {
+    const roles = this.authService.roles();
+    return roles.length > 0 ? (roles[0].name || roles[0].code) : (this.currentUser()?.role || 'Staff');
+  }
+
   constructor() {
     effect(
       () => {

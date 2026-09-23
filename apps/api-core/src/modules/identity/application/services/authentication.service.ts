@@ -19,6 +19,9 @@ import {
   NativeAuthenticationResponse,
   AuthenticationResponse,
   MeResponse,
+  SecurityContext,
+  UserRoleSummaryDto,
+  UserRoleScopeSummaryDto,
 } from '@hms/api-contracts';
 import { User } from '@prisma/client';
 
@@ -298,7 +301,11 @@ export class AuthenticationService {
   /**
    * Retrieves safe identity snapshot and active context for the current session.
    */
-  async getMe(userId: string, sessionId: string): Promise<MeResponse> {
+  async getMe(
+    userId: string,
+    sessionId: string,
+    securityContext?: SecurityContext,
+  ): Promise<MeResponse> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -308,6 +315,28 @@ export class AuthenticationService {
     }
 
     const actx = await this.resolveActiveContext(user);
+
+    const roles: UserRoleSummaryDto[] =
+      securityContext?.roles?.map((r) => ({
+        id: r.id,
+        code: r.code,
+        name: r.name,
+      })) ?? [];
+
+    const roleScopes: UserRoleScopeSummaryDto[] =
+      securityContext?.scopes?.map((s) => ({
+        scopeType: s.scopeType,
+        hotelGroupId: s.hotelGroupId,
+        regionId: s.regionId,
+        countryId: s.countryId,
+        propertyId: s.propertyId,
+        departmentCode: s.departmentCode,
+        roleCode: s.roleCode,
+      })) ?? [];
+
+    const permissions: string[] = securityContext?.permissions
+      ? Array.from(securityContext.permissions)
+      : [];
 
     return {
       user: {
@@ -320,6 +349,9 @@ export class AuthenticationService {
       },
       activeContext: actx,
       sessionId,
+      roles,
+      roleScopes,
+      permissions,
     };
   }
 }

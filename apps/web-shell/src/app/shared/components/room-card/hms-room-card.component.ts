@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="hms-room-card" [class.hms-room-card--{{ statusClass }]="statusClass">
+    <div class="hms-room-card" [ngClass]="statusClass ? 'hms-room-card--' + statusClass : ''">
       <div class="hms-room-card__top">
         <span class="hms-room-card__number">{{ roomNumber }}</span>
         <span class="hms-room-card__status" *ngIf="ready">✓ Ready</span>

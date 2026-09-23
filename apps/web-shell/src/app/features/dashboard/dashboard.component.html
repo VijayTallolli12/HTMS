@@ -17,13 +17,13 @@
 
     <!-- Quick Actions -->
     <div class="header-actions">
-      <hms-button variant="gold" (click)="navigateTo('/pms/reservations/new')">
+      <hms-button variant="gold" *ngIf="hasPermission('front_office.reservation.create')" (click)="navigateTo('/pms/reservations/new')">
         <span class="btn-icon">＋</span> New Reservation
       </hms-button>
-      <hms-button variant="outline" (click)="navigateTo('/pms/front-office')">
+      <hms-button variant="outline" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/front-office')">
         <span class="btn-icon">🛎️</span> Front Desk
       </hms-button>
-      <hms-button variant="outline" (click)="navigateTo('/pms/room-operations')">
+      <hms-button variant="outline" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
         <span class="btn-icon">📋</span> Tape Chart
       </hms-button>
     </div>
@@ -35,14 +35,14 @@
   </hms-alert>
 
   <!-- Operational Stat Cards -->
-  <section class="metrics-grid">
+  <section class="metrics-grid" *ngIf="kpiCards.length > 0">
     <hms-kpi-strip [cards]="kpiCards" (cardClick)="onCardClick($event)"></hms-kpi-strip>
   </section>
 
   <!-- Two-Column Operational Activity Section -->
   <section class="dashboard-content-grid">
     <!-- Left: Today's Recent Bookings -->
-    <div class="panel-card">
+    <div class="panel-card" *ngIf="hasPermission('front_office.reservation.read')">
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Recent Reservations</h2>
@@ -71,7 +71,7 @@
     </div>
 
     <!-- Right: Quick Operations Hub -->
-    <div class="panel-card">
+    <div class="panel-card" *ngIf="canAccessOperationsHub()">
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Hospitality Operations Hub</h2>
@@ -81,7 +81,7 @@
 
       <div class="panel-body">
         <div class="quick-gateways-list">
-          <div class="gateway-item" (click)="navigateTo('/pms/front-office')">
+          <div class="gateway-item" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/front-office')">
             <div class="gateway-icon">🛎️</div>
             <div class="gateway-info">
               <h3 class="gateway-title">Front Desk & Arrivals</h3>
@@ -90,7 +90,7 @@
             <div class="gateway-arrow">&rarr;</div>
           </div>
 
-          <div class="gateway-item" (click)="navigateTo('/pms/room-operations')">
+          <div class="gateway-item" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
             <div class="gateway-icon">🧹</div>
             <div class="gateway-info">
               <h3 class="gateway-title">Room Operations & Tape Chart</h3>
@@ -99,7 +99,7 @@
             <div class="gateway-arrow">&rarr;</div>
           </div>
 
-          <div class="gateway-item" (click)="navigateTo('/pms/folios')">
+          <div class="gateway-item" *ngIf="hasPermission('folio:view')" (click)="navigateTo('/pms/folios')">
             <div class="gateway-icon">💳</div>
             <div class="gateway-info">
               <h3 class="gateway-title">Cashiering & Folio Settlement</h3>
@@ -108,7 +108,7 @@
             <div class="gateway-arrow">&rarr;</div>
           </div>
 
-          <div class="gateway-item" (click)="navigateTo('/pms/reservations/new')">
+          <div class="gateway-item" *ngIf="hasPermission('front_office.reservation.create')" (click)="navigateTo('/pms/reservations/new')">
             <div class="gateway-icon">📅</div>
             <div class="gateway-info">
               <h3 class="gateway-title">New Booking Engine</h3>
@@ -117,6 +117,21 @@
             <div class="gateway-arrow">&rarr;</div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Fallback panel for scoped departmental roles -->
+    <div class="panel-card" *ngIf="!hasPermission('front_office.reservation.read') && !canAccessOperationsHub()">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Departmental Operations</h2>
+          <p class="panel-subtitle">Access your assigned operational module</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <p style="padding: 1.5rem; color: #a1a1aa; font-size: 0.95rem;">
+          You are logged in with departmental credentials. Please select your assigned operational module from the navigation sidebar.
+        </p>
       </div>
     </div>
   </section>

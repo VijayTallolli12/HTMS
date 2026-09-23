@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'hms-sidebar',
@@ -17,33 +18,58 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       </a>
     </div>
 
-    <div class="hms-sidebar__section">
+    <div class="hms-sidebar__section" *ngIf="canAccessOperations()">
       <div class="hms-sidebar__section-title">Operations</div>
-      <a routerLink="/pms/front-office" routerLinkActive="hms-sidebar__item--active" class="hms-sidebar__item">
+      <a
+        *ngIf="hasPermission('front_office.reservation.read')"
+        routerLink="/pms/front-office"
+        routerLinkActive="hms-sidebar__item--active"
+        class="hms-sidebar__item"
+      >
         <span class="hms-sidebar__item-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9zm2.5-.5a.5.5 0 0 0-.5.5v9c0 .28.22.5.5.5h13a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-13zm2 3.5h9v2h-9v-2zm0 4h6v2h-6v-2z"/></svg>
         </span>
         <span>Front Desk</span>
       </a>
-      <a routerLink="/pms/housekeeping" routerLinkActive="hms-sidebar__item--active" class="hms-sidebar__item">
+      <a
+        *ngIf="hasPermission('housekeeping.task.view')"
+        routerLink="/pms/housekeeping"
+        routerLinkActive="hms-sidebar__item--active"
+        class="hms-sidebar__item"
+      >
         <span class="hms-sidebar__item-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M12 2c2.5 2.4 3.5 4.3 3.5 6.3A3.5 3.5 0 0 1 12 12a3.5 3.5 0 0 1-3.5-3.7C8.5 6.3 9.5 4.4 12 2zm7 14.5c0 3.4-3.1 5.5-7 5.5s-7-2.1-7-5.5c0-2.4 1.9-4.5 4.8-5.1l1.8 2.1c-1.1.4-1.8 1.5-1.8 2.8 0 1.8 1.5 3.3 3.3 3.3 1.8 0 3.3-1.5 3.3-3.3 0-1.3-.7-2.4-1.8-2.8l1.8-2.1c2.9.6 4.8 2.7 4.8 5.1z"/></svg>
         </span>
         <span>Housekeeping</span>
       </a>
-      <a routerLink="/pms/room-operations" routerLinkActive="hms-sidebar__item--active" class="hms-sidebar__item">
+      <a
+        *ngIf="hasPermission('room_operations.status.read')"
+        routerLink="/pms/room-operations"
+        routerLinkActive="hms-sidebar__item--active"
+        class="hms-sidebar__item"
+      >
         <span class="hms-sidebar__item-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm1 4h10v2H7V8zm0 4h7v2H7v-2zm0 4h5v2H7v-2z"/></svg>
         </span>
         <span>Room Operations</span>
       </a>
-      <a routerLink="/pms/availability" routerLinkActive="hms-sidebar__item--active" class="hms-sidebar__item">
+      <a
+        *ngIf="hasPermission('inventory:read')"
+        routerLink="/pms/availability"
+        routerLinkActive="hms-sidebar__item--active"
+        class="hms-sidebar__item"
+      >
         <span class="hms-sidebar__item-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2zm13 8H4v9h16v-9zm-9 2v2H6v-2h5zm7 0v2h-5v-2h5z"/></svg>
         </span>
         <span>Inventory ATS</span>
       </a>
-      <a routerLink="/pms/reservations" routerLinkActive="hms-sidebar__item--active" class="hms-sidebar__item">
+      <a
+        *ngIf="hasPermission('front_office.reservation.read')"
+        routerLink="/pms/reservations"
+        routerLinkActive="hms-sidebar__item--active"
+        class="hms-sidebar__item"
+      >
         <span class="hms-sidebar__item-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2zm13 8H4v9h16v-9zm-9 2v2H6v-2h5zm7 0v2h-5v-2h5z"/></svg>
         </span>
@@ -51,9 +77,13 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       </a>
     </div>
 
-    <div class="hms-sidebar__section">
+    <div class="hms-sidebar__section" *ngIf="hasPermission('folio:view')">
       <div class="hms-sidebar__section-title">Finance</div>
-      <a routerLink="/pms/folios" routerLinkActive="hms-sidebar__item--active" class="hms-sidebar__item">
+      <a
+        routerLink="/pms/folios"
+        routerLinkActive="hms-sidebar__item--active"
+        class="hms-sidebar__item"
+      >
         <span class="hms-sidebar__item-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M12 2a5 5 0 0 1 5 5v1h1a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3h1V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v1h6V7a3 3 0 0 0-3-3zm-5 7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1H7zm5 2.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z"/></svg>
         </span>
@@ -79,4 +109,19 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   `,
   styles: [],
 })
-export class HmsSidebarComponent {}
+export class HmsSidebarComponent {
+  private readonly authService = inject(AuthService);
+
+  hasPermission(permission: string): boolean {
+    return this.authService.hasPermission(permission);
+  }
+
+  canAccessOperations(): boolean {
+    return (
+      this.hasPermission('front_office.reservation.read') ||
+      this.hasPermission('housekeeping.task.view') ||
+      this.hasPermission('room_operations.status.read') ||
+      this.hasPermission('inventory:read')
+    );
+  }
+}

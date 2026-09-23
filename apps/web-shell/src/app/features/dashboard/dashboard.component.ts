@@ -1,6 +1,9 @@
 import { Component, inject, signal, OnInit, effect, TemplateRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { AuthService } from '../../core/services/auth.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { PmsApiService } from '../pms/services/pms-api.service';
 import { ReservationDto, RoomStatusDto } from '@hms/api-contracts';
@@ -24,6 +27,7 @@ export interface DashboardStats {
   styleUrls: ['./dashboard.component.css'],
 })
 export class DashboardComponent implements OnInit, AfterViewInit {
+  readonly auth = inject(AuthService);
   private readonly orgService = inject(OrganizationService);
   private readonly pmsApi = inject(PmsApiService);
   private readonly router = inject(Router);
@@ -61,15 +65,39 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     }));
   }
 
+  hasPermission(permission: string): boolean {
+    return this.auth.hasPermission(permission);
+  }
+
+  canAccessOperationsHub(): boolean {
+    return (
+      this.hasPermission('front_office.reservation.read') ||
+      this.hasPermission('room_operations.status.read') ||
+      this.hasPermission('folio:view') ||
+      this.hasPermission('front_office.reservation.create')
+    );
+  }
+
   get kpiCards() {
     const s = this.stats();
-    return [
-      { label: 'ARRIVALS TODAY', value: s.arrivalsToday, desc: 'Expected guest arrivals', footer: 'Process in Front Office →', path: '/pms/front-office' },
-      { label: 'DEPARTURES TODAY', value: s.departuresToday, desc: 'Scheduled departures', footer: 'Settlement & Checkout →', path: '/pms/reservations' },
-      { label: 'OCCUPIED ROOMS', value: `${s.occupiedRooms} / ${s.totalRooms}`, desc: 'Active in-house guests', footer: 'View Tape Chart →', path: '/pms/room-operations' },
-      { label: 'READY FOR CHECK-IN', value: s.availableCleanRooms, desc: 'Inspected & sellable rooms', footer: 'Housekeeping Board →', path: '/pms/room-operations' },
-      { label: 'MAINTENANCE (OOO/OOS)', value: s.maintenanceRooms, desc: 'Under repair / blocked', footer: 'Manage Blocks →', path: '/pms/room-operations' },
-    ];
+    const cards: Array<{ label: string; value: string | number; desc: string; footer: string; path: string }> = [];
+
+    if (this.hasPermission('front_office.reservation.read')) {
+      cards.push(
+        { label: 'ARRIVALS TODAY', value: s.arrivalsToday, desc: 'Expected guest arrivals', footer: 'Process in Front Office →', path: '/pms/front-office' },
+        { label: 'DEPARTURES TODAY', value: s.departuresToday, desc: 'Scheduled departures', footer: 'Settlement & Checkout →', path: '/pms/reservations' },
+      );
+    }
+
+    if (this.hasPermission('room_operations.status.read')) {
+      cards.push(
+        { label: 'OCCUPIED ROOMS', value: `${s.occupiedRooms} / ${s.totalRooms}`, desc: 'Active in-house guests', footer: 'View Tape Chart →', path: '/pms/room-operations' },
+        { label: 'READY FOR CHECK-IN', value: s.availableCleanRooms, desc: 'Inspected & sellable rooms', footer: 'Housekeeping Board →', path: '/pms/room-operations' },
+        { label: 'MAINTENANCE (OOO/OOS)', value: s.maintenanceRooms, desc: 'Under repair / blocked', footer: 'Manage Blocks →', path: '/pms/room-operations' },
+      );
+    }
+
+    return cards;
   }
 
   constructor() {
@@ -107,70 +135,88 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     this.errorMessage.set(null);
 
     const todayStr = new Date().toISOString().split('T')[0];
+    const canReadReservations = this.hasPermission('front_office.reservation.read');
+    const canReadRooms = this.hasPermission('room_operations.status.read');
 
-    this.pmsApi.getReservations(propertyId, { limit: 100 }).subscribe({
-      next: (resRes) => {
-        const reservations = resRes.data?.items || [];
+    if (!canReadReservations && !canReadRooms) {
+      this.recentReservations.set([]);
+      this.roomsOverview.set([]);
+      this.isLoading.set(false);
+      return;
+    }
+
+    const reservations$ = canReadReservations
+      ? this.pmsApi.getReservations(propertyId, { limit: 100 }).pipe(
+          catchError((err) => {
+            this.errorMessage.set(err?.error?.message || 'Failed to load reservations.');
+            return of({ data: { items: [] } });
+          }),
+        )
+      : of({ data: { items: [] } });
+
+    const rooms$ = canReadRooms
+      ? this.pmsApi.getRoomOperationsRooms(propertyId).pipe(
+          catchError((err) => {
+            this.errorMessage.set(err?.error?.message || 'Failed to load rooms operational state.');
+            return of({ data: [] });
+          }),
+        )
+      : of({ data: [] });
+
+    forkJoin([reservations$, rooms$]).subscribe({
+      next: ([resRes, roomsRes]) => {
+        const reservations = (resRes as any).data?.items || [];
         this.recentReservations.set(reservations.slice(0, 6));
 
-        this.pmsApi.getRoomOperationsRooms(propertyId).subscribe({
-          next: (roomsRes) => {
-            const rooms = roomsRes.data || [];
-            this.roomsOverview.set(rooms);
+        const rooms = (roomsRes as any).data || [];
+        this.roomsOverview.set(rooms);
 
-            const arrivalsToday = reservations.filter(
-              (r) => r.arrivalDate === todayStr && r.status === 'CONFIRMED',
-            ).length;
+        const arrivalsToday = reservations.filter(
+          (r: any) => r.arrivalDate === todayStr && r.status === 'CONFIRMED',
+        ).length;
 
-            const departuresToday = reservations.filter(
-              (r) => r.departureDate === todayStr && r.status === 'CHECKED_IN',
-            ).length;
+        const departuresToday = reservations.filter(
+          (r: any) => r.departureDate === todayStr && r.status === 'CHECKED_IN',
+        ).length;
 
-            const occupiedRooms = rooms.filter(
-              (rm) => rm.effective?.occupancyStatus === 'OCCUPIED' || rm.occupancyStatus === 'OCCUPIED',
-            ).length;
+        const occupiedRooms = rooms.filter(
+          (rm: any) => rm.effective?.occupancyStatus === 'OCCUPIED' || rm.occupancyStatus === 'OCCUPIED',
+        ).length;
 
-            const availableCleanRooms = rooms.filter(
-              (rm) =>
-                (rm.effective?.occupancyStatus === 'VACANT' || rm.occupancyStatus === 'VACANT') &&
-                (rm.effective?.housekeepingStatus === 'CLEAN' ||
-                  rm.effective?.housekeepingStatus === 'INSPECTED' ||
-                  rm.housekeepingStatus === 'CLEAN' ||
-                  rm.housekeepingStatus === 'INSPECTED') &&
-                (rm.effective?.serviceStatus === 'IN_SERVICE' || rm.serviceStatus === 'IN_SERVICE'),
-            ).length;
+        const availableCleanRooms = rooms.filter(
+          (rm: any) =>
+            (rm.effective?.occupancyStatus === 'VACANT' || rm.occupancyStatus === 'VACANT') &&
+            (rm.effective?.housekeepingStatus === 'CLEAN' ||
+              rm.effective?.housekeepingStatus === 'INSPECTED' ||
+              rm.housekeepingStatus === 'CLEAN' ||
+              rm.housekeepingStatus === 'INSPECTED') &&
+            (rm.effective?.serviceStatus === 'IN_SERVICE' || rm.serviceStatus === 'IN_SERVICE'),
+        ).length;
 
-            const maintenanceRooms = rooms.filter(
-              (rm) =>
-                rm.effective?.serviceStatus === 'OUT_OF_ORDER' ||
-                rm.effective?.serviceStatus === 'OUT_OF_SERVICE' ||
-                rm.serviceStatus === 'OUT_OF_ORDER' ||
-                rm.serviceStatus === 'OUT_OF_SERVICE',
-            ).length;
+        const maintenanceRooms = rooms.filter(
+          (rm: any) =>
+            rm.effective?.serviceStatus === 'OUT_OF_ORDER' ||
+            rm.effective?.serviceStatus === 'OUT_OF_SERVICE' ||
+            rm.serviceStatus === 'OUT_OF_ORDER' ||
+            rm.serviceStatus === 'OUT_OF_SERVICE',
+        ).length;
 
-            const totalRooms = rooms.length;
-            const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
+        const totalRooms = rooms.length;
+        const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
 
-            this.stats.set({
-              arrivalsToday,
-              departuresToday,
-              occupiedRooms,
-              availableCleanRooms,
-              maintenanceRooms,
-              totalRooms,
-              occupancyRate,
-            });
-
-            this.isLoading.set(false);
-          },
-          error: (err) => {
-            this.errorMessage.set(err?.error?.message || 'Failed to load rooms operational state.');
-            this.isLoading.set(false);
-          },
+        this.stats.set({
+          arrivalsToday,
+          departuresToday,
+          occupiedRooms,
+          availableCleanRooms,
+          maintenanceRooms,
+          totalRooms,
+          occupancyRate,
         });
+
+        this.isLoading.set(false);
       },
-      error: (err) => {
-        this.errorMessage.set(err?.error?.message || 'Failed to load reservations.');
+      error: () => {
         this.isLoading.set(false);
       },
     });
