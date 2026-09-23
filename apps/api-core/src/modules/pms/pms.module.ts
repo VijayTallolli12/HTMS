@@ -51,7 +51,6 @@ import { HousekeepingModule } from './housekeeping/housekeeping.module';
 import { EngineeringModule } from './engineering/engineering.module';
 
 @Module({
-  imports: [ReservationsModule, RoomOperationsModule, FrontOfficeModule, FinanceModule, HousekeepingModule],
   imports: [ReservationsModule, RoomOperationsModule, FrontOfficeModule, FinanceModule, HousekeepingModule, EngineeringModule],
   controllers: [
     RoomTypeController,
