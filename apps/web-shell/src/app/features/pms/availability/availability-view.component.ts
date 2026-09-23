@@ -12,7 +12,8 @@ import { OrganizationService } from '../../../core/services/organization.service
   template: `
     <div class="pms-container">
       <div class="header">
-        <h2>PMS — Daily Inventory Calendar & Stay Quotes</h2>
+        <span class="luxury-badge">INVENTORY &amp; ATS ENGINE</span>
+        <h2>PMS — Daily Inventory Calendar &amp; Stay Quotes</h2>
         <p class="subtitle">
           Authoritative ATS Calculation Engine, Stop-Sells, and Multi-Day Restriction Quotes
         </p>
@@ -23,7 +24,7 @@ import { OrganizationService } from '../../../core/services/organization.service
       <!-- Tab Selection -->
       <div class="tabs">
         <button [class.active]="activeTab() === 'calendar'" (click)="activeTab.set('calendar')">
-          Inventory & ATS Calendar
+          Inventory &amp; ATS Calendar
         </button>
         <button [class.active]="activeTab() === 'quote'" (click)="activeTab.set('quote')">
           Stay Quote Evaluator
@@ -119,7 +120,7 @@ import { OrganizationService } from '../../../core/services/organization.service
           </div>
         </div>
 
-        <div *ngIf="isLoading()" class="loading-state">Evaluating restrictions & rates...</div>
+        <div *ngIf="isLoading()" class="loading-state">Evaluating restrictions &amp; rates...</div>
 
         <div *ngIf="!isLoading() && quoteResult()" class="quote-results">
           <h3>Stay Quote: {{ quoteResult()?.lengthOfStay }} Night(s)</h3>
@@ -157,14 +158,26 @@ import { OrganizationService } from '../../../core/services/organization.service
     `
       .pms-container {
         padding: 24px;
-        max-width: 1200px;
+        max-width: 1400px;
         margin: 0 auto;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      .luxury-badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        color: var(--gold-accent, #9a7b38);
+        background: #fdf8ee;
+        padding: 0.25rem 0.6rem;
+        border-radius: 4px;
+        border: 1px solid rgba(154, 123, 56, 0.25);
+        margin-bottom: 0.5rem;
       }
       .header h2 {
         margin: 0 0 6px 0;
         font-size: 24px;
-        color: #1e293b;
+        color: #0f172a;
       }
       .subtitle {
         margin: 0 0 20px 0;
@@ -197,17 +210,20 @@ import { OrganizationService } from '../../../core/services/organization.service
         cursor: pointer;
         border-bottom: 2px solid transparent;
         margin-bottom: -2px;
+        transition: all 0.15s ease;
       }
       .tabs button.active {
-        color: #2563eb;
-        border-bottom-color: #2563eb;
+        color: #9a7b38;
+        border-bottom-color: #9a7b38;
+        font-weight: 600;
       }
       .filter-card {
-        background: #fff;
+        background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
         padding: 16px;
         margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       }
       .form-row {
         display: flex;
@@ -227,6 +243,11 @@ import { OrganizationService } from '../../../core/services/organization.service
         border: 1px solid #cbd5e1;
         border-radius: 6px;
         font-size: 14px;
+        outline: none;
+      }
+      .form-control:focus {
+        border-color: #9a7b38;
+        box-shadow: 0 0 0 2px rgba(154, 123, 56, 0.12);
       }
       .btn {
         padding: 8px 16px;
@@ -235,16 +256,21 @@ import { OrganizationService } from '../../../core/services/organization.service
         font-size: 14px;
         cursor: pointer;
         border: 1px solid transparent;
+        transition: all 0.15s ease;
       }
       .btn-primary {
-        background: #2563eb;
-        color: #fff;
+        background: #9a7b38;
+        color: #ffffff;
+      }
+      .btn-primary:hover {
+        background: #83672e;
       }
       .table-responsive {
         overflow-x: auto;
-        background: #fff;
+        background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       }
       .table {
         width: 100%;
@@ -255,24 +281,31 @@ import { OrganizationService } from '../../../core/services/organization.service
       .table th,
       .table td {
         padding: 12px 16px;
-        border-bottom: 1px solid #e2e8f0;
+        border-bottom: 1px solid #f1f5f9;
       }
       .table th {
         background: #f8fafc;
-        color: #475569;
+        color: #64748b;
         font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #e2e8f0;
       }
       .ats-badge {
-        background: #dcfce7;
-        color: #166534;
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
         padding: 3px 10px;
         border-radius: 12px;
         font-weight: 600;
         font-size: 13px;
+        display: inline-block;
       }
       .ats-badge.ats-zero {
-        background: #fee2e2;
-        color: #991b1b;
+        background: #fef2f2;
+        color: #b91c1c;
+        border-color: #fecaca;
       }
       .quote-grid {
         display: grid;
@@ -281,13 +314,14 @@ import { OrganizationService } from '../../../core/services/organization.service
         margin-top: 16px;
       }
       .quote-card {
-        background: #fff;
+        background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
         padding: 16px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       }
       .quote-card.rejected {
-        opacity: 0.75;
+        opacity: 0.8;
         background: #f8fafc;
       }
       .card-header {
@@ -298,16 +332,17 @@ import { OrganizationService } from '../../../core/services/organization.service
       }
       .card-header h4 {
         margin: 0;
-        font-size: 16px;
-        color: #1e293b;
+        font-size: 15px;
+        color: #0f172a;
       }
       .room-type-tag {
-        background: #e0e7ff;
-        color: #4338ca;
+        background: #fdf8ee;
+        color: #9a7b38;
+        border: 1px solid rgba(154, 123, 56, 0.25);
         padding: 2px 8px;
         border-radius: 4px;
         font-size: 12px;
-        font-weight: 500;
+        font-weight: 600;
       }
       .total-price {
         font-size: 22px;
@@ -323,8 +358,9 @@ import { OrganizationService } from '../../../core/services/organization.service
         gap: 2px;
       }
       .badge-rejected {
-        background: #fecaca;
+        background: #fef2f2;
         color: #b91c1c;
+        border: 1px solid #fecaca;
         padding: 2px 8px;
         border-radius: 4px;
         font-size: 12px;

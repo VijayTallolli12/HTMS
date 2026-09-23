@@ -1,25 +1,25 @@
 export const LUXURY_PALETTE = {
-  // Background & Surfacing
-  navyPrimary: '#0B132B',
-  navySecondary: '#1C2541',
-  slateAccent: '#3A506B',
-  surfaceCard: '#131D3B',
-  surfaceBorder: '#233154',
+  // Background & Surfacing (Light Neutral Canvas)
+  navyPrimary: '#F8FAFC',
+  navySecondary: '#FFFFFF',
+  slateAccent: '#F1F5F9',
+  surfaceCard: '#FFFFFF',
+  surfaceBorder: '#E2E8F0',
 
-  // Brand Accents
-  goldAccent: '#C5A880',
-  goldLight: '#E0CCA9',
-  goldDark: '#9E8257',
+  // Brand Accents (Restrained Warm Camel / Bronze)
+  goldAccent: '#9A7B38',
+  goldLight: '#FDF8EE',
+  goldDark: '#83672E',
 
-  // Status Indicators
-  statusSuccess: '#10B981', // Operational / Clean
-  statusWarning: '#F59E0B', // Degraded / Inspecting
-  statusDanger: '#EF4444', // Down / Critical
-  statusInfo: '#3B82F6',
+  // Status Indicators (Calibrated for Light Surfaces)
+  statusSuccess: '#059669', // Operational / Clean
+  statusWarning: '#D97706', // Degraded / Inspecting
+  statusDanger: '#DC2626',  // Down / Critical
+  statusInfo: '#2563EB',
 
-  // Typography
-  textPrimary: '#F8FAFC',
-  textSecondary: '#94A3B8',
+  // Typography (Charcoal & Slate)
+  textPrimary: '#0F172A',
+  textSecondary: '#334155',
   textMuted: '#64748B',
 } as const;
 

@@ -23,10 +23,10 @@
   font-weight: 700;
   letter-spacing: 0.15em;
   color: var(--gold-accent);
-  background: rgba(197, 168, 128, 0.1);
+  background: var(--gold-light);
   padding: 0.25rem 0.6rem;
-  border-radius: 3px;
-  border: 1px solid rgba(197, 168, 128, 0.25);
+  border-radius: 4px;
+  border: 1px solid rgba(154, 123, 56, 0.25);
   margin-bottom: 0.5rem;
 }
 
@@ -82,6 +82,7 @@
   border: 1px solid var(--surface-border);
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .panel-header {
@@ -90,7 +91,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--navy-secondary);
+  background: var(--surface-raised);
 }
 
 .panel-title {
@@ -129,12 +130,13 @@
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .metric-card:hover {
   transform: translateY(-2px);
   border-color: var(--gold-accent);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .metric-header {
@@ -167,7 +169,7 @@
 .metric-footer {
   margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--surface-border-subtle);
   font-size: 0.72rem;
   color: var(--text-muted);
   display: flex;
@@ -191,15 +193,16 @@
   gap: 1rem;
   padding: 0.9rem;
   border-radius: 6px;
-  background: var(--navy-primary);
+  background: var(--surface-card);
   border: 1px solid var(--surface-border);
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .gateway-item:hover {
   border-color: var(--gold-accent);
-  background: rgba(197, 168, 128, 0.05);
+  background: var(--gold-light);
   transform: translateX(4px);
 }
 
@@ -261,8 +264,9 @@
 }
 
 .room-type-tag {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-raised);
   border: 1px solid var(--surface-border);
+  color: var(--text-secondary);
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
   font-size: 0.75rem;

@@ -7,7 +7,7 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   template: `
     <div class="hms-modal-backdrop" (click)="onBackdropClick()">
-      <div class="hms-modal" [class.hms-modal--wide]="wide">
+      <div class="hms-modal" [class.hms-modal--wide]="wide" (click)="$event.stopPropagation()">
         <div class="hms-modal__header">
           <h3 class="hms-modal__title">{{ title }}</h3>
           <button class="hms-modal__close" (click)="onClose()">&times;</button>

@@ -13,8 +13,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 2rem;
-  background-color: var(--navy-secondary);
+  background-color: var(--surface-card);
   border-bottom: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-sm);
   height: 64px;
 }
 
@@ -27,7 +28,7 @@
 
 .brand-mark {
   background: linear-gradient(135deg, var(--gold-accent), var(--gold-dark));
-  color: var(--navy-primary);
+  color: var(--text-inverse);
   font-weight: 800;
   font-size: 0.9rem;
   letter-spacing: 0.05em;
@@ -64,7 +65,7 @@
 }
 
 .nav-link {
-  color: #94a3b8;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 500;
@@ -74,21 +75,21 @@
 }
 
 .nav-link:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  background: var(--surface-raised);
 }
 
 .nav-link.active-nav {
   color: var(--gold-accent);
-  background: rgba(197, 168, 128, 0.12);
-  border: 1px solid rgba(197, 168, 128, 0.3);
+  background: var(--gold-light);
+  border: 1px solid rgba(154, 123, 56, 0.3);
   font-weight: 600;
 }
 
 .property-selector {
   display: flex;
   flex-direction: column;
-  background: var(--navy-primary);
+  background: var(--surface-raised);
   border: 1px solid var(--surface-border);
   border-radius: 6px;
   padding: 0.3rem 0.8rem;
@@ -120,7 +121,7 @@
 }
 
 .property-dropdown option {
-  background: var(--navy-secondary);
+  background: var(--surface-card);
   color: var(--text-primary);
 }
 
@@ -131,8 +132,8 @@
 }
 
 .env-tag {
-  background: rgba(58, 80, 107, 0.4);
-  color: var(--slate-accent);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
   border: 1px solid var(--surface-border);
   font-size: 0.65rem;
   font-weight: 700;
@@ -150,8 +151,8 @@
 .user-avatar {
   width: 32px;
   height: 32px;
-  background: var(--slate-accent);
-  color: var(--text-primary);
+  background: var(--gold-light);
+  color: var(--gold-accent);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -194,7 +195,7 @@
 }
 
 .logout-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
-  color: #ef4444;
+  background: #fef2f2;
+  border-color: var(--status-danger);
+  color: var(--status-danger);
 }

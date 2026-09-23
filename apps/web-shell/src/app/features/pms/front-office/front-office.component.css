@@ -91,17 +91,18 @@
 
 /* Badge styles for table cells */
 .badge-subtle {
-  background: rgba(255, 255, 255, 0.05);
+  background: #f1f5f9;
   border: 1px solid var(--surface-border);
+  color: var(--text-secondary);
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   font-size: 0.75rem;
 }
 
 .badge-assigned {
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--status-success);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
   padding: 0.25rem 0.6rem;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -110,16 +111,16 @@
 }
 
 .badge-unassigned {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--status-danger);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
   padding: 0.25rem 0.6rem;
   border-radius: 4px;
   font-size: 0.75rem;
 }
 
 .text-warning {
-  color: var(--status-warning);
+  color: #b45309;
 }
 
 /* Guest Summary */
@@ -149,20 +150,21 @@
 }
 
 .eligible-room-item {
-  background: var(--navy-primary);
+  background: #ffffff;
   border: 1px solid var(--surface-border);
   border-radius: 6px;
   padding: 0.85rem 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .eligible-room-item:hover {
   border-color: var(--gold-accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .eligible-room-item.selected-room {
-  background: rgba(197, 168, 128, 0.12);
+  background: #fdf8ee;
   border-color: var(--gold-accent);
 }
 
@@ -182,8 +184,9 @@
 .upgrade-badge {
   font-size: 0.65rem;
   font-weight: 700;
-  background: rgba(197, 168, 128, 0.2);
+  background: #fdf8ee;
   color: var(--gold-accent);
+  border: 1px solid rgba(154, 123, 56, 0.25);
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
 }
@@ -191,8 +194,9 @@
 .ready-badge {
   font-size: 0.65rem;
   font-weight: 700;
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--status-success);
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
 }
@@ -242,7 +246,7 @@
 }
 
 .form-control {
-  background: var(--navy-primary);
+  background: #ffffff;
   border: 1px solid var(--surface-border);
   color: var(--text-primary);
   padding: 0.65rem 0.85rem;
@@ -251,10 +255,9 @@
   outline: none;
 }
 
-.assignment-options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.form-control:focus {
+  border-color: var(--gold-accent);
+  box-shadow: 0 0 0 2px rgba(154, 123, 56, 0.12);
 }
 
 /* Success Card */

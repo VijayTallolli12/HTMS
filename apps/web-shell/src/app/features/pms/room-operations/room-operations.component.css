@@ -82,8 +82,9 @@
 .ready-indicator {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.15);
+  color: var(--status-success);
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
   padding: 0.2rem 0.5rem;
   border-radius: 10px;
 }
@@ -108,12 +109,12 @@
   width: 90%;
   max-width: 540px;
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 }
 
 .command-header {
   padding: 1.25rem 1.5rem;
-  background: var(--navy-secondary);
+  background: var(--surface-raised);
   border-bottom: 1px solid var(--surface-border);
   display: flex;
   justify-content: space-between;
@@ -131,7 +132,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.85rem;
-  background: var(--navy-primary);
+  background: var(--surface-raised);
   border: 1px solid var(--surface-border);
   border-radius: 6px;
   padding: 1rem;
@@ -169,7 +170,7 @@
 
 .command-footer {
   padding: 1rem 1.5rem;
-  background: var(--navy-secondary);
+  background: var(--surface-raised);
   border-top: 1px solid var(--surface-border);
   display: flex;
   justify-content: flex-end;
@@ -177,7 +178,7 @@
 
 /* Shared component overrides for page-specific content */
 .text-gold { color: var(--gold-accent); }
-.text-clean { color: #14b8a6; }
+.text-clean { color: var(--status-success); }
 .font-bold { font-weight: 700; }
 .font-mono { font-family: var(--font-mono); }
 .mt-1 { margin-top: 1rem; }
