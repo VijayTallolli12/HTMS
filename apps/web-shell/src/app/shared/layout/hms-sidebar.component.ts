@@ -54,6 +54,17 @@ import { AuthService } from '../../core/services/auth.service';
         <span>Room Operations</span>
       </a>
       <a
+        *ngIf="hasPermission('engineering.work_order.view') || hasPermission('engineering.asset.view')"
+        routerLink="/pms/engineering"
+        routerLinkActive="hms-sidebar__item--active"
+        class="hms-sidebar__item"
+      >
+        <span class="hms-sidebar__item-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
+        </span>
+        <span>Engineering</span>
+      </a>
+      <a
         *ngIf="hasPermission('inventory:read')"
         routerLink="/pms/availability"
         routerLinkActive="hms-sidebar__item--active"
@@ -121,7 +132,9 @@ export class HmsSidebarComponent {
       this.hasPermission('front_office.reservation.read') ||
       this.hasPermission('housekeeping.task.view') ||
       this.hasPermission('room_operations.status.read') ||
-      this.hasPermission('inventory:read')
+      this.hasPermission('inventory:read') ||
+      this.hasPermission('engineering.work_order.view') ||
+      this.hasPermission('engineering.asset.view')
     );
   }
 }

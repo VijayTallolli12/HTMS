@@ -7,3 +7,4 @@ export * from './room-operations.contract';
 export * from './front-office.contract';
 export * from './finance.contract';
 export * from './housekeeping.contract';
+export * from './engineering.contract';

@@ -266,6 +266,67 @@ export async function seedIamBaseline() {
       description: 'Inspect immutable system security and activity audit records',
       module: 'PLATFORM',
     },
+    // ── Engineering / Maintenance ─────────────────────────────────────
+    {
+      code: 'engineering.asset.view',
+      name: 'View Assets',
+      description: 'View equipment, appliances, and facility asset records',
+      module: 'ENGINEERING',
+    },
+    {
+      code: 'engineering.asset.manage',
+      name: 'Manage Assets',
+      description: 'Create, update, or retire facility assets',
+      module: 'ENGINEERING',
+    },
+    {
+      code: 'engineering.work_order.view',
+      name: 'View Work Orders',
+      description: 'View maintenance work orders and repair status',
+      module: 'ENGINEERING',
+    },
+    {
+      code: 'engineering.work_order.create',
+      name: 'Create Work Orders',
+      description: 'Report maintenance defects and create repair work orders',
+      module: 'ENGINEERING',
+    },
+    {
+      code: 'engineering.work_order.assign',
+      name: 'Assign Work Orders',
+      description: 'Dispatch and assign work orders to technicians',
+      module: 'ENGINEERING',
+    },
+    {
+      code: 'engineering.work_order.status_update',
+      name: 'Update Work Order Status',
+      description: 'Start, complete, or update progress on work orders',
+      module: 'ENGINEERING',
+    },
+    {
+      code: 'engineering.work_order.close',
+      name: 'Close Work Orders',
+      description: 'Verify and formally close completed work orders',
+      module: 'ENGINEERING',
+    },
+    {
+      code: 'engineering.work_order.note',
+      name: 'Add Work Order Notes',
+      description: 'Add progress logs and technician notes to work orders',
+      module: 'ENGINEERING',
+    },
+    {
+      code: 'engineering.schedule.view',
+      name: 'View Maintenance Schedules',
+      description: 'View preventive maintenance schedules and due dates',
+      module: 'ENGINEERING',
+    },
+    {
+      code: 'engineering.schedule.manage',
+      name: 'Manage Maintenance Schedules',
+      description: 'Create and update recurring preventive maintenance schedules',
+      module: 'ENGINEERING',
+    },
   ];
 
   const permMap = new Map<string, string>();
@@ -315,6 +376,16 @@ export async function seedIamBaseline() {
         'folio:post_charge',
         'folio:post_payment',
         'frontdesk:checkout',
+        'engineering.asset.view',
+        'engineering.asset.manage',
+        'engineering.work_order.view',
+        'engineering.work_order.create',
+        'engineering.work_order.assign',
+        'engineering.work_order.status_update',
+        'engineering.work_order.close',
+        'engineering.work_order.note',
+        'engineering.schedule.view',
+        'engineering.schedule.manage',
       ],
     },
     {
@@ -334,6 +405,9 @@ export async function seedIamBaseline() {
         'folio:post_charge',
         'folio:post_payment',
         'frontdesk:checkout',
+        'engineering.work_order.view',
+        'engineering.work_order.create',
+        'engineering.work_order.note',
       ],
     },
     {
@@ -344,6 +418,20 @@ export async function seedIamBaseline() {
         'housekeeping.task.view',
         'housekeeping.task.assign',
         'housekeeping.task.inspect',
+        'engineering.work_order.view',
+        'engineering.work_order.create',
+        'engineering.work_order.note',
+      ],
+    },
+    {
+      roleCode: 'MAINT_TECH',
+      permCodes: [
+        'engineering.asset.view',
+        'engineering.work_order.view',
+        'engineering.work_order.status_update',
+        'engineering.work_order.note',
+        'engineering.schedule.view',
+        'maintenance.ticket.create',
       ],
     },
     {

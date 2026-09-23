@@ -70,4 +70,10 @@ export const PMS_ROUTES: Routes = [
       import('./availability/availability-view.component').then((m) => m.AvailabilityViewComponent),
     title: 'Enterprise HMS — PMS Availability & Calendar',
   },
+  {
+    path: 'engineering',
+    loadComponent: () =>
+      import('./engineering/engineering.component').then((m) => m.EngineeringComponent),
+    title: 'Enterprise HMS — Engineering & Facilities',
+  },
 ];

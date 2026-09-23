@@ -126,6 +126,9 @@ model Property {
   roomStatusLogs            RoomStatusLog[]
   reservationAssignmentLogs ReservationAssignmentLog[]
   housekeepingTasks         HousekeepingTask[]
+  assets                    Asset[]
+  workOrders                WorkOrder[]
+  maintenanceSchedules      MaintenanceSchedule[]
 
   @@index([countryId])
   @@index([status])
@@ -550,6 +553,8 @@ model Room {
   assignmentLogsFrom   ReservationAssignmentLog[] @relation("AssignmentLogsPrevRoom")
   assignmentLogsTo     ReservationAssignmentLog[] @relation("AssignmentLogsNewRoom")
   housekeepingTasks    HousekeepingTask[]
+  assets               Asset[]
+  workOrders           WorkOrder[]
 
   @@unique([propertyId, id], name: "uq_rooms_property_id")
   @@unique([propertyId, roomNumber], name: "uq_rooms_property_room_number")
@@ -990,4 +995,119 @@ model Payment {
   @@index([propertyId, folioId], name: "idx_payment_property_folio")
   @@map("payments")
   @@schema("finance_schema")
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ENGINEERING / MAINTENANCE V1 (pms_schema)
+// Asset registry, maintenance work orders, preventive schedules.
+// Room operational impact continues to be owned by RoomMaintenanceBlock.
+// ════════════════════════════════════════════════════════════════════
+
+model Asset {
+  id          String    @id
+  propertyId  String    @map("property_id")
+  code        String    @db.VarChar(50)
+  name        String    @db.VarChar(120)
+  category    String    @db.VarChar(40) // ELECTRICAL | PLUMBING | HVAC | ...
+  status      String    @default("ACTIVE") @db.VarChar(20) // ACTIVE | UNDER_MAINTENANCE | INACTIVE
+  description String?   @db.VarChar(500)
+  roomId      String?   @map("room_id")
+  version     Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property         Property              @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  room             Room?                 @relation(fields: [propertyId, roomId], references: [propertyId, id], onDelete: Restrict)
+  workOrders       WorkOrder[]
+  maintenanceSchedules MaintenanceSchedule[]
+
+  @@unique([propertyId, code], name: "uq_assets_property_code")
+  @@unique([propertyId, id], name: "uq_assets_property_id")
+  @@index([propertyId, status], name: "idx_assets_property_status")
+  @@index([propertyId, category], name: "idx_assets_property_category")
+  @@map("assets")
+  @@schema("pms_schema")
+}
+
+model WorkOrder {
+  id                   String    @id
+  propertyId           String    @map("property_id")
+  code                 String    @db.VarChar(30) // Human-readable WO number, unique per property
+  title                String    @db.VarChar(150)
+  description          String?   @db.VarChar(1000)
+  priority             String    @default("MEDIUM") @db.VarChar(10) // LOW | MEDIUM | HIGH | URGENT
+  category             String    @db.VarChar(40) // ELECTRICAL | PLUMBING | HVAC | ...
+  status               String    @default("OPEN") @db.VarChar(20) // OPEN | ASSIGNED | IN_PROGRESS | COMPLETED | CLOSED
+  assetId              String?   @map("asset_id")
+  roomId               String?   @map("room_id")
+  assignedTechnicianId String?   @map("assigned_technician_id")
+  // Logical reference to pms_schema.room_maintenance_blocks (no FK: block
+  // lifecycle is owned by the PMS RoomMaintenanceService)
+  maintenanceBlockId   String?   @map("maintenance_block_id")
+  reportedAt           DateTime  @default(now()) @map("reported_at") @db.Timestamptz(6)
+  dueAt                DateTime? @map("due_at") @db.Timestamptz(6)
+  assignedAt           DateTime? @map("assigned_at") @db.Timestamptz(6)
+  startedAt            DateTime? @map("started_at") @db.Timestamptz(6)
+  completedAt          DateTime? @map("completed_at") @db.Timestamptz(6)
+  closedAt             DateTime? @map("closed_at") @db.Timestamptz(6)
+  completionNotes      String?   @map("completion_notes") @db.VarChar(1000)
+  reportedBy           String    @map("reported_by")
+  closedBy             String?   @map("closed_by")
+  version              Int       @default(0)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt            DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property  Property        @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  asset     Asset?          @relation(fields: [propertyId, assetId], references: [propertyId, id], onDelete: Restrict)
+  room      Room?           @relation(fields: [propertyId, roomId], references: [propertyId, id], onDelete: Restrict)
+  notes     WorkOrderNote[]
+
+  @@unique([propertyId, code], name: "uq_work_orders_property_code")
+  @@unique([propertyId, id], name: "uq_work_orders_property_id")
+  @@index([propertyId, status], name: "idx_work_orders_property_status")
+  @@index([propertyId, assignedTechnicianId, status], name: "idx_work_orders_property_technician")
+  @@index([propertyId, roomId], name: "idx_work_orders_property_room")
+  @@map("work_orders")
+  @@schema("pms_schema")
+}
+
+model WorkOrderNote {
+  id          String   @id
+  propertyId  String   @map("property_id")
+  workOrderId String   @map("work_order_id")
+  authorId    String   @map("author_id")
+  body        String   @db.VarChar(1000)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workOrder WorkOrder @relation(fields: [propertyId, workOrderId], references: [propertyId, id], onDelete: Cascade)
+
+  @@index([propertyId, workOrderId, createdAt], name: "idx_work_order_notes_lookup")
+  @@map("work_order_notes")
+  @@schema("pms_schema")
+}
+
+model MaintenanceSchedule {
+  id              String    @id
+  propertyId      String    @map("property_id")
+  assetId         String    @map("asset_id")
+  name            String    @db.VarChar(120)
+  description     String?   @db.VarChar(500)
+  frequency       String    @db.VarChar(20) // DAILY | WEEKLY | MONTHLY | QUARTERLY | ANNUAL
+  nextDueDate     DateTime  @map("next_due_date") @db.Date
+  lastCompletedAt DateTime? @map("last_completed_at") @db.Timestamptz(6)
+  isActive        Boolean   @default(true) @map("is_active")
+  version         Int       @default(0)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  asset    Asset    @relation(fields: [propertyId, assetId], references: [propertyId, id], onDelete: Restrict)
+
+  @@unique([propertyId, id], name: "uq_maintenance_schedules_property_id")
+  @@index([propertyId, isActive, nextDueDate], name: "idx_maintenance_schedules_due_lookup")
+  @@map("maintenance_schedules")
+  @@schema("pms_schema")
 }
