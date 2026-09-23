@@ -4,6 +4,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 import { correlationIdInterceptor } from './core/interceptors/correlation-id.interceptor';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { HmsLayoutComponent } from './shared/layout/hms-layout.component';
 
 export const appConfig: ApplicationConfig = {
   providers: [

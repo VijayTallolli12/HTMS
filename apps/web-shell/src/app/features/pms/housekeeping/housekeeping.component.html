@@ -9,33 +9,16 @@
       </p>
     </div>
     <div class="header-actions">
-      <button
-        class="refresh-btn"
-        (click)="activeProperty() && loadTasks(activeProperty()!.id)"
-        [disabled]="isLoading()"
-        title="Refresh tasks"
-      >
-        <span class="refresh-icon" [class.spinning]="isLoading()">↻</span> Refresh Board
-      </button>
+      <hms-button variant="outline" [disabled]="isLoading()" (click)="activeProperty() && loadTasks(activeProperty()!.id)" title="Refresh tasks">
+        Refresh Board
+      </hms-button>
     </div>
   </div>
 
   <!-- Operational Alert Banners -->
-  <div class="error-banner" *ngIf="errorMessage()">
-    <div class="banner-content">
-      <span class="banner-icon">⚠️</span>
-      <span class="banner-text">{{ errorMessage() }}</span>
-    </div>
-    <button class="banner-close" (click)="errorMessage.set(null)">×</button>
-  </div>
+  <hms-alert type="error">{{ errorMessage() }}</hms-alert>
 
-  <div class="success-banner" *ngIf="successMessage()">
-    <div class="banner-content">
-      <span class="banner-icon">✓</span>
-      <span class="banner-text">{{ successMessage() }}</span>
-    </div>
-    <button class="banner-close" (click)="successMessage.set(null)">×</button>
-  </div>
+  <hms-alert type="success">{{ successMessage() }}</hms-alert>
 
   <!-- Operational KPI Metric Cards -->
   <div class="kpi-grid">
@@ -75,62 +58,30 @@
   <div class="toolbar-card">
     <div class="toolbar-left">
       <div class="status-chips">
-        <button
-          class="chip-btn"
-          [class.active-chip]="selectedStatusFilter() === 'ACTIVE'"
-          (click)="setStatusFilter('ACTIVE')"
-        >
+        <hms-button variant="outline" size="sm" [class.active-chip]="selectedStatusFilter() === 'ACTIVE'" (click)="setStatusFilter('ACTIVE')">
           Active Tasks ({{ pendingCount() + assignedCount() + inProgressCount() + cleanedCount() + rejectedCount() }})
-        </button>
-        <button
-          class="chip-btn"
-          [class.active-chip]="selectedStatusFilter() === 'ALL'"
-          (click)="setStatusFilter('ALL')"
-        >
+        </hms-button>
+        <hms-button variant="outline" size="sm" [class.active-chip]="selectedStatusFilter() === 'ALL'" (click)="setStatusFilter('ALL')">
           All ({{ tasks().length }})
-        </button>
-        <button
-          class="chip-btn chip-pending"
-          [class.active-chip]="selectedStatusFilter() === 'PENDING'"
-          (click)="setStatusFilter('PENDING')"
-        >
+        </hms-button>
+        <hms-button variant="outline" size="sm" class="chip-pending" [class.active-chip]="selectedStatusFilter() === 'PENDING'" (click)="setStatusFilter('PENDING')">
           Pending
-        </button>
-        <button
-          class="chip-btn chip-assigned"
-          [class.active-chip]="selectedStatusFilter() === 'ASSIGNED'"
-          (click)="setStatusFilter('ASSIGNED')"
-        >
+        </hms-button>
+        <hms-button variant="outline" size="sm" class="chip-assigned" [class.active-chip]="selectedStatusFilter() === 'ASSIGNED'" (click)="setStatusFilter('ASSIGNED')">
           Assigned
-        </button>
-        <button
-          class="chip-btn chip-progress"
-          [class.active-chip]="selectedStatusFilter() === 'IN_PROGRESS'"
-          (click)="setStatusFilter('IN_PROGRESS')"
-        >
+        </hms-button>
+        <hms-button variant="outline" size="sm" class="chip-progress" [class.active-chip]="selectedStatusFilter() === 'IN_PROGRESS'" (click)="setStatusFilter('IN_PROGRESS')">
           In Progress
-        </button>
-        <button
-          class="chip-btn chip-cleaned"
-          [class.active-chip]="selectedStatusFilter() === 'CLEANED'"
-          (click)="setStatusFilter('CLEANED')"
-        >
+        </hms-button>
+        <hms-button variant="outline" size="sm" class="chip-cleaned" [class.active-chip]="selectedStatusFilter() === 'CLEANED'" (click)="setStatusFilter('CLEANED')">
           Cleaned
-        </button>
-        <button
-          class="chip-btn chip-inspected"
-          [class.active-chip]="selectedStatusFilter() === 'INSPECTED'"
-          (click)="setStatusFilter('INSPECTED')"
-        >
+        </hms-button>
+        <hms-button variant="outline" size="sm" class="chip-inspected" [class.active-chip]="selectedStatusFilter() === 'INSPECTED'" (click)="setStatusFilter('INSPECTED')">
           Inspected
-        </button>
-        <button
-          class="chip-btn chip-rejected"
-          [class.active-chip]="selectedStatusFilter() === 'REJECTED'"
-          (click)="setStatusFilter('REJECTED')"
-        >
+        </hms-button>
+        <hms-button variant="outline" size="sm" class="chip-rejected" [class.active-chip]="selectedStatusFilter() === 'REJECTED'" (click)="setStatusFilter('REJECTED')">
           Re-Clean
-        </button>
+        </hms-button>
       </div>
     </div>
 
@@ -139,7 +90,7 @@
         <label for="priorityFilter">Priority:</label>
         <select
           id="priorityFilter"
-          class="priority-select"
+          class="form-control"
           [ngModel]="priorityFilter()"
           (ngModelChange)="setPriorityFilter($event)"
         >
@@ -151,12 +102,7 @@
       </div>
 
       <div class="search-box">
-        <input
-          type="text"
-          placeholder="Search room, attendant, guest..."
-          [ngModel]="searchQuery()"
-          (ngModelChange)="onSearchChange($event)"
-        />
+        <hms-search placeholder="Search room, attendant, guest..." [value]="searchQuery()" (search)="onSearchChange($event)"></hms-search>
       </div>
     </div>
   </div>
@@ -164,469 +110,262 @@
   <!-- Main Content Board -->
   <div class="content-container">
     <!-- Loading State -->
-    <div class="loading-state" *ngIf="isLoading()">
-      <span class="spinner"></span> Loading housekeeping operations board...
-    </div>
+    <hms-loading [message]="'Loading housekeeping operations board...'" *ngIf="isLoading()"></hms-loading>
 
     <!-- Empty State -->
-    <div class="empty-state" *ngIf="!isLoading() && filteredTasks().length === 0">
-      <div class="empty-icon">🧹</div>
-      <div class="empty-title">No Housekeeping Tasks Found</div>
-      <p class="empty-desc">
-        There are no departure or housekeeping tasks matching the current view criteria.
-        Departure tasks are automatically generated when guests check out.
-      </p>
-      <button class="reset-filter-btn" (click)="setStatusFilter('ALL'); setPriorityFilter('ALL'); onSearchChange('')">
-        Reset Filters
-      </button>
-    </div>
+    <hms-empty
+      [icon]="'🧹'"
+      [title]="'No Housekeeping Tasks Found'"
+      [desc]="'No tasks matching criteria.'"
+      [actionLabel]="'Reset Filters'"
+      (action)="setStatusFilter('ALL'); setPriorityFilter('ALL')"
+      *ngIf="!isLoading() && filteredTasks().length === 0">
+    </hms-empty>
 
     <!-- Tasks Table -->
     <div class="table-container" *ngIf="!isLoading() && filteredTasks().length > 0">
-      <table class="luxury-table">
-        <thead>
-          <tr>
-            <th>Room</th>
-            <th>Type</th>
-            <th>Priority</th>
-            <th>Status</th>
-            <th>Assigned Attendant</th>
-            <th>Reservation / Guest</th>
-            <th>Timing</th>
-            <th class="text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            *ngFor="let task of filteredTasks()"
-            [class.row-selected]="selectedTask()?.id === task.id"
-            [class.row-urgent]="task.priority === 'URGENT'"
-          >
-            <!-- Room Number -->
-            <td>
-              <div class="room-pill">
-                <span class="room-num font-mono">{{ task.roomNumber || 'Room' }}</span>
-              </div>
-            </td>
-
-            <!-- Task Type -->
-            <td>
-              <span class="task-type-badge">{{ task.type }}</span>
-            </td>
-
-            <!-- Priority -->
-            <td>
-              <span
-                class="priority-pill"
-                [class.priority-normal]="task.priority === 'NORMAL'"
-                [class.priority-high]="task.priority === 'HIGH'"
-                [class.priority-urgent]="task.priority === 'URGENT'"
-              >
-                {{ task.priority }}
-              </span>
-            </td>
-
-            <!-- Status -->
-            <td>
-              <span
-                class="status-badge"
-                [class.badge-pending]="task.status === 'PENDING'"
-                [class.badge-assigned]="task.status === 'ASSIGNED'"
-                [class.badge-progress]="task.status === 'IN_PROGRESS'"
-                [class.badge-cleaned]="task.status === 'CLEANED'"
-                [class.badge-inspected]="task.status === 'INSPECTED'"
-                [class.badge-rejected]="task.status === 'REJECTED'"
-              >
-                <span class="status-dot"></span>
-                {{ task.status }}
-              </span>
-            </td>
-
-            <!-- Assigned Attendant -->
-            <td>
-              <div class="attendant-cell">
-                <span
-                  class="attendant-avatar"
-                  [class.avatar-unassigned]="!task.assignedAttendantId"
-                >
-                  {{ getAttendantInitials(task.assignedAttendantId) }}
-                </span>
-                <span class="attendant-name">
-                  {{ getAttendantDisplayName(task.assignedAttendantId) }}
-                </span>
-              </div>
-            </td>
-
-            <!-- Guest / Res Info -->
-            <td>
-              <div class="guest-cell">
-                <span class="guest-name" *ngIf="task.guestName">{{ task.guestName }}</span>
-                <span class="conf-num font-mono" *ngIf="task.confirmationNumber">
-                  #{{ task.confirmationNumber }}
-                </span>
-                <span class="text-muted" *ngIf="!task.guestName && !task.confirmationNumber">—</span>
-              </div>
-            </td>
-
-            <!-- Timestamps -->
-            <td>
-              <div class="timing-cell">
-                <span class="time-primary">{{ task.updatedAt | date: 'shortTime' }}</span>
-                <span class="time-secondary">{{ task.createdAt | date: 'MMM d' }}</span>
-              </div>
-            </td>
-
-            <!-- Actions -->
-            <td class="text-right">
-              <button class="command-btn" (click)="openTaskCommand(task)">
-                Manage →
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <hms-data-table [columns]="tableColumns" [rows]="filteredTasks()">
+      </hms-data-table>
     </div>
   </div>
 
   <!-- Task Command Drawer / Modal -->
-  <div class="modal-backdrop" *ngIf="selectedTask()" (click)="closeTaskCommand()">
-    <div class="command-drawer" (click)="$event.stopPropagation()">
-      <!-- Drawer Header -->
-      <div class="drawer-header">
-        <div>
-          <div class="drawer-badge">TASK COMMAND CONSOLE</div>
-          <h2 class="drawer-title">
-            Room <span class="font-mono text-gold">{{ selectedTask()?.roomNumber }}</span> Departure Cleaning
-          </h2>
-        </div>
-        <button class="close-btn" (click)="closeTaskCommand()">×</button>
+  <hms-modal [title]="'Room Departure Cleaning'" [wide]="true" *ngIf="selectedTask()" (closed)="closeTaskCommand()">
+    <!-- Workflow Progress Bar -->
+    <hms-workflow-stepper>
+    </hms-workflow-stepper>
+
+    <!-- Task Metadata Cards -->
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Task Status</span>
+        <span class="info-value text-bold font-mono">
+          <hms-status-pill [statusKey]="selectedTask()?.status.toLowerCase()" [statusLabel]="selectedTask()?.status"></hms-status-pill>
+        </span>
       </div>
 
-      <!-- Drawer Body -->
-      <div class="drawer-body">
-        <!-- Live Workflow Progress Bar -->
-        <div class="workflow-stepper">
-          <div
-            class="step-item"
-            [class.step-done]="selectedTask()?.status !== 'PENDING'"
-            [class.step-current]="selectedTask()?.status === 'PENDING'"
-          >
-            <div class="step-circle">1</div>
-            <div class="step-label">Pending</div>
-          </div>
-          <div class="step-line" [class.line-done]="selectedTask()?.status !== 'PENDING' && selectedTask()?.status !== 'ASSIGNED'"></div>
-          <div
-            class="step-item"
-            [class.step-done]="selectedTask()?.status === 'IN_PROGRESS' || selectedTask()?.status === 'CLEANED' || selectedTask()?.status === 'INSPECTED'"
-            [class.step-current]="selectedTask()?.status === 'ASSIGNED'"
-          >
-            <div class="step-circle">2</div>
-            <div class="step-label">Assigned</div>
-          </div>
-          <div class="step-line" [class.line-done]="selectedTask()?.status === 'CLEANED' || selectedTask()?.status === 'INSPECTED'"></div>
-          <div
-            class="step-item"
-            [class.step-done]="selectedTask()?.status === 'CLEANED' || selectedTask()?.status === 'INSPECTED'"
-            [class.step-current]="selectedTask()?.status === 'IN_PROGRESS'"
-          >
-            <div class="step-circle">3</div>
-            <div class="step-label">Cleaning</div>
-          </div>
-          <div class="step-line" [class.line-done]="selectedTask()?.status === 'INSPECTED'"></div>
-          <div
-            class="step-item"
-            [class.step-done]="selectedTask()?.status === 'INSPECTED'"
-            [class.step-current]="selectedTask()?.status === 'CLEANED'"
-            [class.step-rejected]="selectedTask()?.status === 'REJECTED'"
-          >
-            <div class="step-circle">4</div>
-            <div class="step-label">{{ selectedTask()?.status === 'REJECTED' ? 'Rejected' : 'Inspection' }}</div>
-          </div>
-          <div class="step-line" [class.line-done]="selectedTask()?.status === 'INSPECTED'"></div>
-          <div
-            class="step-item"
-            [class.step-done]="selectedTask()?.status === 'INSPECTED'"
-            [class.step-current]="selectedTask()?.status === 'INSPECTED'"
-          >
-            <div class="step-circle">5</div>
-            <div class="step-label">Inspected</div>
-          </div>
-        </div>
-
-        <!-- Task Metadata Cards -->
-        <div class="info-grid">
-          <div class="info-item">
-            <span class="info-label">Task Status</span>
-            <span class="info-value text-bold font-mono">
-              <span
-                class="status-badge"
-                [class.badge-pending]="selectedTask()?.status === 'PENDING'"
-                [class.badge-assigned]="selectedTask()?.status === 'ASSIGNED'"
-                [class.badge-progress]="selectedTask()?.status === 'IN_PROGRESS'"
-                [class.badge-cleaned]="selectedTask()?.status === 'CLEANED'"
-                [class.badge-inspected]="selectedTask()?.status === 'INSPECTED'"
-                [class.badge-rejected]="selectedTask()?.status === 'REJECTED'"
-              >
-                {{ selectedTask()?.status }}
-              </span>
-            </span>
-          </div>
-
-          <div class="info-item">
-            <span class="info-label">Priority Level</span>
-            <span
-              class="priority-pill"
-              [class.priority-normal]="selectedTask()?.priority === 'NORMAL'"
-              [class.priority-high]="selectedTask()?.priority === 'HIGH'"
-              [class.priority-urgent]="selectedTask()?.priority === 'URGENT'"
-            >
-              {{ selectedTask()?.priority }}
-            </span>
-          </div>
-
-          <div class="info-item">
-            <span class="info-label">Assigned Attendant</span>
-            <span class="info-value">
-              {{ getAttendantDisplayName(selectedTask()?.assignedAttendantId || null) }}
-            </span>
-          </div>
-
-          <div class="info-item">
-            <span class="info-label">Task Type</span>
-            <span class="info-value font-mono">{{ selectedTask()?.type }}</span>
-          </div>
-
-          <div class="info-item" *ngIf="selectedTask()?.guestName">
-            <span class="info-label">Departed Guest</span>
-            <span class="info-value">{{ selectedTask()?.guestName }}</span>
-          </div>
-
-          <div class="info-item" *ngIf="selectedTask()?.confirmationNumber">
-            <span class="info-label">Confirmation #</span>
-            <span class="info-value font-mono text-gold">#{{ selectedTask()?.confirmationNumber }}</span>
-          </div>
-
-          <div class="info-item" *ngIf="selectedTask()?.startedAt">
-            <span class="info-label">Cleaning Started</span>
-            <span class="info-value">{{ selectedTask()?.startedAt | date: 'shortTime' }}</span>
-          </div>
-
-          <div class="info-item" *ngIf="selectedTask()?.completedAt">
-            <span class="info-label">Cleaning Completed</span>
-            <span class="info-value">{{ selectedTask()?.completedAt | date: 'shortTime' }}</span>
-          </div>
-        </div>
-
-        <!-- Rejection / Inspection Notes Callout if Rejected -->
-        <div class="rejection-callout" *ngIf="selectedTask()?.status === 'REJECTED' && selectedTask()?.notes">
-          <div class="callout-header">
-            <span class="callout-icon">⚠️</span>
-            <span class="callout-title">Supervisor Inspection Rejection Notes</span>
-          </div>
-          <p class="callout-body">{{ selectedTask()?.notes }}</p>
-        </div>
-
-        <!-- Inspection Passed Callout if Inspected -->
-        <div class="inspected-callout" *ngIf="selectedTask()?.status === 'INSPECTED'">
-          <div class="callout-header">
-            <span class="callout-icon">✓</span>
-            <span class="callout-title">Room Certified Clean & Inspected</span>
-          </div>
-          <p class="callout-body">
-            This room has passed supervisory inspection and is certified ready for front desk check-in.
-            <span *ngIf="selectedTask()?.notes"><br><strong>Notes:</strong> {{ selectedTask()?.notes }}</span>
-          </p>
-        </div>
-
-        <!-- State-Aware Action Panels -->
-        <div class="action-section">
-          <h3 class="section-title">Operational Actions</h3>
-
-          <!-- Action for PENDING or REJECTED: Assignment / Self-Claim -->
-          <div
-            class="action-card"
-            *ngIf="selectedTask()?.status === 'PENDING' || selectedTask()?.status === 'REJECTED'"
-          >
-            <div class="action-card-header">
-              <span class="action-num">1</span>
-              <div>
-                <h4 class="action-name">Assign Attendant to Departure Clean</h4>
-                <p class="action-desc">Dispatch a trained housekeeping attendant to turn over this room.</p>
-              </div>
-            </div>
-
-            <div class="assignment-form">
-              <div class="form-group">
-                <label for="attendantSelect">Select Staff Attendant:</label>
-                <select
-                  id="attendantSelect"
-                  class="luxury-select"
-                  [(ngModel)]="selectedAttendantId"
-                >
-                  <option value="" disabled>-- Select Eligible Attendant --</option>
-                  <option *ngFor="let att of availableAttendants()" [value]="att.id">
-                    {{ att.name }} ({{ att.role }})
-                  </option>
-                </select>
-                <div class="custom-id-prompt" style="margin-top: 0.35rem;">
-                  <input
-                    type="text"
-                    class="luxury-select font-mono"
-                    style="font-size: 0.75rem; width: 100%; box-sizing: border-box;"
-                    placeholder="Or enter specific Attendant UUID"
-                    [(ngModel)]="selectedAttendantId"
-                  />
-                </div>
-              </div>
-
-              <div class="btn-group">
-                <button
-                  class="btn-primary"
-                  [disabled]="!selectedAttendantId || isActionInProgress()"
-                  (click)="assignAttendant()"
-                >
-                  <span *ngIf="!isActionInProgress()">Assign Attendant</span>
-                  <span *ngIf="isActionInProgress()">Assigning...</span>
-                </button>
-                <button
-                  class="btn-secondary"
-                  [disabled]="isActionInProgress()"
-                  (click)="claimTask()"
-                >
-                  Claim for Myself
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Action for ASSIGNED: Start Cleaning -->
-          <div
-            class="action-card"
-            *ngIf="selectedTask()?.status === 'ASSIGNED'"
-          >
-            <div class="action-card-header">
-              <span class="action-num">2</span>
-              <div>
-                <h4 class="action-name">Commence Room Cleaning</h4>
-                <p class="action-desc">
-                  Attendant has arrived at Room {{ selectedTask()?.roomNumber }}. Marking this in progress will update
-                  the room housekeeping status to <strong>CLEANING</strong>.
-                </p>
-              </div>
-            </div>
-
-            <div class="action-card-body">
-              <button
-                class="btn-primary btn-gold"
-                [disabled]="isActionInProgress()"
-                (click)="startCleaning()"
-              >
-                <span *ngIf="!isActionInProgress()">▶ Start Cleaning Room {{ selectedTask()?.roomNumber }}</span>
-                <span *ngIf="isActionInProgress()">Starting Cleaning...</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Action for IN_PROGRESS: Complete Cleaning -->
-          <div
-            class="action-card"
-            *ngIf="selectedTask()?.status === 'IN_PROGRESS'"
-          >
-            <div class="action-card-header">
-              <span class="action-num">3</span>
-              <div>
-                <h4 class="action-name">Complete Departure Turnover</h4>
-                <p class="action-desc">
-                  Attendant has finished linen change, sanitization, and amenities restock. Room will be updated to
-                  <strong>CLEAN</strong> and queued for Supervisor Inspection.
-                </p>
-              </div>
-            </div>
-
-            <div class="action-card-body">
-              <button
-                class="btn-primary btn-teal"
-                [disabled]="isActionInProgress()"
-                (click)="completeCleaning()"
-              >
-                <span *ngIf="!isActionInProgress()">✓ Mark Cleaning Complete</span>
-                <span *ngIf="isActionInProgress()">Completing...</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Action for CLEANED: Supervisor Inspection (Pass or Fail) -->
-          <div
-            class="action-card"
-            *ngIf="selectedTask()?.status === 'CLEANED'"
-          >
-            <div class="action-card-header">
-              <span class="action-num">4</span>
-              <div>
-                <h4 class="action-name">Supervisor Quality Inspection</h4>
-                <p class="action-desc">
-                  Inspect the room against 5-star brand standards. Passing certifies room as
-                  <strong>INSPECTED</strong> (ready for guest check-in). Failing returns room to <strong>DIRTY</strong> for re-clean.
-                </p>
-              </div>
-            </div>
-
-            <div class="inspection-form">
-              <div class="form-group">
-                <label for="inspectionNotes">Inspection Notes (Required if rejecting):</label>
-                <textarea
-                  id="inspectionNotes"
-                  class="luxury-textarea"
-                  rows="3"
-                  placeholder="Enter quality audit notes, deficiency feedback, or approval remarks..."
-                  [(ngModel)]="inspectionNotes"
-                ></textarea>
-              </div>
-
-              <div class="btn-group">
-                <button
-                  class="btn-primary btn-green"
-                  [disabled]="isActionInProgress()"
-                  (click)="passInspection()"
-                >
-                  <span *ngIf="!isActionInProgress()">✓ Pass Inspection (Certify Room)</span>
-                  <span *ngIf="isActionInProgress()">Submitting...</span>
-                </button>
-                <button
-                  class="btn-danger"
-                  [disabled]="isActionInProgress()"
-                  (click)="failInspection()"
-                >
-                  <span *ngIf="!isActionInProgress()">✕ Reject (Require Re-Clean)</span>
-                  <span *ngIf="isActionInProgress()">Rejecting...</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Inspected State: Done -->
-          <div
-            class="action-completed-box"
-            *ngIf="selectedTask()?.status === 'INSPECTED'"
-          >
-            <div class="completed-icon">★</div>
-            <div class="completed-content">
-              <h4>Turnover Lifecycle Closed</h4>
-              <p>
-                Room {{ selectedTask()?.roomNumber }} is fully certified as INSPECTED and available for front desk assignment and guest check-in.
-              </p>
-            </div>
-          </div>
-        </div>
+      <div class="info-item">
+        <span class="info-label">Priority Level</span>
+        <hms-status-pill [statusKey]="selectedTask()?.priority.toLowerCase()" [statusLabel]="selectedTask()?.priority"></hms-status-pill>
       </div>
 
-      <!-- Drawer Footer -->
-      <div class="drawer-footer">
-        <a [routerLink]="['/pms/room-operations']" class="footer-link">
-          Open Room Operations Board →
-        </a>
-        <button class="btn-secondary" (click)="closeTaskCommand()">Close Panel</button>
+      <div class="info-item">
+        <span class="info-label">Assigned Attendant</span>
+        <span class="info-value">
+          {{ getAttendantDisplayName(selectedTask()?.assignedAttendantId || null) }}
+        </span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-label">Task Type</span>
+        <span class="info-value font-mono">{{ selectedTask()?.taskType }}</span>
+      </div>
+
+      <div class="info-item" *ngIf="selectedTask()?.guestName">
+        <span class="info-label">Departed Guest</span>
+        <span class="info-value">{{ selectedTask()?.guestName }}</span>
+      </div>
+
+      <div class="info-item" *ngIf="selectedTask()?.confirmationNumber">
+        <span class="info-label">Confirmation #</span>
+        <span class="info-value font-mono text-gold">#{{ selectedTask()?.confirmationNumber }}</span>
+      </div>
+
+      <div class="info-item" *ngIf="selectedTask()?.startedAt">
+        <span class="info-label">Cleaning Started</span>
+        <span class="info-value">{{ selectedTask()?.startedAt | date: 'shortTime' }}</span>
+      </div>
+
+      <div class="info-item" *ngIf="selectedTask()?.completedAt">
+        <span class="info-label">Cleaning Completed</span>
+        <span class="info-value">{{ selectedTask()?.completedAt | date: 'shortTime' }}</span>
       </div>
     </div>
-  </div>
+
+    <!-- Rejection / Inspection Notes Callout if Rejected -->
+    <div class="rejection-callout" *ngIf="selectedTask()?.status === 'REJECTED' && selectedTask()?.notes">
+      <div class="callout-header">
+        <span class="callout-icon">⚠️</span>
+        <span class="callout-title">Supervisor Inspection Rejection Notes</span>
+      </div>
+      <p class="callout-body">{{ selectedTask()?.notes }}</p>
+    </div>
+
+    <!-- Inspection Passed Callout if Inspected -->
+    <div class="inspected-callout" *ngIf="selectedTask()?.status === 'INSPECTED'">
+      <div class="callout-header">
+        <span class="callout-icon">✓</span>
+        <span class="callout-title">Room Certified Clean & Inspected</span>
+      </div>
+      <p class="callout-body">
+        This room has passed supervisory inspection and is certified ready for front desk check-in.
+        <span *ngIf="selectedTask()?.notes"><br><strong>Notes:</strong> {{ selectedTask()?.notes }}</span>
+      </p>
+    </div>
+
+    <!-- State-Aware Action Panels -->
+    <div class="action-section">
+      <h3 class="section-title">Operational Actions</h3>
+
+      <!-- Action for PENDING or REJECTED: Assignment / Self-Claim -->
+      <div
+        class="action-card"
+        *ngIf="selectedTask()?.status === 'PENDING' || selectedTask()?.status === 'REJECTED'"
+      >
+        <div class="action-card-header">
+          <span class="action-num">1</span>
+          <div>
+            <h4 class="action-name">Assign Attendant to Departure Clean</h4>
+            <p class="action-desc">Dispatch a trained housekeeping attendant to turn over this room.</p>
+          </div>
+        </div>
+
+        <div class="assignment-form">
+          <div class="form-group">
+            <label for="attendantSelect">Select Staff Attendant:</label>
+            <select
+              id="attendantSelect"
+              class="form-control"
+              [(ngModel)]="selectedAttendantId"
+            >
+              <option value="" disabled>-- Select Eligible Attendant --</option>
+              <option *ngFor="let att of availableAttendants()" [value]="att.id">
+                {{ att.name }} ({{ att.role }})
+              </option>
+            </select>
+            <div class="custom-id-prompt" style="margin-top: 0.35rem;">
+              <input
+                type="text"
+                class="form-control font-mono"
+                style="font-size: 0.75rem; width: 100%; box-sizing: border-box;"
+                placeholder="Or enter specific Attendant UUID"
+                [(ngModel)]="selectedAttendantId"
+              />
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <hms-button variant="gold" [disabled]="!selectedAttendantId || isActionInProgress()" (click)="assignAttendant()">
+              <span *ngIf="!isActionInProgress()">Assign Attendant</span>
+              <span *ngIf="isActionInProgress()">Assigning...</span>
+            </hms-button>
+            <hms-button variant="outline" [disabled]="isActionInProgress()" (click)="claimTask()">
+              Claim for Myself
+            </hms-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action for ASSIGNED: Start Cleaning -->
+      <div
+        class="action-card"
+        *ngIf="selectedTask()?.status === 'ASSIGNED'"
+      >
+        <div class="action-card-header">
+          <span class="action-num">2</span>
+          <div>
+            <h4 class="action-name">Commence Room Cleaning</h4>
+            <p class="action-desc">
+              Attendant has arrived at Room {{ selectedTask()?.roomNumber }}. Marking this in progress will update
+              the room housekeeping status to <strong>CLEANING</strong>.
+            </p>
+          </div>
+        </div>
+
+        <div class="action-card-body">
+          <hms-button variant="gold" [disabled]="isActionInProgress()" (click)="startCleaning()">
+            <span *ngIf="!isActionInProgress()">▶ Start Cleaning Room {{ selectedTask()?.roomNumber }}</span>
+            <span *ngIf="isActionInProgress()">Starting Cleaning...</span>
+          </hms-button>
+        </div>
+      </div>
+
+      <!-- Action for IN_PROGRESS: Complete Cleaning -->
+      <div
+        class="action-card"
+        *ngIf="selectedTask()?.status === 'IN_PROGRESS'"
+      >
+        <div class="action-card-header">
+          <span class="action-num">3</span>
+          <div>
+            <h4 class="action-name">Complete Departure Turnover</h4>
+            <p class="action-desc">
+              Attendant has finished linen change, sanitization, and amenities restock. Room will be updated to
+              <strong>CLEAN</strong> and queued for Supervisor Inspection.
+            </p>
+          </div>
+        </div>
+
+        <div class="action-card-body">
+          <hms-button variant="gold" [disabled]="isActionInProgress()" (click)="completeCleaning()">
+            <span *ngIf="!isActionInProgress()">✓ Mark Cleaning Complete</span>
+            <span *ngIf="isActionInProgress()">Completing...</span>
+          </hms-button>
+        </div>
+      </div>
+
+      <!-- Action for CLEANED: Supervisor Inspection (Pass or Fail) -->
+      <div
+        class="action-card"
+        *ngIf="selectedTask()?.status === 'CLEANED'"
+      >
+        <div class="action-card-header">
+          <span class="action-num">4</span>
+          <div>
+            <h4 class="action-name">Supervisor Quality Inspection</h4>
+            <p class="action-desc">
+              Inspect the room against 5-star brand standards. Passing certifies room as
+              <strong>INSPECTED</strong> (ready for guest check-in). Failing returns room to <strong>DIRTY</strong> for re-clean.
+            </p>
+          </div>
+        </div>
+
+        <div class="inspection-form">
+          <div class="form-group">
+            <label for="inspectionNotes">Inspection Notes (Required if rejecting):</label>
+            <textarea
+              id="inspectionNotes"
+              class="form-control"
+              rows="3"
+              placeholder="Enter quality audit notes, deficiency feedback, or approval remarks..."
+              [(ngModel)]="inspectionNotes"
+            ></textarea>
+          </div>
+
+          <div class="btn-group">
+            <hms-button variant="gold" [disabled]="isActionInProgress()" (click)="passInspection()">
+              <span *ngIf="!isActionInProgress()">✓ Pass Inspection (Certify Room)</span>
+              <span *ngIf="isActionInProgress()">Submitting...</span>
+            </hms-button>
+            <hms-button variant="danger" [disabled]="isActionInProgress()" (click)="failInspection()">
+              <span *ngIf="!isActionInProgress()">✕ Reject (Require Re-Clean)</span>
+              <span *ngIf="isActionInProgress()">Rejecting...</span>
+            </hms-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inspected State: Done -->
+      <div
+        class="action-completed-box"
+        *ngIf="selectedTask()?.status === 'INSPECTED'"
+      >
+        <div class="completed-icon">★</div>
+        <div class="completed-content">
+          <h4>Turnover Lifecycle Closed</h4>
+          <p>
+            Room {{ selectedTask()?.roomNumber }} is fully certified as INSPECTED and available for front desk assignment and guest check-in.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="drawer-footer" hmsModalFooter>
+      <a [routerLink]="['/pms/room-operations']" class="footer-link">
+        Open Room Operations Board →
+      </a>
+      <hms-button variant="outline" (click)="closeTaskCommand()">Close Panel</hms-button>
+    </div>
+  </hms-modal>
 </div>

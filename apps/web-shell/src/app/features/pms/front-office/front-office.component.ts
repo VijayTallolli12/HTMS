@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, AfterViewInit, effect, ViewChild, TemplateRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -9,19 +9,32 @@ import {
   EligibleRoomDto,
   CheckInResponseDto,
 } from '@hms/api-contracts';
+import {
+  HmsSearchComponent,
+  HmsDataTableComponent,
+  HmsModalComponent,
+  HmsAlertComponent,
+  HmsButtonComponent,
+  HmsStatusPillComponent,
+  HmsEmptyComponent,
+  HmsLoadingComponent,
+  HmsRoomCardComponent,
+  TableColumn,
+} from '../../../shared/index';
 
 @Component({
   selector: 'app-front-office',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, HmsSearchComponent, HmsDataTableComponent, HmsModalComponent, HmsAlertComponent, HmsButtonComponent, HmsStatusPillComponent, HmsEmptyComponent, HmsLoadingComponent, HmsRoomCardComponent],
   templateUrl: './front-office.component.html',
   styleUrls: ['./front-office.component.css'],
 })
-export class FrontOfficeComponent implements OnInit {
+export class FrontOfficeComponent implements OnInit, AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly orgService = inject(OrganizationService);
   private readonly pmsApi = inject(PmsApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly activeProperty = this.orgService.activePropertyContext;
   readonly isLoading = signal<boolean>(false);
@@ -33,7 +46,6 @@ export class FrontOfficeComponent implements OnInit {
 
   searchQuery = signal<string>('');
 
-  // Assign Room Modal State
   selectedReservation = signal<ReservationDto | null>(null);
   showAssignModal = signal<boolean>(false);
   isLoadingEligibleRooms = signal<boolean>(false);
@@ -43,7 +55,6 @@ export class FrontOfficeComponent implements OnInit {
   assignmentReason = '';
   isAssigning = signal<boolean>(false);
 
-  // Check-In Modal State
   showCheckInModal = signal<boolean>(false);
   identityVerified = true;
   registrationCardSigned = true;
@@ -51,6 +62,16 @@ export class FrontOfficeComponent implements OnInit {
   cleanOverrideReason = '';
   isCheckingIn = signal<boolean>(false);
   checkInSuccessData = signal<CheckInResponseDto | null>(null);
+
+  @ViewChild('confNumberCell') confNumberCell!: TemplateRef<any>;
+  @ViewChild('guestNameCell') guestNameCell!: TemplateRef<any>;
+  @ViewChild('roomCategoryCell') roomCategoryCell!: TemplateRef<any>;
+  @ViewChild('stayPeriodCell') stayPeriodCell!: TemplateRef<any>;
+  @ViewChild('allocatedRoomCell') allocatedRoomCell!: TemplateRef<any>;
+  @ViewChild('statusCell') statusCell!: TemplateRef<any>;
+  @ViewChild('actionsCellCell') actionsCellCell!: TemplateRef<any>;
+
+  columns: TableColumn[] = [];
 
   constructor() {
     effect(
@@ -71,6 +92,19 @@ export class FrontOfficeComponent implements OnInit {
     }
   }
 
+  ngAfterViewInit(): void {
+    this.columns = [
+      { field: 'confirmationNumber', label: 'Conf #', cellTemplate: this.confNumberCell },
+      { field: 'guest', label: 'Guest Name', cellTemplate: this.guestNameCell },
+      { field: 'roomTypeCode', label: 'Room Category', cellTemplate: this.roomCategoryCell },
+      { field: 'stayPeriod', label: 'Stay Period', cellTemplate: this.stayPeriodCell },
+      { field: 'assignedRoom', label: 'Allocated Room', cellTemplate: this.allocatedRoomCell },
+      { field: 'status', label: 'Status', cellTemplate: this.statusCell },
+      { field: 'actions', label: 'Front Desk Actions', cellTemplate: this.actionsCellCell },
+    ];
+    this.cdr.detectChanges();
+  }
+
   loadArrivals(propertyId: string): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
@@ -78,11 +112,9 @@ export class FrontOfficeComponent implements OnInit {
     this.pmsApi.getReservations(propertyId, { limit: 100 }).subscribe({
       next: (res) => {
         const items = res.data?.items || [];
-        // Focus on CONFIRMED or CHECKED_IN
         this.arrivals.set(items);
         this.applyFilter();
 
-        // Check if queryParam reservationId is passed
         const targetResId = this.route.snapshot.queryParamMap.get('reservationId');
         if (targetResId) {
           const target = items.find((r) => r.id === targetResId);
@@ -126,7 +158,6 @@ export class FrontOfficeComponent implements OnInit {
     this.filteredArrivals.set(list);
   }
 
-  // --- Assign Room Methods ---
   openAssignModal(res: ReservationDto): void {
     this.selectedReservation.set(res);
     this.selectedRoomId.set(null);
@@ -190,7 +221,6 @@ export class FrontOfficeComponent implements OnInit {
           this.isAssigning.set(false);
           this.showAssignModal.set(false);
 
-          // Update in arrivals array
           const list = this.arrivals().map((r) => (r.id === res.id ? updatedRes.data : r));
           this.arrivals.set(list);
           this.applyFilter();
@@ -208,7 +238,6 @@ export class FrontOfficeComponent implements OnInit {
       });
   }
 
-  // --- Check-In Methods ---
   openCheckInModal(res: ReservationDto): void {
     this.selectedReservation.set(res);
     this.identityVerified = true;
@@ -245,7 +274,6 @@ export class FrontOfficeComponent implements OnInit {
           this.isCheckingIn.set(false);
           this.checkInSuccessData.set(checkInRes.data);
 
-          // Update in arrivals list
           const list = this.arrivals().map((r) =>
             r.id === res.id ? checkInRes.data.reservation : r,
           );

@@ -11,33 +11,31 @@ import {
   OrganizationHierarchyTree,
 } from '@hms/api-contracts';
 import { OrganizationService } from '../../core/services/organization.service';
+import { HmsDataTableComponent, HmsModalComponent, HmsAlertComponent, HmsButtonComponent, HmsEmptyComponent, HmsLoadingComponent } from '../../shared/index';
 
 type NavLevel = 'group' | 'region' | 'country' | 'property' | 'building' | 'floor' | 'tree';
 
 @Component({
   selector: 'hms-organization-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HmsDataTableComponent, HmsModalComponent, HmsAlertComponent, HmsButtonComponent, HmsEmptyComponent, HmsLoadingComponent],
   templateUrl: './organization-management.component.html',
   styleUrls: ['./organization-management.component.css'],
 })
 export class OrganizationManagementComponent implements OnInit {
   private readonly orgService = inject(OrganizationService);
 
-  // View state signals
   readonly currentLevel = signal<NavLevel>('group');
   readonly isLoading = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
 
-  // Selected parent entities for drill-down
   readonly selectedGroup = signal<HotelGroupDto | null>(null);
   readonly selectedRegion = signal<RegionDto | null>(null);
   readonly selectedCountry = signal<CountryDto | null>(null);
   readonly selectedProperty = signal<PropertyDto | null>(null);
   readonly selectedBuilding = signal<BuildingDto | null>(null);
 
-  // Data lists
   readonly groups = signal<HotelGroupDto[]>([]);
   readonly regions = signal<RegionDto[]>([]);
   readonly countries = signal<CountryDto[]>([]);
@@ -46,13 +44,11 @@ export class OrganizationManagementComponent implements OnInit {
   readonly floors = signal<FloorDto[]>([]);
   readonly hierarchyTree = signal<OrganizationHierarchyTree | null>(null);
 
-  // Modal form state
   readonly isModalOpen = signal<boolean>(false);
   readonly modalType = signal<NavLevel>('group');
   readonly modalMode = signal<'create' | 'edit'>('create');
   readonly editingId = signal<string | null>(null);
 
-  // Form model fields
   formCode = '';
   formName = '';
   formDescription = '';
@@ -68,8 +64,6 @@ export class OrganizationManagementComponent implements OnInit {
   ngOnInit(): void {
     this.loadGroups();
   }
-
-  // --- Data Loading Operations ---
 
   loadGroups(): void {
     this.isLoading.set(true);
@@ -155,8 +149,6 @@ export class OrganizationManagementComponent implements OnInit {
     });
   }
 
-  // --- Drill-down Navigation ---
-
   selectGroup(group: HotelGroupDto): void {
     this.selectedGroup.set(group);
     this.selectedRegion.set(null);
@@ -236,8 +228,6 @@ export class OrganizationManagementComponent implements OnInit {
     this.orgService.setActiveProperty(property);
     this.successMessage.set(`Active Property Context set to: ${property.name} (${property.code})`);
   }
-
-  // --- Modal Operations ---
 
   openCreateModal(level: NavLevel): void {
     this.modalType.set(level);
@@ -368,8 +358,6 @@ export class OrganizationManagementComponent implements OnInit {
         });
     }
   }
-
-  // --- Deactivate / Soft Delete Operations ---
 
   deleteGroup(id: string, name: string): void {
     if (!confirm(`Are you sure you want to deactivate Hotel Group '${name}'?`)) return;

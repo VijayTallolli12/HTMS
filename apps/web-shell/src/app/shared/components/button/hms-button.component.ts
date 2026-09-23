@@ -1,0 +1,29 @@
+import { Component, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'hms-button',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <button
+      [type]="type"
+      class="hms-btn hms-btn--{{ variant }}"
+      [class.hms-btn--sm]="size === 'sm'"
+      [disabled]="disabled"
+    >
+      <ng-content></ng-content>
+    </button>
+  `,
+  styles: [],
+})
+export class HmsButtonComponent {
+  @Input() type = 'button';
+  @Input() variant = 'outline';
+  @Input() size = 'md';
+  @Input() disabled = false;
+
+  onClick(): void {
+    // Subclass can override
+  }
+}

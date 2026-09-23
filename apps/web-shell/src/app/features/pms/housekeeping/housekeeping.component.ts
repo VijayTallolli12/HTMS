@@ -10,6 +10,18 @@ import {
   HousekeepingTaskStatus,
   InspectionResult,
 } from '@hms/api-contracts';
+import {
+  HmsDataTableComponent,
+  HmsAlertComponent,
+  HmsButtonComponent,
+  HmsStatusPillComponent,
+  HmsEmptyComponent,
+  HmsLoadingComponent,
+  HmsModalComponent,
+  HmsWorkflowStepperComponent,
+  HmsSearchComponent,
+  HmsRoomCardComponent,
+} from '../../../shared/index';
 
 export interface AttendantOption {
   id: string;
@@ -21,7 +33,7 @@ export interface AttendantOption {
 @Component({
   selector: 'app-housekeeping',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, HmsDataTableComponent, HmsAlertComponent, HmsButtonComponent, HmsStatusPillComponent, HmsEmptyComponent, HmsLoadingComponent, HmsModalComponent, HmsWorkflowStepperComponent, HmsSearchComponent, HmsRoomCardComponent],
   templateUrl: './housekeeping.component.html',
   styleUrls: ['./housekeeping.component.css'],
 })
@@ -41,19 +53,15 @@ export class HousekeepingComponent implements OnInit {
   readonly tasks = signal<HousekeepingTaskDto[]>([]);
   readonly filteredTasks = signal<HousekeepingTaskDto[]>([]);
 
-  // Filters
   readonly selectedStatusFilter = signal<string>('ACTIVE');
   readonly priorityFilter = signal<string>('ALL');
   readonly searchQuery = signal<string>('');
 
-  // Selected Task & Command Panel
   readonly selectedTask = signal<HousekeepingTaskDto | null>(null);
 
-  // Command inputs
   selectedAttendantId = '';
   inspectionNotes = '';
 
-  // Dynamically derived attendants from authenticated user context and loaded task activity
   readonly availableAttendants = computed<AttendantOption[]>(() => {
     const list: AttendantOption[] = [];
     const current = this.currentUser();
@@ -66,7 +74,6 @@ export class HousekeepingComponent implements OnInit {
       });
     }
 
-    // Dynamically include any distinct attendant IDs already observed in loaded property tasks
     const seenIds = new Set<string>(list.map((a) => a.id));
     for (const t of this.tasks()) {
       if (t.assignedAttendantId && !seenIds.has(t.assignedAttendantId)) {
@@ -83,7 +90,6 @@ export class HousekeepingComponent implements OnInit {
     return list;
   });
 
-  // Operational KPI Metrics
   readonly pendingCount = computed(
     () => this.tasks().filter((t) => t.status === HousekeepingTaskStatus.PENDING).length,
   );
@@ -102,6 +108,16 @@ export class HousekeepingComponent implements OnInit {
   readonly rejectedCount = computed(
     () => this.tasks().filter((t) => t.status === HousekeepingTaskStatus.REJECTED).length,
   );
+
+  readonly tableColumns = [
+    { field: 'roomNumber', label: 'Room' },
+    { field: 'taskType', label: 'Type' },
+    { field: 'priority', label: 'Priority' },
+    { field: 'status', label: 'Status' },
+    { field: 'assignedAttendantName', label: 'Assigned Attendant' },
+    { field: 'guestName', label: 'Reservation / Guest' },
+    { field: 'updatedAt', label: 'Timing' },
+  ];
 
   constructor() {
     effect(
@@ -133,7 +149,6 @@ export class HousekeepingComponent implements OnInit {
         this.applyFilters();
         this.isLoading.set(false);
 
-        // If a task was selected, refresh its reference
         const currentSelected = this.selectedTask();
         if (currentSelected) {
           const fresh = items.find((t) => t.id === currentSelected.id);
@@ -154,7 +169,6 @@ export class HousekeepingComponent implements OnInit {
   applyFilters(): void {
     let result = [...this.tasks()];
 
-    // Status Filter
     const status = this.selectedStatusFilter();
     if (status === 'ACTIVE') {
       result = result.filter((t) => t.status !== HousekeepingTaskStatus.INSPECTED);
@@ -162,13 +176,11 @@ export class HousekeepingComponent implements OnInit {
       result = result.filter((t) => t.status === status);
     }
 
-    // Priority Filter
     const priority = this.priorityFilter();
     if (priority !== 'ALL') {
       result = result.filter((t) => t.priority === priority);
     }
 
-    // Search Query
     const query = this.searchQuery().trim().toLowerCase();
     if (query) {
       result = result.filter(

@@ -1,6 +1,16 @@
 import { Component, inject, signal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import {
+  HmsDataTableComponent,
+  HmsAlertComponent,
+  HmsButtonComponent,
+  HmsStatusPillComponent,
+  HmsEmptyComponent,
+  HmsLoadingComponent,
+  HmsModalComponent,
+  HmsRoomCardComponent,
+} from '../../../shared/index';
 import { OrganizationService } from '../../../core/services/organization.service';
 import { PmsApiService } from '../services/pms-api.service';
 import {
@@ -12,7 +22,7 @@ import {
 @Component({
   selector: 'app-room-operations',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HmsDataTableComponent, HmsAlertComponent, HmsButtonComponent, HmsStatusPillComponent, HmsEmptyComponent, HmsLoadingComponent, HmsModalComponent, HmsRoomCardComponent],
   templateUrl: './room-operations.component.html',
   styleUrls: ['./room-operations.component.css'],
 })
@@ -29,11 +39,9 @@ export class RoomOperationsComponent implements OnInit {
   readonly filteredRooms = signal<RoomStatusDto[]>([]);
   readonly floors = signal<FloorDto[]>([]);
 
-  // Filters
   selectedStatusFilter = signal<string>('ALL');
   selectedFloorId = signal<string>('ALL');
 
-  // Command Panel State
   selectedRoom = signal<RoomStatusDto | null>(null);
   isUpdating = signal<boolean>(false);
   transitionReason = '';
@@ -162,7 +170,6 @@ export class RoomOperationsComponent implements OnInit {
           const updatedRoom = res.data;
           this.selectedRoom.set(updatedRoom);
 
-          // Update in rooms array
           const updatedList = this.rooms().map((r) =>
             r.roomId === updatedRoom.roomId ? updatedRoom : r,
           );

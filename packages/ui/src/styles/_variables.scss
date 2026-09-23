@@ -1,0 +1,68 @@
+@use '../tokens/colors' as *;
+@use '../tokens/typography' as *;
+@use '../tokens/spacing' as *;
+@use '../tokens/radii' as *;
+@use '../tokens/shadows' as *;
+@use '../tokens/breakpoints' as *;
+@use '../tokens/status' as *;
+@use '../tokens/z-index' as *;
+
+:root {
+  --color-navy-primary: #{LUXURY_PALETTE.navyPrimary};
+  --color-navy-secondary: #{LUXURY_PALETTE.navySecondary};
+  --color-slate-accent: #{LUXURY_PALETTE.slateAccent};
+  --color-surface-card: #{LUXURY_PALETTE.surfaceCard};
+  --color-surface-border: #{LUXURY_PALETTE.surfaceBorder};
+  --color-gold-accent: #{LUXURY_PALETTE.goldAccent};
+  --color-gold-light: #{LUXURY_PALETTE.goldLight};
+  --color-gold-dark: #{LUXURY_PALETTE.goldDark};
+  --color-status-success: #{LUXURY_PALETTE.statusSuccess};
+  --color-status-warning: #{LUXURY_PALETTE.statusWarning};
+  --color-status-danger: #{LUXURY_PALETTE.statusDanger};
+  --color-status-info: #{LUXURY_PALETTE.statusInfo};
+  --color-text-primary: #{LUXURY_PALETTE.textPrimary};
+  --color-text-secondary: #{LUXURY_PALETTE.textSecondary};
+  --color-text-muted: #{LUXURY_PALETTE.textMuted};
+
+  --font-primary: #{TYPOGRAPHY.fontPrimary};
+  --font-mono: #{TYPOGRAPHY.fontMono};
+  --font-serif: #{TYPOGRAPHY.fontSerif};
+
+  --space-1: #{SPACING['1']};
+  --space-2: #{SPACING['2']};
+  --space-3: #{SPACING['3']};
+  --space-4: #{SPACING['4']};
+  --space-5: #{SPACING['5']};
+  --space-6: #{SPACING['6']};
+  --space-8: #{SPACING['8']};
+  --space-10: #{SPACING['10']};
+  --space-12: #{SPACING['12']};
+  --space-16: #{SPACING['16']};
+
+  --radius-none: #{RADII.none};
+  --radius-sm: #{RADII.sm};
+  --radius-md: #{RADII.md};
+  --radius-lg: #{RADII.lg};
+  --radius-full: #{RADII.full};
+
+  --shadow-sm: #{SHADOWS.sm};
+  --shadow-md: #{SHADOWS.md};
+  --shadow-lg: #{SHADOWS.lg};
+  --shadow-modal: #{SHADOWS.modal};
+  --shadow-toast: #{SHADOWS.toast};
+
+  --z-base: #{Z_INDEX.base};
+  --z-sticky: #{Z_INDEX.sticky};
+  --z-header: #{Z_INDEX.header};
+  --z-dropdown: #{Z_INDEX.dropdown};
+  --z-drawer: #{Z_INDEX.drawer};
+  --z-backdrop: #{Z_INDEX.backdrop};
+  --z-modal: #{Z_INDEX.modal};
+  --z-toast: #{Z_INDEX.toast};
+  --z-tooltip: #{Z_INDEX.tooltip};
+
+  --breakpoint-mobile: #{BREAKPOINTS.mobile};
+  --breakpoint-tablet: #{BREAKPOINTS.tablet};
+  --breakpoint-desktop: #{BREAKPOINTS.desktop};
+  --breakpoint-wide: #{BREAKPOINTS.wide};
+}

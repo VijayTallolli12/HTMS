@@ -2,10 +2,22 @@
   "name": "@hms/ui",
   "version": "1.0.0",
   "description": "Design tokens, luxury hospitality theme variables, and shared UI primitives for Enterprise HMS",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/cjs/index.d.ts",
+      "browser": "./dist/esm/index.js",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/cjs/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc -b --force",
+    "build": "npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc -p tsconfig.json",
+    "build:esm": "tsc -p tsconfig.browser.json",
     "clean": "rimraf dist"
   },
   "devDependencies": {

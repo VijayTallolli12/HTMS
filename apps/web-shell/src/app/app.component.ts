@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -25,6 +25,17 @@ export class AppComponent implements OnInit {
 
   title = 'Enterprise HMS';
 
+  constructor() {
+    effect(
+      () => {
+        if (this.isAuthenticated()) {
+          this.loadProperties();
+        }
+      },
+      { allowSignalWrites: true },
+    );
+  }
+
   ngOnInit(): void {
     if (!this.isAuthenticated()) {
       this.router.navigate(['/login']);
@@ -33,18 +44,22 @@ export class AppComponent implements OnInit {
 
     // Validate session via /auth/me
     this.authService.validateSession().subscribe(() => {
-      this.orgService.loadInitialProperty();
+      this.loadProperties();
+    });
+  }
 
-      this.orgService.getProperties().subscribe({
-        next: (res) => {
-          const list = res.data || [];
-          this.properties.set(list);
-          if (!this.activeProperty() && list.length > 0) {
-            this.orgService.setActiveProperty(list[0]);
-          }
-        },
-        error: () => {},
-      });
+  private loadProperties(): void {
+    this.orgService.loadInitialProperty();
+
+    this.orgService.getProperties().subscribe({
+      next: (res) => {
+        const list = res.data || [];
+        this.properties.set(list);
+        if (!this.activeProperty() && list.length > 0) {
+          this.orgService.setActiveProperty(list[0]);
+        }
+      },
+      error: () => {},
     });
   }
 

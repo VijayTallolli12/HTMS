@@ -17,100 +17,26 @@
 
     <!-- Quick Actions -->
     <div class="header-actions">
-      <button class="btn btn-gold" (click)="navigateTo('/pms/reservations/new')">
+      <hms-button variant="gold" (click)="navigateTo('/pms/reservations/new')">
         <span class="btn-icon">＋</span> New Reservation
-      </button>
-      <button class="btn btn-outline" (click)="navigateTo('/pms/front-office')">
+      </hms-button>
+      <hms-button variant="outline" (click)="navigateTo('/pms/front-office')">
         <span class="btn-icon">🛎️</span> Front Desk
-      </button>
-      <button class="btn btn-outline" (click)="navigateTo('/pms/room-operations')">
+      </hms-button>
+      <hms-button variant="outline" (click)="navigateTo('/pms/room-operations')">
         <span class="btn-icon">📋</span> Tape Chart
-      </button>
+      </hms-button>
     </div>
   </header>
 
   <!-- Error Banner -->
-  <div class="error-banner" *ngIf="errorMessage()">
-    <span class="error-icon">⚠️</span>
-    <span>{{ errorMessage() }}</span>
-  </div>
+  <hms-alert type="error" [icon]="'⚠️'" *ngIf="errorMessage()">
+    {{ errorMessage() }}
+  </hms-alert>
 
   <!-- Operational Stat Cards -->
   <section class="metrics-grid">
-    <!-- Arrivals Today -->
-    <div class="metric-card gold-border" (click)="navigateTo('/pms/front-office')">
-      <div class="metric-header">
-        <span class="metric-label">ARRIVALS TODAY</span>
-        <span class="metric-badge badge-gold">Front Office</span>
-      </div>
-      <div class="metric-body">
-        <div class="metric-value text-gold">{{ stats().arrivalsToday }}</div>
-        <div class="metric-desc">Expected guest arrivals</div>
-      </div>
-      <div class="metric-footer">
-        <span>Process in Front Office &rarr;</span>
-      </div>
-    </div>
-
-    <!-- Departures Today -->
-    <div class="metric-card info-border" (click)="navigateTo('/pms/reservations')">
-      <div class="metric-header">
-        <span class="metric-label">DEPARTURES TODAY</span>
-        <span class="metric-badge badge-info">Cashiering</span>
-      </div>
-      <div class="metric-body">
-        <div class="metric-value text-info">{{ stats().departuresToday }}</div>
-        <div class="metric-desc">Scheduled departures</div>
-      </div>
-      <div class="metric-footer">
-        <span>Settlement & Checkout &rarr;</span>
-      </div>
-    </div>
-
-    <!-- Occupied Rooms -->
-    <div class="metric-card success-border" (click)="navigateTo('/pms/room-operations')">
-      <div class="metric-header">
-        <span class="metric-label">OCCUPIED ROOMS</span>
-        <span class="metric-badge badge-success">{{ stats().occupancyRate }}% Occupancy</span>
-      </div>
-      <div class="metric-body">
-        <div class="metric-value text-success">{{ stats().occupiedRooms }} / {{ stats().totalRooms }}</div>
-        <div class="metric-desc">Active in-house guests</div>
-      </div>
-      <div class="metric-footer">
-        <span>View Tape Chart &rarr;</span>
-      </div>
-    </div>
-
-    <!-- Available Clean Rooms -->
-    <div class="metric-card clean-border" (click)="navigateTo('/pms/room-operations')">
-      <div class="metric-header">
-        <span class="metric-label">READY FOR CHECK-IN</span>
-        <span class="metric-badge badge-clean">Vacant Clean</span>
-      </div>
-      <div class="metric-body">
-        <div class="metric-value text-clean">{{ stats().availableCleanRooms }}</div>
-        <div class="metric-desc">Inspected & sellable rooms</div>
-      </div>
-      <div class="metric-footer">
-        <span>Housekeeping Board &rarr;</span>
-      </div>
-    </div>
-
-    <!-- Out of Order / Out of Service -->
-    <div class="metric-card danger-border" (click)="navigateTo('/pms/room-operations')">
-      <div class="metric-header">
-        <span class="metric-label">MAINTENANCE (OOO/OOS)</span>
-        <span class="metric-badge badge-danger">Offline</span>
-      </div>
-      <div class="metric-body">
-        <div class="metric-value text-danger">{{ stats().maintenanceRooms }}</div>
-        <div class="metric-desc">Under repair / blocked</div>
-      </div>
-      <div class="metric-footer">
-        <span>Manage Blocks &rarr;</span>
-      </div>
-    </div>
+    <hms-kpi-strip [cards]="kpiCards" (cardClick)="onCardClick($event)"></hms-kpi-strip>
   </section>
 
   <!-- Two-Column Operational Activity Section -->
@@ -122,58 +48,25 @@
           <h2 class="panel-title">Recent Reservations</h2>
           <p class="panel-subtitle">Latest bookings recorded across channels</p>
         </div>
-        <button class="btn btn-sm btn-outline" (click)="navigateTo('/pms/reservations')">
+        <hms-button variant="outline" size="sm" (click)="navigateTo('/pms/reservations')">
           View All Bookings
-        </button>
+        </hms-button>
       </div>
 
       <div class="panel-body">
-        <div class="loading-indicator" *ngIf="isLoading()">
-          <span class="spinner"></span> Loading real-time reservations...
-        </div>
+        <hms-loading [message]="'Loading...'" *ngIf="isLoading()"></hms-loading>
 
-        <div class="empty-state" *ngIf="!isLoading() && recentReservations().length === 0">
-          <p>No reservations found for this property.</p>
-          <button class="btn btn-gold btn-sm" (click)="navigateTo('/pms/reservations/new')">
-            Create First Reservation
-          </button>
-        </div>
+        <hms-empty *ngIf="!isLoading() && recentReservations().length === 0"
+          title="No reservations found"
+          desc="There are no reservations for this property."
+          actionLabel="Create First Reservation"
+          (action)="navigateTo('/pms/reservations/new')">
+        </hms-empty>
 
-        <table class="data-table" *ngIf="!isLoading() && recentReservations().length > 0">
-          <thead>
-            <tr>
-              <th>Conf #</th>
-              <th>Guest Name</th>
-              <th>Room Type</th>
-              <th>Arrival &bull; Departure</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let r of recentReservations()">
-              <td class="font-mono text-gold font-bold">{{ r.confirmationNumber }}</td>
-              <td class="font-bold">
-                {{ r.guest?.firstName }} {{ r.guest?.lastName }}
-              </td>
-              <td>
-                <span class="room-type-tag">{{ r.roomTypeCode || 'ROOM' }}</span>
-              </td>
-              <td class="text-secondary text-sm">
-                {{ r.arrivalDate }} &rarr; {{ r.departureDate }}
-                <span class="nights-tag">({{ r.nightsCount }}n)</span>
-              </td>
-              <td>
-                <span class="status-pill status-{{ r.status.toLowerCase() }}">
-                  {{ r.status }}
-                </span>
-              </td>
-              <td>
-                <a [routerLink]="['/pms/reservations', r.id]" class="table-link">Details &rarr;</a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <hms-data-table *ngIf="!isLoading() && recentReservations().length > 0"
+          [columns]="columns"
+          [rows]="tableRows">
+        </hms-data-table>
       </div>
     </div>
 
@@ -228,3 +121,11 @@
     </div>
   </section>
 </div>
+
+<!-- Cell templates for data table (defined at component level for @ViewChild access) -->
+<ng-template #statusCellTpl let-value let-row="row">
+  <hms-status-pill [statusKey]="(value || row?.status || '').toLowerCase()" [statusLabel]="value || row?.status"></hms-status-pill>
+</ng-template>
+<ng-template #actionCellTpl let-id let-row="row">
+  <a [routerLink]="['/pms/reservations', id || row?.action || row?.id]" class="table-link">Details &rarr;</a>
+</ng-template>

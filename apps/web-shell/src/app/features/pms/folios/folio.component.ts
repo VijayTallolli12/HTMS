@@ -2,6 +2,16 @@ import { Component, inject, signal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import {
+  HmsModalComponent,
+  HmsAlertComponent,
+  HmsButtonComponent,
+  HmsEmptyComponent,
+  HmsLoadingComponent,
+  HmsDataTableComponent,
+  HmsStatusPillComponent,
+  HmsSearchComponent,
+} from '../../../shared/index';
 import { OrganizationService } from '../../../core/services/organization.service';
 import { PmsApiService } from '../services/pms-api.service';
 import {
@@ -14,7 +24,7 @@ import {
 @Component({
   selector: 'app-folio',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, HmsModalComponent, HmsAlertComponent, HmsButtonComponent, HmsEmptyComponent, HmsLoadingComponent, HmsDataTableComponent, HmsStatusPillComponent, HmsSearchComponent],
   templateUrl: './folio.component.html',
   styleUrls: ['./folio.component.css'],
 })
@@ -29,12 +39,10 @@ export class FolioComponent implements OnInit {
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
 
-  // Folio state
   readonly activeFolio = signal<FolioDetailDto | null>(null);
   readonly activeReservation = signal<ReservationDto | null>(null);
   readonly reservationsList = signal<ReservationDto[]>([]);
 
-  // Charge Modal
   showChargeModal = signal<boolean>(false);
   chargeTxCode = 'ROOM_SERVICE';
   chargeDescription = 'In-Room Dining Dining Experience';
@@ -43,16 +51,29 @@ export class FolioComponent implements OnInit {
   chargeReason = '';
   isPostingCharge = signal<boolean>(false);
 
-  // Payment Modal
   showPaymentModal = signal<boolean>(false);
   paymentMethod: PaymentMethod = PaymentMethod.CREDIT_CARD;
   paymentAmount = '';
   paymentReference = 'AUTH-MC-8821';
   isRecordingPayment = signal<boolean>(false);
 
-  // Checkout Modal
   isCheckingOut = signal<boolean>(false);
   checkoutReceipt = signal<CheckoutResponseDto | null>(null);
+
+  chargeColumns = [
+    { field: 'postedAt', label: 'Date / Time' },
+    { field: 'transactionCode', label: 'Tx Code' },
+    { field: 'description', label: 'Description' },
+    { field: 'taxAmount', label: 'Tax' },
+    { field: 'amount', label: 'Total' },
+  ];
+  paymentColumns = [
+    { field: 'processedAt', label: 'Date / Time' },
+    { field: 'paymentMethod', label: 'Method' },
+    { field: 'referenceNumber', label: 'Reference #' },
+    { field: 'status', label: 'Status' },
+    { field: 'amount', label: 'Amount' },
+  ];
 
   constructor() {
     effect(
@@ -82,7 +103,6 @@ export class FolioComponent implements OnInit {
     } else if (reservationId) {
       this.loadFolioByReservation(propertyId, reservationId);
     } else {
-      // Load list of in-house or confirmed reservations to allow selecting
       this.loadReservationsForSelection(propertyId);
     }
   }
@@ -93,7 +113,6 @@ export class FolioComponent implements OnInit {
       next: (res) => {
         const items = res.data?.items || [];
         this.reservationsList.set(items);
-        // If there's an in-house or confirmed reservation, pick the first one
         const activeRes = items.find((r) => r.status === 'CHECKED_IN') || items[0];
         if (activeRes) {
           this.loadFolioByReservation(propertyId, activeRes.id);
@@ -145,10 +164,8 @@ export class FolioComponent implements OnInit {
           next: (folioListRes) => {
             const folios = folioListRes.data || [];
             if (folios.length > 0) {
-              // Load first folio details
               this.loadFolioById(propertyId, folios[0].id);
             } else {
-              // No folio exists yet for this reservation
               this.activeFolio.set(null);
               this.isLoading.set(false);
             }
@@ -193,7 +210,6 @@ export class FolioComponent implements OnInit {
     }
   }
 
-  // --- Post Charge ---
   openPostChargeModal(): void {
     this.showChargeModal.set(true);
     this.chargeAmount = '120.00';
@@ -241,7 +257,6 @@ export class FolioComponent implements OnInit {
       });
   }
 
-  // --- Record Payment ---
   openRecordPaymentModal(): void {
     const folio = this.activeFolio();
     if (folio) {
@@ -292,7 +307,6 @@ export class FolioComponent implements OnInit {
       });
   }
 
-  // --- Departure Checkout ---
   executeCheckout(): void {
     const prop = this.activeProperty();
     const res = this.activeReservation();

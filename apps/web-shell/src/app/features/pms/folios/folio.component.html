@@ -23,29 +23,20 @@
   </div>
 
   <!-- Messages -->
-  <div class="error-banner" *ngIf="errorMessage()">
-    <span>⚠️ {{ errorMessage() }}</span>
-  </div>
-  <div class="success-banner" *ngIf="successMessage()">
-    <span>✓ {{ successMessage() }}</span>
-  </div>
+  <hms-alert type="error">{{ errorMessage() }}</hms-alert>
+  <hms-alert type="success">{{ successMessage() }}</hms-alert>
 
-  <div class="loading-state" *ngIf="isLoading()">
-    <span class="spinner"></span> Loading guest ledger and transactions...
-  </div>
+  <hms-loading [message]="'Loading ledger...'" *ngIf="isLoading()"></hms-loading>
 
   <!-- Empty / No Folio State -->
-  <div class="empty-card" *ngIf="!isLoading() && !activeFolio() && activeReservation()">
-    <div class="empty-icon">💳</div>
-    <h2 class="empty-title">No Billing Folio Open</h2>
-    <p class="empty-desc">
-      A billing folio has not yet been initialized for reservation
-      <strong>{{ activeReservation()?.confirmationNumber }}</strong> ({{ activeReservation()?.guest?.firstName }} {{ activeReservation()?.guest?.lastName }}).
-    </p>
-    <button class="btn btn-gold mt-1" (click)="createFolioForReservation()">
-      Open Master Billing Folio Now
-    </button>
-  </div>
+  <hms-empty
+    icon="💳"
+    [title]="'No Billing Folio Open'"
+    [desc]="'No folio initialized for this reservation.'"
+    [actionLabel]="'Open Master Billing Folio'"
+    (action)="createFolioForReservation()"
+    *ngIf="!isLoading() && !activeFolio() && activeReservation()"
+  ></hms-empty>
 
   <!-- Active Folio Content -->
   <div class="folio-content" *ngIf="!isLoading() && activeFolio()">
@@ -78,9 +69,7 @@
         </div>
         <div class="meta-row">
           <span class="meta-label">FOLIO STATUS</span>
-          <span class="status-pill status-{{ activeFolio()!.status.toLowerCase() }}">
-            {{ activeFolio()!.status }}
-          </span>
+          <hms-status-pill [statusKey]="activeFolio()!.status.toLowerCase()" [statusLabel]="activeFolio()!.status"></hms-status-pill>
         </div>
       </div>
 
@@ -104,32 +93,20 @@
     <!-- Folio Actions Bar -->
     <div class="folio-actions-bar">
       <div class="left-actions">
-        <button
-          class="btn btn-outline"
-          [disabled]="activeFolio()!.status === 'CLOSED'"
-          (click)="openPostChargeModal()"
-        >
+        <hms-button variant="outline" [disabled]="activeFolio()!.status === 'CLOSED'" (click)="openPostChargeModal()">
           ＋ Post Room Charge / Service
-        </button>
-        <button
-          class="btn btn-outline btn-payment"
-          [disabled]="activeFolio()!.status === 'CLOSED'"
-          (click)="openRecordPaymentModal()"
-        >
+        </hms-button>
+        <hms-button variant="outline" class="btn-payment" [disabled]="activeFolio()!.status === 'CLOSED'" (click)="openRecordPaymentModal()">
           💵 Record Guest Payment
-        </button>
+        </hms-button>
       </div>
 
       <!-- Departure Checkout Action (Strict Zero-Balance Enforced) -->
       <div class="right-actions">
-        <button
-          class="btn btn-gold checkout-btn"
-          [disabled]="!isZeroBalance() || activeFolio()!.status === 'CLOSED' || isCheckingOut()"
-          (click)="executeCheckout()"
-        >
+        <hms-button variant="gold" class="checkout-btn" [disabled]="!isZeroBalance() || activeFolio()!.status === 'CLOSED' || isCheckingOut()" (click)="executeCheckout()">
           <span *ngIf="!isCheckingOut()">🚪 Execute Zero-Balance Checkout</span>
           <span *ngIf="isCheckingOut()">Processing Departure...</span>
-        </button>
+        </hms-button>
       </div>
     </div>
 
@@ -142,46 +119,19 @@
             <h2 class="card-title">Charges &amp; Service Debits</h2>
             <span class="card-sub">{{ activeFolio()!.transactions.length }} posted items</span>
           </div>
-          <button
-            class="btn btn-sm btn-outline"
-            [disabled]="activeFolio()!.status === 'CLOSED'"
-            (click)="openPostChargeModal()"
-          >
+          <hms-button variant="outline" size="sm" [disabled]="activeFolio()!.status === 'CLOSED'" (click)="openPostChargeModal()">
             ＋ Charge
-          </button>
+          </hms-button>
         </div>
 
         <div class="card-body p-0">
-          <div class="empty-state" *ngIf="activeFolio()!.transactions.length === 0">
-            <p>No charges posted to this folio ledger yet.</p>
-          </div>
+          <hms-empty [title]="'No charges posted'" [desc]="'No charges posted to this folio ledger yet.'" *ngIf="activeFolio()!.transactions.length === 0"></hms-empty>
 
-          <table class="data-table" *ngIf="activeFolio()!.transactions.length > 0">
-            <thead>
-              <tr>
-                <th>Date / Time</th>
-                <th>Tx Code</th>
-                <th>Description</th>
-                <th>Tax</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let t of activeFolio()!.transactions">
-                <td class="text-xs text-muted">
-                  {{ t.postedAt | date: 'short' }}
-                </td>
-                <td>
-                  <span class="badge-subtle font-mono">{{ t.transactionCode }}</span>
-                </td>
-                <td class="font-bold">{{ t.description }}</td>
-                <td class="text-secondary font-mono">{{ activeFolio()!.currency }} {{ t.taxAmount }}</td>
-                <td class="amount-cell text-gold font-mono">
-                  {{ activeFolio()!.currency }} {{ t.amount }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <hms-data-table
+            *ngIf="activeFolio()!.transactions.length > 0"
+            [columns]="chargeColumns"
+            [rows]="activeFolio()!.transactions"
+          ></hms-data-table>
         </div>
       </div>
 
@@ -192,217 +142,144 @@
             <h2 class="card-title">Payments &amp; Credits</h2>
             <span class="card-sub">{{ activeFolio()!.payments.length }} recorded receipts</span>
           </div>
-          <button
-            class="btn btn-sm btn-outline btn-payment"
-            [disabled]="activeFolio()!.status === 'CLOSED'"
-            (click)="openRecordPaymentModal()"
-          >
+          <hms-button variant="outline" size="sm" class="btn-payment" [disabled]="activeFolio()!.status === 'CLOSED'" (click)="openRecordPaymentModal()">
             💵 Payment
-          </button>
+          </hms-button>
         </div>
 
         <div class="card-body p-0">
-          <div class="empty-state" *ngIf="activeFolio()!.payments.length === 0">
-            <p>No payments recorded against this folio yet.</p>
-          </div>
+          <hms-empty [title]="'No payments recorded'" [desc]="'No payments recorded against this folio yet.'" *ngIf="activeFolio()!.payments.length === 0"></hms-empty>
 
-          <table class="data-table" *ngIf="activeFolio()!.payments.length > 0">
-            <thead>
-              <tr>
-                <th>Date / Time</th>
-                <th>Method</th>
-                <th>Reference #</th>
-                <th>Status</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let p of activeFolio()!.payments">
-                <td class="text-xs text-muted">
-                  {{ p.processedAt | date: 'short' }}
-                </td>
-                <td>
-                  <span class="method-tag">{{ p.paymentMethod }}</span>
-                </td>
-                <td class="text-secondary font-mono text-xs">
-                  {{ p.referenceNumber || 'N/A' }}
-                </td>
-                <td>
-                  <span class="badge-success-sm">{{ p.status }}</span>
-                </td>
-                <td class="amount-cell text-clean font-mono">
-                  -{{ p.currency }} {{ p.amount }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <hms-data-table
+            *ngIf="activeFolio()!.payments.length > 0"
+            [columns]="paymentColumns"
+            [rows]="activeFolio()!.payments"
+          ></hms-data-table>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Post Charge Modal -->
-  <div class="modal-backdrop" *ngIf="showChargeModal()">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div>
-          <div class="luxury-badge">LEDGER POSTING</div>
-          <h2 class="modal-title">Post Incidental Charge</h2>
-        </div>
-        <button class="close-btn" (click)="closePostChargeModal()">&times;</button>
+  <hms-modal [title]="'Post Incidental Charge'" *ngIf="showChargeModal()" (closed)="closePostChargeModal()">
+    <div class="form-group">
+      <label class="form-label">Transaction Code <span class="required">*</span></label>
+      <select [(ngModel)]="chargeTxCode" class="form-control">
+        <option value="ROOM_SERVICE">ROOM_SERVICE &bull; In-Room Dining</option>
+        <option value="MINIBAR">MINIBAR &bull; Minibar Refreshment</option>
+        <option value="SPA">SPA &bull; Spa &amp; Wellness Sanctuary</option>
+        <option value="RESTAURANT">RESTAURANT &bull; Royal Dining</option>
+        <option value="LAUNDRY">LAUNDRY &bull; Valet &amp; Laundry</option>
+        <option value="PARKING">PARKING &bull; Valet Parking</option>
+      </select>
+    </div>
+
+    <div class="form-group mt-1">
+      <label class="form-label">Charge Description <span class="required">*</span></label>
+      <input
+        type="text"
+        [(ngModel)]="chargeDescription"
+        placeholder="e.g. Signature Dinner Experience"
+        class="form-control"
+      />
+    </div>
+
+    <div class="form-grid mt-1">
+      <div class="form-group">
+        <label class="form-label">Charge Amount ({{ activeFolio()?.currency }}) <span class="required">*</span></label>
+        <input
+          type="text"
+          [(ngModel)]="chargeAmount"
+          placeholder="0.00"
+          class="form-control font-mono"
+        />
       </div>
-
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Transaction Code <span class="required">*</span></label>
-          <select [(ngModel)]="chargeTxCode" class="form-control">
-            <option value="ROOM_SERVICE">ROOM_SERVICE &bull; In-Room Dining</option>
-            <option value="MINIBAR">MINIBAR &bull; Minibar Refreshment</option>
-            <option value="SPA">SPA &bull; Spa &amp; Wellness Sanctuary</option>
-            <option value="RESTAURANT">RESTAURANT &bull; Royal Dining</option>
-            <option value="LAUNDRY">LAUNDRY &bull; Valet &amp; Laundry</option>
-            <option value="PARKING">PARKING &bull; Valet Parking</option>
-          </select>
-        </div>
-
-        <div class="form-group mt-1">
-          <label class="form-label">Charge Description <span class="required">*</span></label>
-          <input
-            type="text"
-            [(ngModel)]="chargeDescription"
-            placeholder="e.g. Signature Dinner Experience"
-            class="form-control"
-          />
-        </div>
-
-        <div class="form-grid mt-1">
-          <div class="form-group">
-            <label class="form-label">Charge Amount ({{ activeFolio()?.currency }}) <span class="required">*</span></label>
-            <input
-              type="text"
-              [(ngModel)]="chargeAmount"
-              placeholder="0.00"
-              class="form-control font-mono"
-            />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Tax Portion (Informational)</label>
-            <input
-              type="text"
-              [(ngModel)]="chargeTaxAmount"
-              placeholder="0.00"
-              class="form-control font-mono"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-outline" (click)="closePostChargeModal()">Cancel</button>
-        <button
-          class="btn btn-gold"
-          [disabled]="isPostingCharge()"
-          (click)="submitPostCharge()"
-        >
-          <span *ngIf="!isPostingCharge()">Post Immutable Charge</span>
-          <span *ngIf="isPostingCharge()">Posting...</span>
-        </button>
+      <div class="form-group">
+        <label class="form-label">Tax Portion (Informational)</label>
+        <input
+          type="text"
+          [(ngModel)]="chargeTaxAmount"
+          placeholder="0.00"
+          class="form-control font-mono"
+        />
       </div>
     </div>
-  </div>
+
+    <div class="modal-footer" hmsModalFooter>
+      <hms-button variant="outline" (click)="closePostChargeModal()">Cancel</hms-button>
+      <hms-button variant="gold" [disabled]="isPostingCharge()" (click)="submitPostCharge()">
+        <span *ngIf="!isPostingCharge()">Post Immutable Charge</span>
+        <span *ngIf="isPostingCharge()">Posting...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
 
   <!-- Record Payment Modal -->
-  <div class="modal-backdrop" *ngIf="showPaymentModal()">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div>
-          <div class="luxury-badge">CASHIERING RECEIPT</div>
-          <h2 class="modal-title">Record Guest Settlement Payment</h2>
-        </div>
-        <button class="close-btn" (click)="closeRecordPaymentModal()">&times;</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Payment Method <span class="required">*</span></label>
-          <select [(ngModel)]="paymentMethod" class="form-control">
-            <option value="CREDIT_CARD">CREDIT_CARD &bull; Visa / MasterCard / Amex</option>
-            <option value="CASH">CASH &bull; Cash Settlement</option>
-            <option value="CITY_LEDGER">CITY_LEDGER &bull; Corporate Billing</option>
-          </select>
-        </div>
-
-        <div class="form-group mt-1">
-          <label class="form-label">Settlement Amount ({{ activeFolio()?.currency }}) <span class="required">*</span></label>
-          <input
-            type="text"
-            [(ngModel)]="paymentAmount"
-            placeholder="0.00"
-            class="form-control font-mono"
-          />
-        </div>
-
-        <div class="form-group mt-1">
-          <label class="form-label">Authorization / Transaction Reference</label>
-          <input
-            type="text"
-            [(ngModel)]="paymentReference"
-            placeholder="e.g. AUTH-VISA-99214"
-            class="form-control"
-          />
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-outline" (click)="closeRecordPaymentModal()">Cancel</button>
-        <button
-          class="btn btn-gold"
-          [disabled]="isRecordingPayment()"
-          (click)="submitRecordPayment()"
-        >
-          <span *ngIf="!isRecordingPayment()">Record Settlement Payment</span>
-          <span *ngIf="isRecordingPayment()">Recording...</span>
-        </button>
-      </div>
+  <hms-modal [title]="'Record Guest Settlement Payment'" *ngIf="showPaymentModal()" (closed)="closeRecordPaymentModal()">
+    <div class="form-group">
+      <label class="form-label">Payment Method <span class="required">*</span></label>
+      <select [(ngModel)]="paymentMethod" class="form-control">
+        <option value="CREDIT_CARD">CREDIT_CARD &bull; Visa / MasterCard / Amex</option>
+        <option value="CASH">CASH &bull; Cash Settlement</option>
+        <option value="CITY_LEDGER">CITY_LEDGER &bull; Corporate Billing</option>
+      </select>
     </div>
-  </div>
+
+    <div class="form-group mt-1">
+      <label class="form-label">Settlement Amount ({{ activeFolio()?.currency }}) <span class="required">*</span></label>
+      <input
+        type="text"
+        [(ngModel)]="paymentAmount"
+        placeholder="0.00"
+        class="form-control font-mono"
+      />
+    </div>
+
+    <div class="form-group mt-1">
+      <label class="form-label">Authorization / Transaction Reference</label>
+      <input
+        type="text"
+        [(ngModel)]="paymentReference"
+        placeholder="e.g. AUTH-VISA-99214"
+        class="form-control"
+      />
+    </div>
+
+    <div class="modal-footer" hmsModalFooter>
+      <hms-button variant="outline" (click)="closeRecordPaymentModal()">Cancel</hms-button>
+      <hms-button variant="gold" [disabled]="isRecordingPayment()" (click)="submitRecordPayment()">
+        <span *ngIf="!isRecordingPayment()">Record Settlement Payment</span>
+        <span *ngIf="isRecordingPayment()">Recording...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
 
   <!-- Checkout Departure Receipt Modal -->
-  <div class="modal-backdrop" *ngIf="checkoutReceipt()">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div>
-          <div class="luxury-badge">DEPARTURE COMPLETE</div>
-          <h2 class="modal-title">Checkout Settlement Receipt</h2>
+  <hms-modal [title]="'Checkout Settlement Receipt'" *ngIf="checkoutReceipt()" (closed)="closeReceiptModal()">
+    <div class="modal-body text-center">
+      <div class="success-icon">🌟</div>
+      <h3 class="success-title">Guest Departure Finalized</h3>
+      <p class="receipt-text mt-1">
+        Reservation <strong>{{ checkoutReceipt()!.reservation.confirmationNumber }}</strong> is now <strong>CHECKED_OUT</strong>.
+      </p>
+      <div class="receipt-summary-box mt-1">
+        <div class="receipt-row">
+          <span>Room {{ checkoutReceipt()!.room.roomNumber }} State:</span>
+          <strong class="text-warning">VACANT / DIRTY (Turnover required)</strong>
         </div>
-        <button class="close-btn" (click)="closeReceiptModal()">&times;</button>
-      </div>
-
-      <div class="modal-body text-center">
-        <div class="success-icon">🌟</div>
-        <h3 class="success-title">Guest Departure Finalized</h3>
-        <p class="receipt-text mt-1">
-          Reservation <strong>{{ checkoutReceipt()!.reservation.confirmationNumber }}</strong> is now <strong>CHECKED_OUT</strong>.
-        </p>
-        <div class="receipt-summary-box mt-1">
-          <div class="receipt-row">
-            <span>Room {{ checkoutReceipt()!.room.roomNumber }} State:</span>
-            <strong class="text-warning">VACANT / DIRTY (Turnover required)</strong>
-          </div>
-          <div class="receipt-row">
-            <span>Settlement Time:</span>
-            <span>{{ checkoutReceipt()!.checkOutAt | date: 'medium' }}</span>
-          </div>
-          <div class="receipt-row">
-            <span>Final Folio Balance:</span>
-            <strong class="text-success font-mono">0.00 (Fully Settled)</strong>
-          </div>
+        <div class="receipt-row">
+          <span>Settlement Time:</span>
+          <span>{{ checkoutReceipt()!.checkOutAt | date: 'medium' }}</span>
         </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-gold" (click)="closeReceiptModal()">Done</button>
+        <div class="receipt-row">
+          <span>Final Folio Balance:</span>
+          <strong class="text-success font-mono">0.00 (Fully Settled)</strong>
+        </div>
       </div>
     </div>
-  </div>
+
+    <div class="modal-footer" hmsModalFooter>
+      <hms-button variant="gold" (click)="closeReceiptModal()">Done</hms-button>
+    </div>
+  </hms-modal>
 </div>

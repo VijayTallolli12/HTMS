@@ -5,11 +5,12 @@ import { Router } from '@angular/router';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
+import { HmsButtonComponent, HmsAlertComponent } from '../../shared/index';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HmsButtonComponent, HmsAlertComponent],
   template: `
     <div class="login-container">
       <div class="login-card">
@@ -29,6 +30,7 @@ import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
               name="email"
               placeholder="admin@tokyograndeur.demo"
               required
+              class="hms-form-control"
               [disabled]="loading()"
             />
           </div>
@@ -42,17 +44,16 @@ import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
               name="password"
               placeholder="Enter password"
               required
+              class="hms-form-control"
               [disabled]="loading()"
             />
           </div>
 
-          <div class="error-message" *ngIf="error()">
-            {{ error() }}
-          </div>
+          <hms-alert type="error" *ngIf="error()">{{ error() }}</hms-alert>
 
-          <button type="submit" class="login-btn" [disabled]="loading()">
+          <hms-button type="submit" variant="primary" [disabled]="loading()">
             {{ loading() ? 'Signing in...' : 'Sign In' }}
-          </button>
+          </hms-button>
         </form>
 
         <div class="login-footer">
@@ -67,10 +68,10 @@ import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      background: #0f172a;
+      background: var(--navy-primary);
     }
     .login-card {
-      background: #1e293b;
+      background: var(--navy-secondary);
       border-radius: 12px;
       padding: 40px;
       width: 400px;
@@ -82,7 +83,7 @@ import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
     }
     .brand-mark {
       display: inline-block;
-      background: #3b82f6;
+      background: var(--status-info);
       color: white;
       font-weight: 800;
       font-size: 24px;
@@ -91,12 +92,12 @@ import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
       margin-bottom: 12px;
     }
     .login-header h1 {
-      color: #f1f5f9;
+      color: var(--text-primary);
       font-size: 24px;
       margin: 0 0 4px 0;
     }
     .login-header p {
-      color: #94a3b8;
+      color: var(--text-secondary);
       margin: 0;
     }
     .form-group {
@@ -104,31 +105,31 @@ import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
     }
     .form-group label {
       display: block;
-      color: #cbd5e1;
+      color: var(--text-muted);
       font-size: 14px;
       margin-bottom: 6px;
     }
     .form-group input {
       width: 100%;
       padding: 10px 14px;
-      background: #0f172a;
-      border: 1px solid #334155;
+      background: var(--navy-primary);
+      border: 1px solid var(--surface-border);
       border-radius: 8px;
-      color: #f1f5f9;
+      color: var(--text-primary);
       font-size: 15px;
       box-sizing: border-box;
     }
     .form-group input:focus {
       outline: none;
-      border-color: #3b82f6;
+      border-color: var(--status-info);
     }
     .form-group input:disabled {
       opacity: 0.6;
     }
     .error-message {
-      background: #451a1a;
-      border: 1px solid #ef4444;
-      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--status-danger);
+      color: var(--status-danger);
       padding: 10px 14px;
       border-radius: 8px;
       margin-bottom: 16px;
@@ -137,7 +138,7 @@ import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
     .login-btn {
       width: 100%;
       padding: 12px;
-      background: #3b82f6;
+      background: var(--status-info);
       color: white;
       border: none;
       border-radius: 8px;
@@ -150,7 +151,7 @@ import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
     .login-footer {
       text-align: center;
       margin-top: 24px;
-      color: #64748b;
+      color: var(--text-muted);
       font-size: 13px;
     }
   `],
@@ -184,7 +185,6 @@ export class LoginComponent {
 
         this.authService.setSession(data.accessToken, user);
 
-        // Load properties to find and set the active property from activeContext
         const propertyId = data.activeContext?.propertyId;
         if (propertyId) {
           this.orgService.getProperties().subscribe({

@@ -1,9 +1,10 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, effect, TemplateRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { OrganizationService } from '../../core/services/organization.service';
 import { PmsApiService } from '../pms/services/pms-api.service';
 import { ReservationDto, RoomStatusDto } from '@hms/api-contracts';
+import { HmsKpiStripComponent, HmsDataTableComponent, HmsAlertComponent, HmsEmptyComponent, HmsLoadingComponent, HmsButtonComponent, HmsStatusPillComponent } from '../../shared/index';
 
 export interface DashboardStats {
   arrivalsToday: number;
@@ -18,11 +19,11 @@ export interface DashboardStats {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, HmsKpiStripComponent, HmsDataTableComponent, HmsAlertComponent, HmsEmptyComponent, HmsLoadingComponent, HmsButtonComponent, HmsStatusPillComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, AfterViewInit {
   private readonly orgService = inject(OrganizationService);
   private readonly pmsApi = inject(PmsApiService);
   private readonly router = inject(Router);
@@ -44,6 +45,33 @@ export class DashboardComponent implements OnInit {
   readonly recentReservations = signal<ReservationDto[]>([]);
   readonly roomsOverview = signal<RoomStatusDto[]>([]);
 
+  @ViewChild('statusCellTpl') statusCellTpl!: TemplateRef<any>;
+  @ViewChild('actionCellTpl') actionCellTpl!: TemplateRef<any>;
+
+  columns: any[] = [];
+
+  get tableRows() {
+    return this.recentReservations().map(r => ({
+      confirmationNumber: r.confirmationNumber,
+      guestName: `${r.guest?.firstName} ${r.guest?.lastName}`,
+      roomType: r.roomTypeCode || 'ROOM',
+      dateRange: `${r.arrivalDate} → ${r.departureDate}`,
+      status: r.status,
+      action: r.id,
+    }));
+  }
+
+  get kpiCards() {
+    const s = this.stats();
+    return [
+      { label: 'ARRIVALS TODAY', value: s.arrivalsToday, desc: 'Expected guest arrivals', footer: 'Process in Front Office →', path: '/pms/front-office' },
+      { label: 'DEPARTURES TODAY', value: s.departuresToday, desc: 'Scheduled departures', footer: 'Settlement & Checkout →', path: '/pms/reservations' },
+      { label: 'OCCUPIED ROOMS', value: `${s.occupiedRooms} / ${s.totalRooms}`, desc: 'Active in-house guests', footer: 'View Tape Chart →', path: '/pms/room-operations' },
+      { label: 'READY FOR CHECK-IN', value: s.availableCleanRooms, desc: 'Inspected & sellable rooms', footer: 'Housekeeping Board →', path: '/pms/room-operations' },
+      { label: 'MAINTENANCE (OOO/OOS)', value: s.maintenanceRooms, desc: 'Under repair / blocked', footer: 'Manage Blocks →', path: '/pms/room-operations' },
+    ];
+  }
+
   constructor() {
     effect(
       () => {
@@ -63,13 +91,23 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  ngAfterViewInit(): void {
+    this.columns = [
+      { field: 'confirmationNumber', label: 'Conf #' },
+      { field: 'guestName', label: 'Guest Name' },
+      { field: 'roomType', label: 'Room Type' },
+      { field: 'dateRange', label: 'Arrival · Departure' },
+      { field: 'status', label: 'Status', cellTemplate: this.statusCellTpl },
+      { field: 'action', label: 'Action', cellTemplate: this.actionCellTpl },
+    ];
+  }
+
   loadDashboardData(propertyId: string): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // Parallel fetch reservations and rooms
     this.pmsApi.getReservations(propertyId, { limit: 100 }).subscribe({
       next: (resRes) => {
         const reservations = resRes.data?.items || [];
@@ -140,5 +178,11 @@ export class DashboardComponent implements OnInit {
 
   navigateTo(path: string): void {
     this.router.navigate([path]);
+  }
+
+  onCardClick(card: any): void {
+    if (card.path) {
+      this.navigateTo(card.path);
+    }
   }
 }

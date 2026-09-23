@@ -1,11 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HealthService } from '../../core/services/health.service';
+import { HmsAlertComponent, HmsButtonComponent } from '../../shared/index';
 
 @Component({
   selector: 'app-health-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, HmsAlertComponent, HmsButtonComponent],
   templateUrl: './health-dashboard.component.html',
   styleUrls: ['./health-dashboard.component.css'],
 })
