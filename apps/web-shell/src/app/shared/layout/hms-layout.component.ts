@@ -42,11 +42,11 @@ import { PropertyDto } from '@hms/api-contracts';
 
           <nav class="hms-topbar__nav" aria-label="Global workspace navigation">
             <a routerLink="/dashboard" routerLinkActive="active-nav" class="nav-link">Dashboard</a>
-            <a routerLink="/pms/front-office" routerLinkActive="active-nav" class="nav-link">Front Desk</a>
-            <a routerLink="/pms/housekeeping" routerLinkActive="active-nav" class="nav-link">Housekeeping</a>
-            <a routerLink="/pms/room-operations" routerLinkActive="active-nav" class="nav-link">Room Ops</a>
-            <a routerLink="/pms/folios" routerLinkActive="active-nav" class="nav-link">Cashiering</a>
-            <a routerLink="/pms/availability" routerLinkActive="active-nav" class="nav-link">Inventory ATS</a>
+            <a routerLink="/pms/front-office" *ngIf="hasPermission('front_office.reservation.read')" routerLinkActive="active-nav" class="nav-link">Front Desk</a>
+            <a routerLink="/pms/housekeeping" *ngIf="hasPermission('housekeeping.task.view')" routerLinkActive="active-nav" class="nav-link">Housekeeping</a>
+            <a routerLink="/pms/room-operations" *ngIf="hasPermission('room_operations.status.read')" routerLinkActive="active-nav" class="nav-link">Room Ops</a>
+            <a routerLink="/pms/folios" *ngIf="hasPermission('folio:view')" routerLinkActive="active-nav" class="nav-link">Cashiering</a>
+            <a routerLink="/pms/availability" *ngIf="hasPermission('inventory:read')" routerLinkActive="active-nav" class="nav-link">Inventory ATS</a>
             <a routerLink="/organization" routerLinkActive="active-nav" class="nav-link">Organization</a>
           </nav>
         </div>
@@ -156,5 +156,9 @@ export class HmsLayoutComponent implements OnInit {
     this.authService.logout();
     this.orgService.setActiveProperty(null);
     this.router.navigate(['/login']);
+  }
+
+  hasPermission(permission: string): boolean {
+    return this.authService.hasPermission(permission);
   }
 }
