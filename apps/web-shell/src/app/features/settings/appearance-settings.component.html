@@ -2,22 +2,53 @@
   <!-- Page Header -->
   <header class="settings-header">
     <div class="header-titles">
-      <div class="luxury-badge">PREFERENCES &amp; DESIGN SYSTEM</div>
-      <h1 class="page-title">Appearance &amp; Theme Settings</h1>
+      <div class="luxury-badge">ENTERPRISE DESIGN &amp; PERSONALIZATION STUDIO</div>
+      <h1 class="page-title">Appearance &amp; Theme Studio</h1>
       <p class="page-subtitle">
-        Tailor the enterprise visual identity, interface density, corner geometry, and typography with real-time feedback.
+        Tailor the enterprise visual identity, typography system, motion kinetics, and layout geometry with real-time feedback.
       </p>
     </div>
 
     <div class="header-actions">
-      <hms-button variant="outline" (click)="resetDefaults()">
+      <!-- Hidden file input for JSON import -->
+      <input
+        type="file"
+        #importFileInput
+        accept=".json"
+        class="hidden-file-input"
+        (change)="onImportFileSelected($event)"
+      />
+
+      <button type="button" class="studio-btn studio-btn-outline" (click)="exportSettings()" title="Export configuration to JSON">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Export JSON</span>
+      </button>
+
+      <button type="button" class="studio-btn studio-btn-outline" (click)="triggerImportClick()" title="Import configuration from JSON">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span>Import JSON</span>
+      </button>
+
+      <button type="button" class="studio-btn studio-btn-outline" (click)="resetThemeOnly()" title="Reset only theme colors">
+        <span>Reset Theme</span>
+      </button>
+
+      <button type="button" class="studio-btn studio-btn-secondary" (click)="resetDefaults()" title="Reset all appearance preferences">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
           <polyline points="1 4 1 10 7 10"></polyline>
           <polyline points="23 20 23 14 17 14"></polyline>
           <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
         </svg>
-        <span>Reset to Default</span>
-      </hms-button>
+        <span>Reset All</span>
+      </button>
     </div>
   </header>
 
@@ -26,88 +57,204 @@
     {{ successMessage() }}
   </hms-alert>
 
+  <!-- Error Banner -->
+  <hms-alert type="danger" *ngIf="fontUploadError()" (closed)="fontUploadError.set(null)">
+    {{ fontUploadError() }}
+  </hms-alert>
+
   <!-- Low Contrast Warning -->
   <hms-alert type="warning" *ngIf="isLowContrast()">
     Accessibility Notice: The current color configuration has a contrast ratio below WCAG AA recommended standards ({{ textBackgroundContrast() | number:'1.1-1' }}:1). Text readability may be reduced in high-glare environments.
   </hms-alert>
 
+  <!-- Studio Tab Bar Navigation -->
+  <nav class="studio-tab-bar" aria-label="Appearance Studio Sections">
+    <button
+      type="button"
+      class="tab-nav-btn"
+      [class.is-active]="activeTab() === 'themes'"
+      (click)="setActiveTab('themes')"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 2a14.5 14.5 0 0 0 0 20 10 10 0 0 0 0-20"></path>
+      </svg>
+      <span>Theme Presets</span>
+      <span class="tab-count-badge">{{ allPresetKeys.length }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-nav-btn"
+      [class.is-active]="activeTab() === 'colors'"
+      (click)="setActiveTab('colors')"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon" aria-hidden="true">
+        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+      </svg>
+      <span>Color Tokens</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-nav-btn"
+      [class.is-active]="activeTab() === 'typography'"
+      (click)="setActiveTab('typography')"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon" aria-hidden="true">
+        <polyline points="4 7 4 4 20 4 20 7"></polyline>
+        <line x1="9" y1="20" x2="15" y2="20"></line>
+        <line x1="12" y1="4" x2="12" y2="20"></line>
+      </svg>
+      <span>Typography Studio</span>
+      <span class="tab-count-badge" *ngIf="customFonts().length > 0">+{{ customFonts().length }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-nav-btn"
+      [class.is-active]="activeTab() === 'motion'"
+      (click)="setActiveTab('motion')"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon" aria-hidden="true">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+      </svg>
+      <span>Motion Kinetics</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-nav-btn"
+      [class.is-active]="activeTab() === 'layout'"
+      (click)="setActiveTab('layout')"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="3" y1="9" x2="21" y2="9"></line>
+        <line x1="9" y1="21" x2="9" y2="9"></line>
+      </svg>
+      <span>Density &amp; Radius</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-nav-btn"
+      [class.is-active]="activeTab() === 'branding'"
+      (click)="setActiveTab('branding')"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon" aria-hidden="true">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <path d="M16 10a4 4 0 0 1-8 0"></path>
+      </svg>
+      <span>Application Branding</span>
+    </button>
+  </nav>
+
+  <!-- Two-column Studio Grid -->
   <div class="settings-grid">
     <!-- Left Configuration Panel -->
     <div class="config-column">
-      <!-- 0. Application Branding -->
-      <section class="settings-card branding-card" aria-label="Application Branding">
+
+      <!-- ======================================================== -->
+      <!-- TAB 1: THEME PRESETS -->
+      <!-- ======================================================== -->
+      <section class="settings-card" *ngIf="activeTab() === 'themes'">
         <div class="card-header">
-          <div class="branding-header-split">
+          <div class="card-header-split">
             <div>
-              <h2 class="card-title">Application Branding</h2>
-              <p class="card-desc">Configure the enterprise product identity and subtitles displayed across all application surfaces.</p>
+              <h2 class="card-title">Theme Presets Library</h2>
+              <p class="card-desc">16 curated hospitality palettes engineered for legibility, brand luxury, and calm ergonomics.</p>
             </div>
+          </div>
+        </div>
+
+        <!-- Toolbar: Category filters & search -->
+        <div class="theme-toolbar">
+          <div class="category-filters" role="group" aria-label="Theme categories">
             <button
               type="button"
-              class="branding-reset-action"
-              (click)="resetBrandingDefaults()"
-              title="Reset branding to defaults"
+              class="filter-pill"
+              [class.is-active]="themeCategory() === 'all'"
+              (click)="themeCategory.set('all')"
             >
-              Reset to Default
+              All ({{ allPresetKeys.length }})
+            </button>
+            <button
+              type="button"
+              class="filter-pill"
+              [class.is-active]="themeCategory() === 'professional'"
+              (click)="themeCategory.set('professional')"
+            >
+              Professional (9)
+            </button>
+            <button
+              type="button"
+              class="filter-pill"
+              [class.is-active]="themeCategory() === 'seasonal'"
+              (click)="themeCategory.set('seasonal')"
+            >
+              Seasonal (5)
+            </button>
+            <button
+              type="button"
+              class="filter-pill"
+              [class.is-active]="themeCategory() === 'festival'"
+              (click)="themeCategory.set('festival')"
+            >
+              Festival (2)
+            </button>
+            <button
+              type="button"
+              class="filter-pill"
+              [class.is-active]="themeCategory() === 'favorites'"
+              (click)="themeCategory.set('favorites')"
+            >
+              ★ Favorites ({{ themeService.favorites().length }})
             </button>
           </div>
-        </div>
 
-        <div class="branding-form-row">
-          <div class="branding-field">
-            <label for="brandingAppName" class="token-label">Application Name</label>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
             <input
-              id="brandingAppName"
               type="text"
-              class="branding-input"
-              [(ngModel)]="brandingEdit.applicationName"
-              (ngModelChange)="onBrandingChange()"
-              placeholder="e.g. Folkslogic HTMS"
-              maxlength="40"
-            />
-          </div>
-
-          <div class="branding-field">
-            <label for="brandingAppSub" class="token-label">Application Subtitle</label>
-            <input
-              id="brandingAppSub"
-              type="text"
-              class="branding-input"
-              [(ngModel)]="brandingEdit.applicationSubtitle"
-              (ngModelChange)="onBrandingChange()"
-              placeholder="e.g. Hotel Management System"
-              maxlength="50"
+              class="theme-search-input"
+              placeholder="Search presets by name or style..."
+              [ngModel]="themeSearch()"
+              (ngModelChange)="themeSearch.set($event)"
             />
           </div>
         </div>
 
-        <!-- Live Compact Lockup Preview -->
-        <div class="branding-preview-wrap">
-          <div class="branding-preview-tag">LIVE BRANDING PREVIEW</div>
-          <div class="branding-preview-box">
-            <div class="branding-preview-crest">{{ branding.logoMark() }}</div>
-            <div class="branding-preview-meta">
-              <span class="branding-preview-title">{{ branding.applicationName() }}</span>
-              <span class="branding-preview-sub">{{ branding.applicationSubtitle() }}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 1. Presets -->
-      <section class="settings-card">
-        <div class="card-header">
-          <h2 class="card-title">Theme Presets</h2>
-          <p class="card-desc">Curated hospitality palettes engineered for optimal legibility and calm ergonomics.</p>
-        </div>
-
+        <!-- Presets Grid -->
         <div class="presets-grid">
           <div
-            *ngFor="let key of presetKeys"
+            *ngFor="let key of filteredPresets()"
             class="preset-item"
             [class.is-active]="activePreset() === key"
             (click)="selectPreset(key)"
           >
+            <!-- Preset Card Header -->
+            <div class="preset-card-top">
+              <span class="category-badge" [attr.data-cat]="presets[key].category">
+                {{ presets[key].category | uppercase }}
+              </span>
+              <button
+                type="button"
+                class="favorite-star-btn"
+                [class.is-fav]="isFavorite(key)"
+                (click)="toggleFavorite(key, $event)"
+                title="Toggle favorite"
+                aria-label="Toggle favorite"
+              >
+                ★
+              </button>
+            </div>
+
+            <!-- Color Swatches Bar -->
             <div class="preset-swatches">
               <span class="swatch" [style.background]="presets[key].colors.primary" title="Primary"></span>
               <span class="swatch" [style.background]="presets[key].colors.secondary" title="Secondary"></span>
@@ -115,6 +262,8 @@
               <span class="swatch" [style.background]="presets[key].colors.background" title="Background"></span>
               <span class="swatch" [style.background]="presets[key].colors.text" title="Text"></span>
             </div>
+
+            <!-- Preset Info -->
             <div class="preset-info">
               <div class="preset-name">
                 <span>{{ presets[key].name }}</span>
@@ -122,15 +271,32 @@
               </div>
               <p class="preset-desc">{{ presets[key].description }}</p>
             </div>
+
+            <!-- Contrast & Accessibility Footer -->
+            <div class="preset-card-footer">
+              <span class="preset-contrast-tag">
+                <span class="contrast-dot pass"></span>
+                WCAG AA ({{ getPresetContrast(key).ratio | number:'1.1-1' }}:1)
+              </span>
+            </div>
           </div>
+        </div>
+
+        <div class="empty-state" *ngIf="filteredPresets().length === 0">
+          <p>No presets found matching your filter criteria.</p>
+          <button type="button" class="studio-btn studio-btn-outline" (click)="themeSearch.set(''); themeCategory.set('all')">
+            Reset Filters
+          </button>
         </div>
       </section>
 
-      <!-- 2. Realtime Color Tokens -->
-      <section class="settings-card">
+      <!-- ======================================================== -->
+      <!-- TAB 2: COLOR TOKENS -->
+      <!-- ======================================================== -->
+      <section class="settings-card" *ngIf="activeTab() === 'colors'">
         <div class="card-header">
-          <h2 class="card-title">Color Palette Tokens</h2>
-          <p class="card-desc">Customize specific foundation tokens based on the Realtime Colors token architecture.</p>
+          <h2 class="card-title">Realtime Color Palette Tokens</h2>
+          <p class="card-desc">Fine-tune core UI brand tokens. Operational safety colors remain protected to guarantee workflow clarity.</p>
         </div>
 
         <div class="tokens-grid">
@@ -294,7 +460,7 @@
             </div>
           </div>
 
-          <!-- Focus -->
+          <!-- Focus Ring -->
           <div class="token-field">
             <label class="token-label">Focus Ring</label>
             <div class="token-input-group">
@@ -314,153 +480,767 @@
             </div>
           </div>
         </div>
+
+        <!-- Protected Semantic Operational Status Banner -->
+        <div class="protected-status-box">
+          <div class="status-box-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shield-icon" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <div>
+              <h3 class="status-box-title">Protected Operational Semantic Tokens</h3>
+              <p class="status-box-desc">
+                Hospitality operational status states are strictly independent of brand themes. Red/green themes will never invert room readiness or fault indicators.
+              </p>
+            </div>
+          </div>
+          <div class="status-samples-row">
+            <span class="status-chip chip-occupied">● Occupied</span>
+            <span class="status-chip chip-vacant">● Vacant</span>
+            <span class="status-chip chip-clean">● Clean &amp; Ready</span>
+            <span class="status-chip chip-dirty">● Dirty / Turnover</span>
+            <span class="status-chip chip-inspected">● Inspected</span>
+            <span class="status-chip chip-ooo">● Out of Order</span>
+          </div>
+        </div>
       </section>
 
-      <!-- 3. Layout Density -->
-      <section class="settings-card">
+      <!-- ======================================================== -->
+      <!-- TAB 3: TYPOGRAPHY STUDIO -->
+      <!-- ======================================================== -->
+      <section class="settings-card" *ngIf="activeTab() === 'typography'">
         <div class="card-header">
-          <h2 class="card-title">Layout Density</h2>
-          <p class="card-desc">Adjust whitespace padding and data row height across tables and operational views.</p>
+          <h2 class="card-title">Advanced Typography Studio</h2>
+          <p class="card-desc">Configure heading and body font families, font weights, base sizing, line spacing, and upload custom corporate fonts.</p>
         </div>
 
-        <div class="choice-group">
-          <button
-            type="button"
-            class="choice-btn"
-            [class.is-selected]="density() === 'comfortable'"
-            (click)="onDensityChange('comfortable')"
-          >
-            <span class="choice-title">Comfortable</span>
-            <span class="choice-desc">Spacious hospitality standard for high-readability operations (Default)</span>
-          </button>
-          <button
-            type="button"
-            class="choice-btn"
-            [class.is-selected]="density() === 'compact'"
-            (click)="onDensityChange('compact')"
-          >
-            <span class="choice-title">Compact</span>
-            <span class="choice-desc">Higher information density optimized for high-volume dispatchers</span>
-          </button>
+        <!-- Curated 1-Click Font Pairings -->
+        <div class="typography-section">
+          <h3 class="sub-section-title">Recommended Hospitality Font Pairings</h3>
+          <p class="sub-section-desc">Hand-crafted combinations balancing brand elegance with operational legibility.</p>
+
+          <div class="pairings-grid">
+            <div
+              *ngFor="let p of recommendedPairings"
+              class="pairing-card"
+              (click)="applyPairing(p)"
+            >
+              <div class="pairing-head">
+                <span class="pairing-name">{{ p.name }}</span>
+                <span class="pairing-tag">{{ p.tag }}</span>
+              </div>
+              <div class="pairing-sample">
+                <div class="pairing-heading-sample" [style.font-family]="p.headingFont" [style.font-weight]="p.headingWeight">
+                  {{ p.headingFont }}
+                </div>
+                <div class="pairing-body-sample" [style.font-family]="p.bodyFont" [style.font-weight]="p.bodyWeight">
+                  Body in {{ p.bodyFont }} &bull; 100% Legibility
+                </div>
+              </div>
+              <button type="button" class="apply-pairing-btn">Apply Pairing</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Font Family & Weight Configuration -->
+        <div class="typography-section">
+          <h3 class="sub-section-title">Font Families &amp; Weight Architecture</h3>
+
+          <div class="font-controls-grid">
+            <!-- Heading Font Family -->
+            <div class="font-control-item">
+              <label for="headingFontSelect" class="token-label">Heading Font Family</label>
+              <select
+                id="headingFontSelect"
+                class="studio-select"
+                [ngModel]="typography().headingFont"
+                (ngModelChange)="onHeadingFontChange($event)"
+              >
+                <optgroup label="Curated Library (15 Fonts)">
+                  <option *ngFor="let f of builtInFonts" [value]="f.name">{{ f.name }} ({{ f.category }})</option>
+                </optgroup>
+                <optgroup label="Custom Corporate Fonts" *ngIf="customFonts().length > 0">
+                  <option *ngFor="let cf of customFonts()" [value]="cf.name">{{ cf.name }} (Custom)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- Body Font Family -->
+            <div class="font-control-item">
+              <label for="bodyFontSelect" class="token-label">Body Font Family</label>
+              <select
+                id="bodyFontSelect"
+                class="studio-select"
+                [ngModel]="typography().bodyFont"
+                (ngModelChange)="onBodyFontChange($event)"
+              >
+                <optgroup label="Curated Library (15 Fonts)">
+                  <option *ngFor="let f of builtInFonts" [value]="f.name">{{ f.name }} ({{ f.category }})</option>
+                </optgroup>
+                <optgroup label="Custom Corporate Fonts" *ngIf="customFonts().length > 0">
+                  <option *ngFor="let cf of customFonts()" [value]="cf.name">{{ cf.name }} (Custom)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- Heading Weight -->
+            <div class="font-control-item">
+              <label class="token-label">Heading Weight ({{ typography().headingWeight }})</label>
+              <div class="segmented-control">
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().headingWeight === 400"
+                  (click)="onHeadingWeightChange(400)"
+                >
+                  Regular (400)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().headingWeight === 500"
+                  (click)="onHeadingWeightChange(500)"
+                >
+                  Medium (500)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().headingWeight === 600"
+                  (click)="onHeadingWeightChange(600)"
+                >
+                  Semibold (600)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().headingWeight === 700"
+                  (click)="onHeadingWeightChange(700)"
+                >
+                  Bold (700)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().headingWeight === 800"
+                  (click)="onHeadingWeightChange(800)"
+                >
+                  Heavy (800)
+                </button>
+              </div>
+            </div>
+
+            <!-- Body Weight -->
+            <div class="font-control-item">
+              <label class="token-label">Body Weight ({{ typography().bodyWeight }})</label>
+              <div class="segmented-control">
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().bodyWeight === 300"
+                  (click)="onBodyWeightChange(300)"
+                >
+                  Light (300)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().bodyWeight === 400"
+                  (click)="onBodyWeightChange(400)"
+                >
+                  Regular (400)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().bodyWeight === 500"
+                  (click)="onBodyWeightChange(500)"
+                >
+                  Medium (500)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().bodyWeight === 600"
+                  (click)="onBodyWeightChange(600)"
+                >
+                  Semibold (600)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Proportional Sizing & Micro-Typography -->
+        <div class="typography-section">
+          <h3 class="sub-section-title">Sizing, Line Spacing &amp; Scale</h3>
+
+          <div class="font-controls-grid">
+            <!-- Base Font Size Slider (14px - 18px) -->
+            <div class="font-control-item">
+              <div class="slider-header">
+                <label for="baseFontSizeSlider" class="token-label">Base Font Size</label>
+                <span class="slider-value">{{ typography().baseFontSize }}px</span>
+              </div>
+              <input
+                id="baseFontSizeSlider"
+                type="range"
+                min="14"
+                max="18"
+                step="1"
+                class="studio-slider"
+                [ngModel]="typography().baseFontSize"
+                (ngModelChange)="onBaseFontSizeChange($event)"
+              />
+              <div class="slider-ticks">
+                <span>14px (Compact)</span>
+                <span>16px (Standard)</span>
+                <span>18px (Comfortable)</span>
+              </div>
+            </div>
+
+            <!-- Line Height Option -->
+            <div class="font-control-item">
+              <label class="token-label">Line Height</label>
+              <div class="segmented-control">
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().lineHeight === 'compact'"
+                  (click)="onLineHeightChange('compact')"
+                >
+                  Compact (1.4)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().lineHeight === 'comfortable'"
+                  (click)="onLineHeightChange('comfortable')"
+                >
+                  Comfortable (1.5)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().lineHeight === 'relaxed'"
+                  (click)="onLineHeightChange('relaxed')"
+                >
+                  Relaxed (1.7)
+                </button>
+              </div>
+            </div>
+
+            <!-- Letter Spacing Option -->
+            <div class="font-control-item">
+              <label class="token-label">Letter Spacing</label>
+              <div class="segmented-control">
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().letterSpacing === 'tight'"
+                  (click)="onLetterSpacingChange('tight')"
+                >
+                  Tight (-0.01em)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().letterSpacing === 'default'"
+                  (click)="onLetterSpacingChange('default')"
+                >
+                  Standard (0)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().letterSpacing === 'wide'"
+                  (click)="onLetterSpacingChange('wide')"
+                >
+                  Wide (0.02em)
+                </button>
+              </div>
+            </div>
+
+            <!-- Heading Scale Option -->
+            <div class="font-control-item">
+              <label class="token-label">Heading Scale Ratio</label>
+              <div class="segmented-control">
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().headingScale === 'classic'"
+                  (click)="onHeadingScaleChange('classic')"
+                >
+                  Classic (1.20)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().headingScale === 'prominent'"
+                  (click)="onHeadingScaleChange('prominent')"
+                >
+                  Prominent (1.25)
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.is-active]="typography().headingScale === 'editorial'"
+                  (click)="onHeadingScaleChange('editorial')"
+                >
+                  Editorial (1.33)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Font Upload Section -->
+        <div class="typography-section custom-font-section">
+          <div class="custom-font-head">
+            <div>
+              <h3 class="sub-section-title">Upload Custom Corporate Font</h3>
+              <p class="sub-section-desc">
+                Support corporate brand guidelines with custom web fonts (.woff2, .woff, .ttf). Securely stored via browser IndexedDB and registered with FontFace API.
+              </p>
+            </div>
+          </div>
+
+          <div class="upload-box">
+            <div class="upload-fields-row">
+              <div class="upload-file-field">
+                <label for="fontFileInput" class="token-label">Font Binary File</label>
+                <input
+                  id="fontFileInput"
+                  #customFontFileInput
+                  type="file"
+                  accept=".woff2,.woff,.ttf"
+                  class="studio-file-input"
+                  (change)="onFontFileSelected($event)"
+                />
+                <span class="file-hint">Supported: .woff2, .woff, .ttf (Max 5MB)</span>
+              </div>
+
+              <div class="upload-text-field">
+                <label for="fontFamilyInput" class="token-label">Font Family Name</label>
+                <input
+                  id="fontFamilyInput"
+                  type="text"
+                  class="studio-text-input"
+                  placeholder="e.g. Grandeur Corporate Sans"
+                  [ngModel]="fontUploadName()"
+                  (ngModelChange)="fontUploadName.set($event)"
+                />
+              </div>
+
+              <div class="upload-weight-field">
+                <label for="fontWeightSelect" class="token-label">Weight</label>
+                <select
+                  id="fontWeightSelect"
+                  class="studio-select"
+                  [ngModel]="fontUploadWeight()"
+                  (ngModelChange)="fontUploadWeight.set(+$event)"
+                >
+                  <option [value]="300">300 (Light)</option>
+                  <option [value]="400">400 (Regular)</option>
+                  <option [value]="500">500 (Medium)</option>
+                  <option [value]="600">600 (Semibold)</option>
+                  <option [value]="700">700 (Bold)</option>
+                </select>
+              </div>
+
+              <div class="upload-action-field">
+                <button
+                  type="button"
+                  class="studio-btn studio-btn-primary"
+                  [disabled]="!fontUploadFile() || !fontUploadName() || isUploadingFont()"
+                  (click)="uploadCustomFont()"
+                >
+                  <span *ngIf="!isUploadingFont()">Install Font</span>
+                  <span *ngIf="isUploadingFont()">Installing...</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Installed Custom Fonts List -->
+            <div class="installed-fonts-list" *ngIf="customFonts().length > 0">
+              <h4 class="installed-fonts-title">Installed Corporate Fonts ({{ customFonts().length }})</h4>
+              <div class="custom-font-card" *ngFor="let cf of customFonts()">
+                <div class="custom-font-meta">
+                  <span class="custom-font-name" [style.font-family]="cf.name">{{ cf.name }}</span>
+                  <span class="custom-font-tags">
+                    Weight {{ cf.weight }} &bull; {{ cf.format | uppercase }} &bull; {{ cf.fileName }}
+                  </span>
+                </div>
+                <div class="custom-font-actions">
+                  <button
+                    type="button"
+                    class="studio-btn-danger-outline"
+                    (click)="removeCustomFont(cf.id, cf.name)"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- 4. Corner Radius -->
-      <section class="settings-card">
+      <!-- ======================================================== -->
+      <!-- TAB 4: MOTION KINETICS -->
+      <!-- ======================================================== -->
+      <section class="settings-card" *ngIf="activeTab() === 'motion'">
         <div class="card-header">
-          <h2 class="card-title">Corner Geometry</h2>
-          <p class="card-desc">Set border-radius curvature across cards, buttons, dialogs, and pills.</p>
+          <h2 class="card-title">Motion Kinetics &amp; Accessibility</h2>
+          <p class="card-desc">Calibrate interface fluid motion and speed while preserving vestibular accessibility.</p>
         </div>
 
-        <div class="segmented-control">
-          <button
-            type="button"
-            class="segment-btn"
-            [class.is-active]="radius() === 'none'"
-            (click)="onRadiusChange('none')"
-          >
-            Sharp (0px)
-          </button>
-          <button
-            type="button"
-            class="segment-btn"
-            [class.is-active]="radius() === 'sm'"
-            (click)="onRadiusChange('sm')"
-          >
-            Subtle (4px)
-          </button>
-          <button
-            type="button"
-            class="segment-btn"
-            [class.is-active]="radius() === 'md'"
-            (click)="onRadiusChange('md')"
-          >
-            Medium (8px)
-          </button>
-          <button
-            type="button"
-            class="segment-btn"
-            [class.is-active]="radius() === 'lg'"
-            (click)="onRadiusChange('lg')"
-          >
-            Soft (14px)
-          </button>
+        <div class="motion-content-grid">
+          <!-- Motion Preference -->
+          <div class="motion-group">
+            <h3 class="sub-section-title">Motion Preference</h3>
+            <p class="sub-section-desc">Governs global animation behaviors across navigation, modals, and tooltips.</p>
+
+            <div class="choice-group">
+              <button
+                type="button"
+                class="choice-btn"
+                [class.is-selected]="motion().preference === 'full'"
+                (click)="onMotionPreferenceChange('full')"
+              >
+                <span class="choice-title">Full Motion</span>
+                <span class="choice-desc">Rich micro-interactions and smooth layout transitions (Standard)</span>
+              </button>
+
+              <button
+                type="button"
+                class="choice-btn"
+                [class.is-selected]="motion().preference === 'reduced'"
+                (click)="onMotionPreferenceChange('reduced')"
+              >
+                <span class="choice-title">Reduced Motion</span>
+                <span class="choice-desc">Gentle fade transitions only; zero sliding or panning motions</span>
+              </button>
+
+              <button
+                type="button"
+                class="choice-btn"
+                [class.is-selected]="motion().preference === 'minimal'"
+                (click)="onMotionPreferenceChange('minimal')"
+              >
+                <span class="choice-title">Minimal</span>
+                <span class="choice-desc">Instant cuts with subtle color state changes</span>
+              </button>
+
+              <button
+                type="button"
+                class="choice-btn"
+                [class.is-selected]="motion().preference === 'none'"
+                (click)="onMotionPreferenceChange('none')"
+              >
+                <span class="choice-title">None (Instant Cut)</span>
+                <span class="choice-desc">All transitions execute at 0ms duration for high-volume data dispatch</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Motion Intensity -->
+          <div class="motion-group">
+            <h3 class="sub-section-title">Animation Intensity</h3>
+            <div class="segmented-control">
+              <button
+                type="button"
+                class="segment-btn"
+                [class.is-active]="motion().intensity === 'subtle'"
+                (click)="onMotionIntensityChange('subtle')"
+              >
+                Subtle (0.15s)
+              </button>
+              <button
+                type="button"
+                class="segment-btn"
+                [class.is-active]="motion().intensity === 'balanced'"
+                (click)="onMotionIntensityChange('balanced')"
+              >
+                Balanced (0.25s)
+              </button>
+              <button
+                type="button"
+                class="segment-btn"
+                [class.is-active]="motion().intensity === 'expressive'"
+                (click)="onMotionIntensityChange('expressive')"
+              >
+                Expressive (0.35s)
+              </button>
+            </div>
+          </div>
+
+          <!-- Transition Speed -->
+          <div class="motion-group">
+            <h3 class="sub-section-title">Transition Speed Multiplier</h3>
+            <div class="segmented-control">
+              <button
+                type="button"
+                class="segment-btn"
+                [class.is-active]="motion().speed === 'fast'"
+                (click)="onMotionSpeedChange('fast')"
+              >
+                Fast (0.75x)
+              </button>
+              <button
+                type="button"
+                class="segment-btn"
+                [class.is-active]="motion().speed === 'normal'"
+                (click)="onMotionSpeedChange('normal')"
+              >
+                Normal (1.0x)
+              </button>
+              <button
+                type="button"
+                class="segment-btn"
+                [class.is-active]="motion().speed === 'slow'"
+                (click)="onMotionSpeedChange('slow')"
+              >
+                Slow (1.5x)
+              </button>
+            </div>
+          </div>
+
+          <!-- Motion Style / Easing -->
+          <div class="motion-group">
+            <h3 class="sub-section-title">Motion Easing Curve</h3>
+            <div class="segmented-control">
+              <button
+                type="button"
+                class="segment-btn"
+                [class.is-active]="motion().style === 'subtle'"
+                (click)="onMotionStyleChange('subtle')"
+              >
+                Subtle (Ease-Out)
+              </button>
+              <button
+                type="button"
+                class="segment-btn"
+                [class.is-active]="motion().style === 'professional'"
+                (click)="onMotionStyleChange('professional')"
+              >
+                Professional (Cubic Bezier)
+              </button>
+              <button
+                type="button"
+                class="segment-btn"
+                [class.is-active]="motion().style === 'smooth'"
+                (click)="onMotionStyleChange('smooth')"
+              >
+                Smooth (Ease-In-Out)
+              </button>
+              <button
+                type="button"
+                class="segment-btn"
+                [class.is-active]="motion().style === 'expressive'"
+                (click)="onMotionStyleChange('expressive')"
+              >
+                Expressive (Snappy)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Operational Guarantee & Motion Test -->
+        <div class="motion-test-box">
+          <div class="motion-test-meta">
+            <span class="motion-test-title">Live Motion Kinetic Test</span>
+            <p class="motion-test-desc">Click below to test the kinetic response curve with your active speed and easing parameters.</p>
+          </div>
+          <div class="motion-test-interactive">
+            <button
+              type="button"
+              class="studio-btn studio-btn-primary"
+              (click)="testMotion()"
+            >
+              Trigger Motion
+            </button>
+            <div
+              class="motion-test-sample"
+              [class.is-testing]="motionTesting()"
+            >
+              <span>Kinetic Chip</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="motion-guarantee-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shield-icon" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <p>
+            <strong>Operational Guarantee:</strong> Mission-critical hospitality flows (Guest Check-In, Room Dispatch, Billing, and Folio Settlement) never utilize blocking or decorative animation delays. OS-level <code>prefers-reduced-motion</code> is always respected.
+          </p>
         </div>
       </section>
 
-      <!-- 5. Typography -->
-      <section class="settings-card">
+      <!-- ======================================================== -->
+      <!-- TAB 5: DENSITY & RADIUS -->
+      <!-- ======================================================== -->
+      <section class="settings-card" *ngIf="activeTab() === 'layout'">
         <div class="card-header">
-          <h2 class="card-title">Typography System</h2>
-          <p class="card-desc">Select the font typeface applied across headings, body content, and controls.</p>
+          <h2 class="card-title">Interface Density &amp; Geometry</h2>
+          <p class="card-desc">Calibrate whitespace padding across tables and border-radius curvature across cards and dialogs.</p>
         </div>
 
-        <div class="choice-group">
-          <button
-            type="button"
-            class="choice-btn"
-            [class.is-selected]="typography() === 'system'"
-            (click)="onTypographyChange('system')"
-          >
-            <span class="choice-title font-system">System Sans-Serif</span>
-            <span class="choice-desc">Platform native font stack (San Francisco, Segoe UI, Roboto)</span>
-          </button>
-          <button
-            type="button"
-            class="choice-btn"
-            [class.is-selected]="typography() === 'inter'"
-            (click)="onTypographyChange('inter')"
-          >
-            <span class="choice-title font-inter">Inter Sans</span>
-            <span class="choice-desc">Modern geometric grotesque with high legibility for numbers</span>
-          </button>
-          <button
-            type="button"
-            class="choice-btn"
-            [class.is-selected]="typography() === 'serif'"
-            (click)="onTypographyChange('serif')"
-          >
-            <span class="choice-title font-serif">Editorial Serif</span>
-            <span class="choice-desc">Classic luxury serif headings for heritage boutique properties</span>
-          </button>
+        <!-- Layout Density -->
+        <div class="layout-section">
+          <h3 class="sub-section-title">Layout Density</h3>
+          <div class="choice-group">
+            <button
+              type="button"
+              class="choice-btn"
+              [class.is-selected]="density() === 'comfortable'"
+              (click)="onDensityChange('comfortable')"
+            >
+              <span class="choice-title">Comfortable (Standard)</span>
+              <span class="choice-desc">Spacious hospitality standard for high readability and touch ergonomics</span>
+            </button>
+            <button
+              type="button"
+              class="choice-btn"
+              [class.is-selected]="density() === 'compact'"
+              (click)="onDensityChange('compact')"
+            >
+              <span class="choice-title">Compact (High-Density)</span>
+              <span class="choice-desc">Tight row spacing optimized for high-volume room dispatch and night auditors</span>
+            </button>
+            <button
+              type="button"
+              class="choice-btn"
+              [class.is-selected]="density() === 'spacious'"
+              (click)="onDensityChange('spacious')"
+            >
+              <span class="choice-title">Spacious (Executive)</span>
+              <span class="choice-desc">Generous breathing room tailored for executive dashboard displays</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Corner Radius -->
+        <div class="layout-section">
+          <h3 class="sub-section-title">Corner Geometry</h3>
+          <div class="segmented-control">
+            <button
+              type="button"
+              class="segment-btn"
+              [class.is-active]="radius() === 'none'"
+              (click)="onRadiusChange('none')"
+            >
+              Sharp (0px)
+            </button>
+            <button
+              type="button"
+              class="segment-btn"
+              [class.is-active]="radius() === 'sm'"
+              (click)="onRadiusChange('sm')"
+            >
+              Subtle (4px)
+            </button>
+            <button
+              type="button"
+              class="segment-btn"
+              [class.is-active]="radius() === 'md'"
+              (click)="onRadiusChange('md')"
+            >
+              Medium (8px)
+            </button>
+            <button
+              type="button"
+              class="segment-btn"
+              [class.is-active]="radius() === 'lg'"
+              (click)="onRadiusChange('lg')"
+            >
+              Soft (14px)
+            </button>
+          </div>
         </div>
       </section>
 
-      <!-- 6. Motion & Accessibility -->
-      <section class="settings-card">
+      <!-- ======================================================== -->
+      <!-- TAB 6: APPLICATION BRANDING -->
+      <!-- ======================================================== -->
+      <section class="settings-card branding-card" *ngIf="activeTab() === 'branding'" aria-label="Application Branding">
         <div class="card-header">
-          <h2 class="card-title">Motion &amp; Animations</h2>
-          <p class="card-desc">Control interface transitions for users with vestibular or motion sensitivity.</p>
+          <div class="branding-header-split">
+            <div>
+              <h2 class="card-title">Application Identity Branding</h2>
+              <p class="card-desc">Configure the enterprise product identity and subtitles displayed across all application surfaces.</p>
+            </div>
+            <button
+              type="button"
+              class="branding-reset-action"
+              (click)="resetBrandingDefaults()"
+              title="Reset branding to defaults"
+            >
+              Reset to Default
+            </button>
+          </div>
         </div>
 
-        <div class="segmented-control">
-          <button
-            type="button"
-            class="segment-btn"
-            [class.is-active]="motion() === 'normal'"
-            (click)="onMotionChange('normal')"
-          >
-            Smooth Motion
-          </button>
-          <button
-            type="button"
-            class="segment-btn"
-            [class.is-active]="motion() === 'reduced'"
-            (click)="onMotionChange('reduced')"
-          >
-            Reduced Motion
-          </button>
+        <div class="branding-form-row">
+          <div class="branding-field">
+            <label for="brandingAppName" class="token-label">Application Name</label>
+            <input
+              id="brandingAppName"
+              type="text"
+              class="branding-input"
+              [(ngModel)]="brandingEdit.applicationName"
+              (ngModelChange)="onBrandingChange()"
+              placeholder="e.g. Folkslogic HTMS"
+              maxlength="40"
+            />
+          </div>
+
+          <div class="branding-field">
+            <label for="brandingAppSub" class="token-label">Application Subtitle</label>
+            <input
+              id="brandingAppSub"
+              type="text"
+              class="branding-input"
+              [(ngModel)]="brandingEdit.applicationSubtitle"
+              (ngModelChange)="onBrandingChange()"
+              placeholder="e.g. Hotel Management System"
+              maxlength="50"
+            />
+          </div>
+        </div>
+
+        <!-- Live Compact Lockup Preview -->
+        <div class="branding-preview-wrap">
+          <div class="branding-preview-tag">LIVE BRANDING PREVIEW</div>
+          <div class="branding-preview-box">
+            <div class="branding-preview-crest">{{ branding.logoMark() }}</div>
+            <div class="branding-preview-meta">
+              <span class="branding-preview-title">{{ branding.applicationName() }}</span>
+              <span class="branding-preview-sub">{{ branding.applicationSubtitle() }}</span>
+            </div>
+          </div>
         </div>
       </section>
+
     </div>
 
-    <!-- Right Live Preview Sandbox -->
+    <!-- ======================================================== -->
+    <!-- RIGHT LIVE PREVIEW COLUMN (STICKY) -->
+    <!-- ======================================================== -->
     <div class="preview-column">
       <div class="preview-sticky-card">
         <div class="preview-card-header">
-          <span class="preview-badge">LIVE PREVIEW</span>
-          <h3 class="preview-heading">Component Sandbox</h3>
-          <p class="preview-sub">Instant rendering of your theme adjustments</p>
+          <div class="preview-header-split">
+            <div>
+              <span class="preview-badge">LIVE STUDIO PREVIEW</span>
+              <h3 class="preview-heading">Component Sandbox</h3>
+              <p class="preview-sub">Real-time synthesis of theme tokens, typography, and geometry</p>
+            </div>
+          </div>
         </div>
 
         <!-- Sample UI Canvas -->
@@ -472,8 +1252,17 @@
               <span class="sample-brand-name">{{ branding.applicationName() }}</span>
             </div>
             <div class="sample-pill">
-              <span>● Tokyo Grandeur</span>
+              <span>● Grandeur Tokyo</span>
             </div>
+          </div>
+
+          <!-- Typography Specimen -->
+          <div class="sample-typography-specimen">
+            <div class="sample-h1">Grandeur Suite 401</div>
+            <div class="sample-h2">Executive Presidential Floor</div>
+            <p class="sample-body-text">
+              Real-time operational overview. Seamless guest folio management with automated housekeeping clearance.
+            </p>
           </div>
 
           <!-- Sample Content Card -->
@@ -485,10 +1274,6 @@
               </div>
               <hms-status-pill statusKey="clean" statusLabel="Clean & Ready"></hms-status-pill>
             </div>
-
-            <p class="sample-card-body">
-              Closed-loop housekeeping turnover complete. 128 rooms inspected, 24 in turnover, and 2 out of order.
-            </p>
 
             <div class="sample-buttons">
               <button type="button" class="sample-btn-primary">
@@ -551,4 +1336,3 @@
     </div>
   </div>
 </div>
-
