@@ -20,3 +20,4 @@ export * from './components/empty/hms-empty.component';
 export * from './components/room-card/hms-room-card.component';
 export * from './components/workflow-stepper/hms-workflow-stepper.component';
 export * from './components/alert/hms-alert.component';
+export * from './components/hms-brand-logo.component';

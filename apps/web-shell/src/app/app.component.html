@@ -21,11 +21,7 @@
 
       <!-- Brand Mark & Identity Lockup -->
       <div class="hms-topbar__brand" routerLink="/dashboard" [title]="branding.applicationName() + ' Dashboard'">
-        <div class="brand-crest" aria-hidden="true">{{ branding.logoMark() }}</div>
-        <div class="brand-headings">
-          <span class="brand-title">{{ branding.applicationName() }}</span>
-          <span class="brand-subtitle">{{ branding.applicationSubtitle() }}</span>
-        </div>
+        <hms-brand-logo variant="full" size="sm"></hms-brand-logo>
       </div>
     </div>
 

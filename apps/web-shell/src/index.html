@@ -10,11 +10,27 @@
       (function() {
         try {
           var storedBranding = localStorage.getItem('hms_application_branding');
+          var brandMark = 'FH';
           if (storedBranding) {
             var b = JSON.parse(storedBranding);
             if (b && b.applicationName) {
               document.title = b.applicationName;
             }
+            if (b && b.useCustomBrandMark && b.customBrandMark) {
+              brandMark = b.customBrandMark.substring(0, 4);
+            } else if (b && b.applicationName) {
+              var parts = b.applicationName.split(/[\s_\-/\\|:]+/).filter(Boolean);
+              var connectors = {'the':1, 'and':1, 'of':1, 'for':1, '&':1, 'a':1, 'an':1, 'in':1};
+              var meaningful = parts.filter(function(w){ return !connectors[w.toLowerCase()]; });
+              if (meaningful.length >= 2) brandMark = (meaningful[0][0] + meaningful[1][0]).toUpperCase();
+              else if (meaningful.length === 1) brandMark = meaningful[0][0].toUpperCase();
+            }
+          }
+          var favLink = document.querySelector('link[rel*="icon"]');
+          if (favLink) {
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#0F172A" stroke="#9A7B38" stroke-width="2"/><text x="50%" y="54%" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="700" fill="#FDF8EE" text-anchor="middle" dominant-baseline="middle">' + brandMark + '</text></svg>';
+            favLink.type = 'image/svg+xml';
+            favLink.href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
           }
           var stored = localStorage.getItem('hms_theme_preferences');
           if (stored) {

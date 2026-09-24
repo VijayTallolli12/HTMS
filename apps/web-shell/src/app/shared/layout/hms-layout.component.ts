@@ -5,21 +5,18 @@ import { RouterLink, RouterLinkActive, Router, RouterOutlet } from '@angular/rou
 import { AuthService } from '../../core/services/auth.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { ApplicationBrandingService } from '../../core/services/application-branding.service';
+import { HmsBrandLogoComponent } from '../components/hms-brand-logo.component';
 import { PropertyDto } from '@hms/api-contracts';
 
 @Component({
   selector: 'hms-layout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, RouterOutlet, HmsBrandLogoComponent],
   template: `
     <div class="hms-shell">
       <header class="hms-topbar" *ngIf="isAuthenticated()">
         <div class="hms-topbar__brand" routerLink="/dashboard" [title]="branding.applicationName() + ' Dashboard'">
-          <div class="hms-topbar__mark">{{ branding.logoMark() }}</div>
-          <div class="hms-topbar__info">
-            <span class="hms-topbar__name">{{ branding.applicationName() }}</span>
-            <span class="hms-topbar__sub">{{ branding.applicationSubtitle() }}</span>
-          </div>
+          <hms-brand-logo variant="full" size="sm"></hms-brand-logo>
         </div>
 
         <div class="hms-topbar__center">

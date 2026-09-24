@@ -3,12 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ThemeService, PRESET_THEMES } from '../../../core/services/theme.service';
 import { ApplicationBrandingService } from '../../../core/services/application-branding.service';
-import { HmsAlertComponent, HmsStatusPillComponent } from '../../../shared/index';
+import { HmsAlertComponent, HmsStatusPillComponent, HmsBrandLogoComponent } from '../../../shared/index';
 
 @Component({
   selector: 'app-appearance-overview',
   standalone: true,
-  imports: [CommonModule, RouterModule, HmsAlertComponent, HmsStatusPillComponent],
+  imports: [CommonModule, RouterModule, HmsAlertComponent, HmsStatusPillComponent, HmsBrandLogoComponent],
   template: `
     <div class="overview-container">
       <!-- Page Header -->
@@ -99,8 +99,7 @@ import { HmsAlertComponent, HmsStatusPillComponent } from '../../../shared/index
           <div class="mini-preview-content">
             <div class="mini-topbar">
               <div class="mini-brand">
-                <span class="mini-crest">{{ branding.logoMark() }}</span>
-                <span class="mini-brand-name">{{ branding.applicationName() }}</span>
+                <hms-brand-logo variant="full" size="sm" [showSubtitle]="false"></hms-brand-logo>
               </div>
               <span class="mini-property-pill">● Tokyo Grandeur</span>
             </div>

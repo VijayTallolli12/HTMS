@@ -9,11 +9,12 @@ import { ThemeService } from './core/services/theme.service';
 import { ApplicationBrandingService } from './core/services/application-branding.service';
 import { PropertyDto } from '@hms/api-contracts';
 import { HmsSidebarComponent } from './shared/layout/hms-sidebar.component';
+import { HmsBrandLogoComponent } from './shared/components/hms-brand-logo.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, FormsModule, HmsSidebarComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, FormsModule, HmsSidebarComponent, HmsBrandLogoComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
