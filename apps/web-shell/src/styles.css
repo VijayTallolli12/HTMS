@@ -1621,7 +1621,7 @@ button:hover,
 }
 
 .forgot-pwd-link:hover {
-  text-decoration: underline;
+  text-decoration: none !important;
   color: var(--gold-hover);
 }
 
@@ -1635,33 +1635,21 @@ button:hover,
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
+.input-affix-wrapper:hover:not(.is-focused) {
+  border-color: #cbd5e1;
+}
+
 .input-affix-wrapper.is-focused {
   border-color: var(--gold-accent);
   box-shadow: 0 0 0 3px var(--gold-ring);
 }
 
-.input-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-left: 0.9rem;
-  color: var(--text-muted);
-  width: 20px;
-  height: 20px;
-  pointer-events: none;
-  flex-shrink: 0;
-}
-
-.input-icon svg {
-  width: 18px;
-  height: 18px;
-}
-
 .hms-form-input {
   flex: 1;
+  min-width: 0;
   width: 100%;
   height: 46px;
-  padding: 0.65rem 0.9rem;
+  padding: 0 14px;
   background: transparent;
   border: none;
   color: var(--text-primary);
@@ -1675,22 +1663,32 @@ button:hover,
   color: #94a3b8;
 }
 
+.hms-form-input:-webkit-autofill,
+.hms-form-input:-webkit-autofill:hover,
+.hms-form-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px var(--surface-card) inset;
+  -webkit-text-fill-color: var(--text-primary);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 .pwd-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
-  padding: 0 0.9rem;
+  padding: 0 14px;
   height: 46px;
   color: var(--text-muted);
   cursor: pointer;
   border-radius: 0 8px 8px 0;
   transition: color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .pwd-toggle-btn:hover {
   color: var(--text-primary);
+  text-decoration: none !important;
 }
 
 .pwd-toggle-btn:focus-visible {
@@ -1701,6 +1699,7 @@ button:hover,
 .toggle-svg {
   width: 18px;
   height: 18px;
+  display: block;
 }
 
 /* Aux Row: Remember Me */
@@ -1718,14 +1717,23 @@ button:hover,
   color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
+  line-height: 1.2;
 }
 
 .hms-checkbox {
   width: 16px;
   height: 16px;
+  margin: 0;
   border-radius: 4px;
   accent-color: var(--gold-accent);
   cursor: pointer;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.hms-checkbox:focus-visible {
+  outline: 2px solid var(--gold-accent);
+  outline-offset: 2px;
 }
 
 /* Forgot Notice */
