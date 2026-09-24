@@ -10,11 +10,20 @@ import { ApplicationBrandingService } from './core/services/application-branding
 import { PropertyDto } from '@hms/api-contracts';
 import { HmsSidebarComponent } from './shared/layout/hms-sidebar.component';
 import { HmsBrandLogoComponent } from './shared/components/hms-brand-logo.component';
+import { HmsPropertySelectorComponent } from './shared/components/hms-property-selector.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, FormsModule, HmsSidebarComponent, HmsBrandLogoComponent],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    RouterLink,
+    FormsModule,
+    HmsSidebarComponent,
+    HmsBrandLogoComponent,
+    HmsPropertySelectorComponent,
+  ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })

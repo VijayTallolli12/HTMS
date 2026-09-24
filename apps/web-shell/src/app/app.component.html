@@ -25,49 +25,20 @@
       </div>
     </div>
 
-    <!-- Center Context: Clean Contextual Workspace Context (NO Pill, Clean Typography) -->
+    <!-- Center Context: Clean Contextual Workspace Context (Vertically Centered Workspace Title) -->
     <div class="hms-topbar__center">
-      <div class="workspace-context" aria-current="page">
-        <span class="workspace-eyebrow">{{ currentWorkspaceCategory }}</span>
-        <span class="workspace-title workspace-label">{{ currentWorkspaceLabel }}</span>
-      </div>
+      <span class="workspace-title" aria-current="page">{{ currentWorkspaceLabel }}</span>
     </div>
 
-    <!-- Right Controls: Hierarchy: [DEMO] -> [Property Selector] -> [User Menu] -> [Sign Out] -->
+    <!-- Right Controls: Hierarchy: [Property Selector] -> [User Menu] -> [Sign Out] -->
     <div class="hms-topbar__right">
-      <!-- 1. Environment: Quiet semantic indicator -->
-      <div class="demo-env-badge" title="Deterministic Demo Environment Active" aria-label="Demo environment active">
-        <span class="demo-indicator-dot" aria-hidden="true"></span>
-        <span class="demo-text">DEMO</span>
-      </div>
-
-      <!-- 2. Property Selector: Primary Right-side Control with Clear Hierarchy -->
-      <div class="property-context-box" *ngIf="properties().length > 0" [title]="activeProperty() ? (activeProperty()!.name + ' (' + activeProperty()!.code + ')') : ''">
-        <div class="context-info">
-          <span class="context-code">{{ activeProperty()?.code || 'PROPERTY CONTEXT' }}</span>
-          <div class="property-select-wrap">
-            <select
-              [ngModel]="activeProperty()?.id"
-              (ngModelChange)="onPropertyChange($event)"
-              class="property-select"
-              aria-label="Active Property"
-            >
-              <option *ngFor="let p of properties()" [value]="p.id">
-                {{ p.name }}
-              </option>
-            </select>
-            <svg class="select-chevron-svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M6 8l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-      <div class="property-context-box static" *ngIf="properties().length === 0 && activeProperty()">
-        <div class="context-info">
-          <span class="context-code">{{ activeProperty()!.code || 'PROPERTY' }}</span>
-          <span class="context-static-val">{{ activeProperty()!.name }}</span>
-        </div>
-      </div>
+      <!-- 1. Property Selector: Primary Right-side Control with Clear Hierarchy -->
+      <hms-property-selector
+        *ngIf="properties().length > 0 || activeProperty()"
+        [properties]="properties()"
+        [activeProperty]="activeProperty()"
+        (propertyChange)="onPropertyChange($event)"
+      ></hms-property-selector>
 
       <!-- 3. User Area: Unenclosed, Natural Clickable Stack with Avatar & Chevron -->
       <div class="user-menu-wrapper">

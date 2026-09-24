@@ -21,3 +21,4 @@ export * from './components/room-card/hms-room-card.component';
 export * from './components/workflow-stepper/hms-workflow-stepper.component';
 export * from './components/alert/hms-alert.component';
 export * from './components/hms-brand-logo.component';
+export * from './components/hms-property-selector.component';

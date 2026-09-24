@@ -120,7 +120,7 @@
   white-space: nowrap;
 }
 
-/* Zone 2: CENTER - Clean Contextual Workspace Context (NO Pill UI) */
+/* Zone 2: CENTER - Contextual Workspace Title (Vertically Centered, Clean Typography) */
 .hms-topbar__center {
   display: flex;
   align-items: center;
@@ -128,34 +128,11 @@
   flex: 1;
   padding: 0 1rem;
   min-width: 0;
-}
-
-.workspace-context {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   text-align: center;
-  user-select: none;
-  background: transparent;
-  border: none;
-  padding: 0;
-  max-width: 100%;
-  overflow: hidden;
-}
-
-.workspace-eyebrow {
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--gold-accent);
-  text-transform: uppercase;
-  line-height: 1;
-  margin-bottom: 2px;
-  white-space: nowrap;
 }
 
 .workspace-title {
-  font-size: 0.875rem; /* 14px */
+  font-size: 0.9rem; /* ~14.5px */
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.2;
@@ -163,6 +140,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  user-select: none;
 }
 
 /* Zone 3: RIGHT - Hierarchy: Environment -> Property -> User -> Logout */
@@ -173,140 +151,7 @@
   flex-shrink: 0;
 }
 
-/* 1. Environment: Quiet semantic indicator */
-.demo-env-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.5rem;
-  background: rgba(5, 150, 105, 0.06);
-  border: 1px solid rgba(5, 150, 105, 0.2);
-  border-radius: var(--radius-sm, 4px);
-  font-size: 0.68rem; /* ~11px */
-  font-weight: 700;
-  color: var(--status-success);
-  letter-spacing: 0.06em;
-  flex-shrink: 0;
-  user-select: none;
-}
 
-.demo-indicator-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--status-success);
-  flex-shrink: 0;
-}
-
-.demo-text {
-  line-height: 1;
-}
-
-/* 2. Property Selector: Primary Right-side Control with Clear Hierarchy */
-.property-context-box {
-  display: flex;
-  align-items: center;
-  background: var(--surface-raised);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-sm, 6px);
-  padding: 0.25rem 0.65rem;
-  width: 230px;
-  min-width: 200px;
-  max-width: 250px;
-  height: 38px;
-  box-sizing: border-box;
-  transition: background 0.15s ease, border-color 0.15s ease;
-  flex-shrink: 0;
-}
-
-.property-context-box:hover {
-  background: var(--surface-card);
-  border-color: var(--gold-accent);
-}
-
-.property-context-box.static {
-  min-width: auto;
-}
-
-.context-info {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  width: 100%;
-  overflow: hidden;
-}
-
-.context-code {
-  font-size: 0.62rem; /* ~10px */
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--gold-accent);
-  line-height: 1;
-  margin-bottom: 2px;
-  text-transform: uppercase;
-}
-
-.property-select-wrap {
-  display: flex;
-  align-items: center;
-  position: relative;
-  width: 100%;
-}
-
-.property-select {
-  background: transparent;
-  border: none;
-  font-size: 0.8125rem; /* 13px */
-  font-weight: 600;
-  color: var(--text-primary);
-  outline: none;
-  cursor: pointer;
-  padding: 0 1.25rem 0 0;
-  width: 100%;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  font-family: inherit;
-  line-height: 1.2;
-}
-
-.property-select:focus-visible {
-  outline: none;
-}
-
-.property-context-box:focus-within {
-  outline: 2px solid var(--gold-accent);
-  outline-offset: 1px;
-}
-
-.select-chevron-svg {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 14px;
-  height: 14px;
-  color: var(--text-muted);
-  pointer-events: none;
-}
-
-.property-select option {
-  background: var(--surface-card);
-  color: var(--text-primary);
-}
-
-.context-static-val {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
-}
 
 /* 3. User Menu & Dropdown */
 .user-menu-wrapper {
@@ -708,16 +553,6 @@
     min-width: auto;
   }
 
-  .demo-env-badge {
-    display: none;
-  }
-
-  .property-context-box {
-    width: 160px;
-    min-width: 130px;
-    padding: 0.2rem 0.5rem;
-  }
-
   .user-meta {
     display: none;
   }
@@ -735,26 +570,11 @@
   .brand-headings {
     display: none;
   }
-
-  .property-context-box {
-    width: 130px;
-    min-width: 100px;
-    padding: 0.15rem 0.4rem;
-  }
-
-  .context-code {
-    display: none;
-  }
 }
 
 @media (max-width: 375px) {
   .hms-topbar {
     padding: 0 0.5rem;
-  }
-
-  .property-context-box {
-    width: 110px;
-    min-width: 90px;
   }
 
   .logout-btn {

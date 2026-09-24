@@ -6,12 +6,13 @@ import { AuthService } from '../../core/services/auth.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { ApplicationBrandingService } from '../../core/services/application-branding.service';
 import { HmsBrandLogoComponent } from '../components/hms-brand-logo.component';
+import { HmsPropertySelectorComponent } from '../components/hms-property-selector.component';
 import { PropertyDto } from '@hms/api-contracts';
 
 @Component({
   selector: 'hms-layout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, RouterOutlet, HmsBrandLogoComponent],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, RouterOutlet, HmsBrandLogoComponent, HmsPropertySelectorComponent],
   template: `
     <div class="hms-shell">
       <header class="hms-topbar" *ngIf="isAuthenticated()">
@@ -20,23 +21,12 @@ import { PropertyDto } from '@hms/api-contracts';
         </div>
 
         <div class="hms-topbar__center">
-          <div class="hms-topbar__property">
-            <span class="hms-topbar__property-label">Property Context</span>
-            <select
-              *ngIf="properties().length > 0"
-              [ngModel]="activeProperty()?.id"
-              (ngModelChange)="onPropertyChange($event)"
-              class="hms-property-select"
-              aria-label="Active property"
-            >
-              <option *ngFor="let p of properties()" [value]="p.id">
-                {{ p.name }} ({{ p.code }})
-              </option>
-            </select>
-            <span class="hms-topbar__property-value" *ngIf="properties().length === 0">
-              {{ activeProperty()?.name || 'Portfolio' }}
-            </span>
-          </div>
+          <hms-property-selector
+            *ngIf="properties().length > 0 || activeProperty()"
+            [properties]="properties()"
+            [activeProperty]="activeProperty()"
+            (propertyChange)="onPropertyChange($event)"
+          ></hms-property-selector>
 
           <nav class="hms-topbar__nav" aria-label="Global workspace navigation">
             <a routerLink="/dashboard" routerLinkActive="active-nav" class="nav-link">Dashboard</a>
