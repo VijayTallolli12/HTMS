@@ -156,4 +156,50 @@ export class AuthService {
   hasPermission(permissionCode: string): boolean {
     return this.permissions().includes(permissionCode);
   }
+
+  get primaryRoleCode(): string {
+    const primary = this.primaryRole();
+    if (primary?.code) return primary.code;
+    const roles = this.roles();
+    if (roles.length > 0) return roles[0].code;
+    return this.currentUser()?.role || '';
+  }
+
+  isExecutive(): boolean {
+    const code = this.primaryRoleCode;
+    return (
+      code === 'CORP_ADMIN' ||
+      code === 'PROPERTY_GM' ||
+      (!code && this.hasPermission('front_office.reservation.read') && this.hasPermission('org.property.create'))
+    );
+  }
+
+  isFrontDeskAgent(): boolean {
+    const code = this.primaryRoleCode;
+    return (
+      code === 'FRONT_DESK_AGENT' ||
+      code === 'FDA' ||
+      (!this.isExecutive() && this.hasPermission('front_office.reservation.read') && !this.hasPermission('housekeeping.task.view'))
+    );
+  }
+
+  isHousekeepingSupervisor(): boolean {
+    const code = this.primaryRoleCode;
+    return (
+      code === 'HK_SUPERVISOR' ||
+      (!this.isExecutive() &&
+        this.hasPermission('housekeeping.task.view') &&
+        !this.hasPermission('front_office.reservation.read'))
+    );
+  }
+
+  isMaintenanceTech(): boolean {
+    const code = this.primaryRoleCode;
+    return (
+      code === 'MAINT_TECH' ||
+      (!this.isExecutive() &&
+        this.hasPermission('engineering.asset.view') &&
+        !this.hasPermission('front_office.reservation.read'))
+    );
+  }
 }

@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { OrganizationService } from '../../../core/services/organization.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { PmsApiService } from '../services/pms-api.service';
@@ -41,6 +41,8 @@ export class HousekeepingComponent implements OnInit {
   private readonly orgService = inject(OrganizationService);
   private readonly authService = inject(AuthService);
   private readonly pmsApi = inject(PmsApiService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly activeProperty = this.orgService.activePropertyContext;
   readonly currentUser = this.authService.currentUser;
@@ -137,6 +139,14 @@ export class HousekeepingComponent implements OnInit {
     if (prop) {
       this.loadTasks(prop.id);
     }
+
+    this.route.queryParamMap.subscribe((params) => {
+      const tab = params.get('tab') as 'overview' | 'tasks' | 'inspections' | 'readiness' | null;
+      const targetTab = tab && ['overview', 'tasks', 'inspections', 'readiness'].includes(tab) ? tab : 'overview';
+      if (this.activeWorkspaceTab() !== targetTab) {
+        this.setWorkspaceTab(targetTab, false);
+      }
+    });
   }
 
   loadTasks(propertyId: string): void {
@@ -196,8 +206,15 @@ export class HousekeepingComponent implements OnInit {
     this.filteredTasks.set(result);
   }
 
-  setWorkspaceTab(tab: 'overview' | 'tasks' | 'inspections' | 'readiness'): void {
+  setWorkspaceTab(tab: 'overview' | 'tasks' | 'inspections' | 'readiness', updateUrl = true): void {
     this.activeWorkspaceTab.set(tab);
+    if (updateUrl) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: tab === 'overview' ? { tab: null } : { tab },
+        queryParamsHandling: 'merge',
+      });
+    }
     if (tab === 'overview') {
       this.setStatusFilter('ACTIVE');
     } else if (tab === 'tasks') {

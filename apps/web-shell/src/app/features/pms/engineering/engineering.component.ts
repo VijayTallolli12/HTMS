@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { OrganizationService } from '../../../core/services/organization.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { PmsApiService } from '../services/pms-api.service';
@@ -63,6 +63,8 @@ export class EngineeringComponent implements OnInit {
   private readonly orgService = inject(OrganizationService);
   private readonly authService = inject(AuthService);
   private readonly pmsApi = inject(PmsApiService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly activeProperty = this.orgService.activePropertyContext;
   readonly currentUser = this.authService.currentUser;
@@ -175,6 +177,25 @@ export class EngineeringComponent implements OnInit {
     const prop = this.activeProperty();
     if (prop?.id) {
       this.loadAllData(prop.id);
+    }
+
+    this.route.queryParamMap.subscribe((params) => {
+      const tab = params.get('tab') as 'overview' | 'work-orders' | 'assets' | 'schedules' | null;
+      const targetTab = tab && ['overview', 'work-orders', 'assets', 'schedules'].includes(tab) ? tab : 'overview';
+      if (this.activeTab() !== targetTab) {
+        this.setTab(targetTab, false);
+      }
+    });
+  }
+
+  setTab(tab: 'overview' | 'work-orders' | 'assets' | 'schedules', updateUrl = true): void {
+    this.activeTab.set(tab);
+    if (updateUrl) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: tab === 'overview' ? { tab: null } : { tab },
+        queryParamsHandling: 'merge',
+      });
     }
   }
 

@@ -48,7 +48,7 @@
       type="button"
       class="eng-tab-btn"
       [class.eng-tab-btn--active]="activeTab() === 'overview'"
-      (click)="activeTab.set('overview')"
+      (click)="setTab('overview')"
     >
       Overview Briefing
     </button>
@@ -56,7 +56,7 @@
       type="button"
       class="eng-tab-btn"
       [class.eng-tab-btn--active]="activeTab() === 'work-orders'"
-      (click)="activeTab.set('work-orders')"
+      (click)="setTab('work-orders')"
     >
       Work Orders ({{ workOrders().length }})
     </button>
@@ -64,7 +64,7 @@
       type="button"
       class="eng-tab-btn"
       [class.eng-tab-btn--active]="activeTab() === 'assets'"
-      (click)="activeTab.set('assets')"
+      (click)="setTab('assets')"
     >
       Asset Register ({{ assets().length }})
     </button>
@@ -72,7 +72,7 @@
       type="button"
       class="eng-tab-btn"
       [class.eng-tab-btn--active]="activeTab() === 'schedules'"
-      (click)="activeTab.set('schedules')"
+      (click)="setTab('schedules')"
     >
       Preventive Schedules ({{ schedules().length }})
     </button>
@@ -85,27 +85,27 @@
   <section *ngIf="activeTab() === 'overview' && !isLoading()" class="eng-section">
     <!-- Operational KPI Strip -->
     <div class="hms-kpi-strip">
-      <div class="hms-kpi-card" (click)="activeTab.set('work-orders'); selectedWorkOrderStatusFilter.set('OPEN')">
+      <div class="hms-kpi-card" (click)="setTab('work-orders'); selectedWorkOrderStatusFilter.set('OPEN')">
         <span class="hms-kpi-card__label">Open Work Orders</span>
         <span class="hms-kpi-card__value text-warning">{{ summary().open }}</span>
         <span class="hms-kpi-card__desc">Awaiting technician assignment</span>
       </div>
-      <div class="hms-kpi-card" (click)="activeTab.set('work-orders'); selectedWorkOrderStatusFilter.set('IN_PROGRESS')">
+      <div class="hms-kpi-card" (click)="setTab('work-orders'); selectedWorkOrderStatusFilter.set('IN_PROGRESS')">
         <span class="hms-kpi-card__label">Active In Progress</span>
         <span class="hms-kpi-card__value text-info">{{ summary().inProgress }}</span>
         <span class="hms-kpi-card__desc">Technicians on-site</span>
       </div>
-      <div class="hms-kpi-card" (click)="activeTab.set('work-orders'); selectedWorkOrderStatusFilter.set('OVERDUE')">
+      <div class="hms-kpi-card" (click)="setTab('work-orders'); selectedWorkOrderStatusFilter.set('OVERDUE')">
         <span class="hms-kpi-card__label">Overdue Service</span>
         <span class="hms-kpi-card__value text-danger">{{ summary().overdue }}</span>
         <span class="hms-kpi-card__desc">Past scheduled resolution</span>
       </div>
-      <div class="hms-kpi-card" (click)="activeTab.set('work-orders'); selectedWorkOrderStatusFilter.set('ALL')">
+      <div class="hms-kpi-card" (click)="setTab('work-orders'); selectedWorkOrderStatusFilter.set('ALL')">
         <span class="hms-kpi-card__label">Rooms Blocked (OOO/OOS)</span>
         <span class="hms-kpi-card__value text-warning">{{ summary().roomsBlocked }}</span>
         <span class="hms-kpi-card__desc">Impact on hotel sellable capacity</span>
       </div>
-      <div class="hms-kpi-card" (click)="activeTab.set('schedules')">
+      <div class="hms-kpi-card" (click)="setTab('schedules')">
         <span class="hms-kpi-card__label">Schedules Due</span>
         <span class="hms-kpi-card__value text-primary">{{ summary().schedulesDue }}</span>
         <span class="hms-kpi-card__desc">Preventive tasks due today</span>
@@ -122,7 +122,7 @@
       <div class="eng-card">
         <div class="eng-card__header">
           <h3 class="eng-card__title">Priority Work Orders</h3>
-          <hms-button variant="outline" size="sm" (clicked)="activeTab.set('work-orders')">View All</hms-button>
+          <hms-button variant="outline" size="sm" (clicked)="setTab('work-orders')">View All</hms-button>
         </div>
         <div class="eng-card__body">
           <div *ngIf="workOrders().length === 0" class="eng-empty-hint">
