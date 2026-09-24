@@ -336,23 +336,29 @@ export class PmsApiService {
   }
 
   createFolio(propertyId: string, dto: CreateFolioDto) {
+    const idempotencyKey = `folio_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     return this.http.post<ApiSuccessResponse<FolioDto>>(
       `${this.pmsUrl(propertyId)}/finance/folios`,
       dto,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   }
 
   postCharge(propertyId: string, folioId: string, dto: PostChargeDto) {
+    const idempotencyKey = `chg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     return this.http.post<ApiSuccessResponse<FolioTransactionDto>>(
       `${this.pmsUrl(propertyId)}/finance/folios/${folioId}/charges`,
       dto,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   }
 
   recordPayment(propertyId: string, folioId: string, dto: RecordPaymentDto) {
+    const idempotencyKey = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     return this.http.post<ApiSuccessResponse<PaymentDto>>(
       `${this.pmsUrl(propertyId)}/finance/folios/${folioId}/payments`,
       dto,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   }
 

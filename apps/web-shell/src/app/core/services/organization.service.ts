@@ -46,7 +46,9 @@ export class OrganizationService {
     }
   }
 
-  readonly activePropertyContext = signal<PropertyDto | null>(this.getStoredProperty());
+  readonly activePropertyContext = signal<PropertyDto | null>(this.getStoredProperty(), {
+    equal: (a, b) => a?.id === b?.id,
+  });
 
   loadInitialProperty(): void {
     const stored = this.getStoredProperty();
@@ -188,6 +190,10 @@ export class OrganizationService {
   }
 
   setActiveProperty(property: PropertyDto | null): void {
+    const current = this.activePropertyContext();
+    if (current?.id === property?.id && !!current === !!property) {
+      return;
+    }
     if (property) {
       localStorage.setItem(this.activePropertyKey, JSON.stringify(property));
     } else {

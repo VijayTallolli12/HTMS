@@ -34,10 +34,12 @@ export class AppComponent implements OnInit {
     return roles.length > 0 ? (roles[0].name || roles[0].code) : (this.currentUser()?.role || 'Staff');
   }
 
+  private propertiesLoaded = false;
+
   constructor() {
     effect(
       () => {
-        if (this.isAuthenticated()) {
+        if (this.isAuthenticated() && !this.propertiesLoaded) {
           this.loadProperties();
         }
       },
@@ -53,11 +55,14 @@ export class AppComponent implements OnInit {
 
     // Validate session via /auth/me
     this.authService.validateSession().subscribe(() => {
-      this.loadProperties();
+      if (!this.propertiesLoaded) {
+        this.loadProperties();
+      }
     });
   }
 
   private loadProperties(): void {
+    this.propertiesLoaded = true;
     this.orgService.loadInitialProperty();
 
     this.orgService.getProperties().subscribe({
@@ -80,6 +85,7 @@ export class AppComponent implements OnInit {
   }
 
   onLogout(): void {
+    this.propertiesLoaded = false;
     this.authService.logout();
     this.orgService.setActiveProperty(null);
     this.router.navigate(['/login']);

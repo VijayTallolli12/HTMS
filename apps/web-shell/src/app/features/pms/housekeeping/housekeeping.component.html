@@ -124,7 +124,7 @@
 
     <!-- Tasks Table -->
     <div class="table-container" *ngIf="!isLoading() && filteredTasks().length > 0">
-      <hms-data-table [columns]="tableColumns" [rows]="filteredTasks()">
+      <hms-data-table [columns]="tableColumns" [rows]="filteredTasks()" (rowClick)="openTaskCommand($event)">
       </hms-data-table>
     </div>
   </div>

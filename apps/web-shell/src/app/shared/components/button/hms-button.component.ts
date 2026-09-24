@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
       class="hms-btn hms-btn--{{ variant }}"
       [class.hms-btn--sm]="size === 'sm'"
       [disabled]="disabled"
+      (click)="onClick($event)"
     >
       <ng-content></ng-content>
     </button>
@@ -22,8 +23,11 @@ export class HmsButtonComponent {
   @Input() variant = 'outline';
   @Input() size = 'md';
   @Input() disabled = false;
+  @Output() clicked = new EventEmitter<MouseEvent>();
 
-  onClick(): void {
-    // Subclass can override
+  onClick(event: MouseEvent): void {
+    if (!this.disabled) {
+      this.clicked.emit(event);
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -13,7 +13,7 @@ import { CommonModule } from '@angular/common';
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let row of rows; trackBy: trackByFn">
+        <tr *ngFor="let row of rows; trackBy: trackByFn" (click)="rowClick.emit(row)">
           <td *ngFor="let col of columns">
             <ng-container *ngIf="col.cellTemplate; else defaultCell">
               <ng-container [ngTemplateOutlet]="col.cellTemplate" [ngTemplateOutletContext]="{$implicit: row[col.field], value: row[col.field], row: row}"></ng-container>
@@ -30,6 +30,7 @@ export class HmsDataTableComponent {
   @Input() columns: TableColumn[] = [];
   @Input() rows: any[] = [];
   @Input() compact = false;
+  @Output() rowClick = new EventEmitter<any>();
 
   trackByFn(index: number): number {
     return index;
