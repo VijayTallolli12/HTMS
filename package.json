@@ -16,6 +16,7 @@
     "build:apps": "npm run build --workspace=@hms/api-core && npm run build --workspace=@hms/web-shell",
     "build:api": "npm run build --workspace=@hms/api-core",
     "build:web": "npm run build --workspace=@hms/web-shell",
+    "vercel:prepare": "node scripts/prepare-vercel.js",
     "test": "jest --config jest.config.js --selectProjects unit",
     "test:unit": "jest --config jest.config.js --selectProjects unit",
     "test:integration": "jest --config jest.config.js --selectProjects integration --runInBand",
