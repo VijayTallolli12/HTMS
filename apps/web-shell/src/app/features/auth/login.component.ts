@@ -234,26 +234,6 @@ interface SlideItem {
               <p class="welcome-subtext">Sign in to continue to your property workspace.</p>
             </div>
 
-            <!-- Demo Active Persona Banner (Shown when a demo role is clicked) -->
-            <div *ngIf="selectedPersona()" class="active-persona-banner" role="status">
-              <div class="persona-banner-info">
-                <span class="persona-badge-icon">{{ selectedPersona()?.icon }}</span>
-                <div class="persona-banner-text">
-                  <span class="persona-banner-title">Signing in as {{ selectedPersona()?.roleTitle }}</span>
-                  <span class="persona-banner-sub">{{ selectedPersona()?.userName }} · {{ selectedPersona()?.scopeBadge }}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="persona-clear-btn"
-                (click)="clearSelectedPersona()"
-                title="Clear preselected persona"
-                aria-label="Clear preselected persona"
-              >
-                ✕
-              </button>
-            </div>
-
             <!-- Authentication Form -->
             <form (ngSubmit)="onLogin()" class="auth-form" novalidate>
               <!-- Email Input -->
@@ -370,50 +350,31 @@ interface SlideItem {
               </div>
             </form>
 
-            <!-- ========================================================= -->
-            <!-- VERIFIED DEMO ACCOUNTS DIRECTORY                          -->
-            <!-- ========================================================= -->
-            <section class="demo-directory-section" aria-labelledby="demoAccountsHeading">
-              <div class="directory-header">
-                <div class="directory-title-wrap">
-                  <span class="directory-badge">QUICK ACCESS</span>
-                  <h3 id="demoAccountsHeading" class="directory-title">Verified Demo Accounts</h3>
+            <!-- Quick Access Demo Personas -->
+            <section class="quick-access-section" aria-label="Quick Access Demo Personas">
+              <div class="quick-access-header">
+                <div class="quick-access-title-wrap">
+                  <span class="quick-access-badge">QUICK ACCESS</span>
+                  <span class="quick-access-hint">Select a persona</span>
                 </div>
-                <div class="pwd-badge" title="Intentional deterministic seed password">
-                  <svg viewBox="0 0 16 16" fill="currentColor" class="key-icon" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M14 6a4 4 0 0 1-4.899 3.899l-1.955 1.955a.5.5 0 0 1-.354.146H5.5a.5.5 0 0 1-.5-.5V10.5a.5.5 0 0 1 .146-.354l.647-.646H5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .146-.354l1.147-1.147A4 4 0 1 1 14 6zm-4-2.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z" clip-rule="evenodd" />
-                  </svg>
-                  <span>Password: <code>Demo1234!</code></span>
+                <div class="demo-pwd-badge" title="Default deterministic seed password">
+                  <span class="demo-pwd-label">Password:</span>
+                  <code class="demo-pwd-code">Demo1234!</code>
                 </div>
               </div>
 
-              <p class="directory-instructions">
-                Select a verified operational persona to populate credentials:
-              </p>
-
-              <!-- Persona Cards Grid (2x2) -->
-              <div class="demo-personas-grid">
+              <!-- Persona Pills Grid (2x2) -->
+              <div class="quick-access-grid">
                 <button
                   *ngFor="let persona of demoPersonas"
                   type="button"
-                  class="persona-card"
+                  class="persona-chip"
                   [class.is-selected]="selectedPersona()?.email === persona.email"
                   (click)="selectDemoPersona(persona)"
                   [attr.aria-pressed]="selectedPersona()?.email === persona.email"
                 >
-                  <div class="persona-card-header">
-                    <span class="persona-icon" aria-hidden="true">{{ persona.icon }}</span>
-                    <span class="persona-scope-tag">{{ persona.scopeBadge }}</span>
-                  </div>
-                  <div class="persona-card-body">
-                    <span class="persona-role">{{ persona.roleTitle }}</span>
-                    <span class="persona-name">{{ persona.userName }}</span>
-                    <span class="persona-email">{{ persona.email }}</span>
-                  </div>
-                  <div class="persona-card-action">
-                    <span class="action-text">Use Account</span>
-                    <span class="action-chevron">›</span>
-                  </div>
+                  <span class="chip-role">{{ persona.roleTitle }}</span>
+                  <span class="chip-name">{{ persona.userName }}</span>
                 </button>
               </div>
             </section>
