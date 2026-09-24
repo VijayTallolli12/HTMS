@@ -474,6 +474,7 @@
 
 .hms-main-content {
   flex: 1;
+  min-width: 0;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
@@ -525,7 +526,7 @@
     backdrop-filter: blur(2px);
   }
 
-  .user-meta {
+  .user-role-label {
     display: none;
   }
 }
@@ -545,6 +546,10 @@
   }
 
   .context-icon {
+    display: none;
+  }
+
+  .user-meta {
     display: none;
   }
 }

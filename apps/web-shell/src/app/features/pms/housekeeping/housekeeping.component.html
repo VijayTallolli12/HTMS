@@ -16,9 +16,9 @@
   </div>
 
   <!-- Operational Alert Banners -->
-  <hms-alert type="error">{{ errorMessage() }}</hms-alert>
+  <hms-alert type="error" *ngIf="errorMessage()" (closed)="errorMessage.set(null)">{{ errorMessage() }}</hms-alert>
 
-  <hms-alert type="success">{{ successMessage() }}</hms-alert>
+  <hms-alert type="success" *ngIf="successMessage()" (closed)="successMessage.set(null)">{{ successMessage() }}</hms-alert>
 
   <!-- Operational KPI Metric Cards -->
   <div class="kpi-grid">

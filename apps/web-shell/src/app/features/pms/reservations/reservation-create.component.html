@@ -82,8 +82,25 @@
 
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Room Type <span class="required">*</span></label>
-          <select [(ngModel)]="selectedRoomTypeId" name="roomTypeId" class="form-control" required>
+          <label class="form-label">
+            Room Type <span class="required">*</span>
+            <span class="loading-inline-hint" *ngIf="roomTypesLoading()"> &bull; Loading room types...</span>
+          </label>
+          <div *ngIf="roomTypesError()" class="field-error-row">
+            <span class="field-error-text">⚠️ {{ roomTypesError() }}</span>
+            <button type="button" class="btn-retry" (click)="retryLoadRoomTypes()">Retry</button>
+          </div>
+          <div *ngIf="!roomTypesLoading() && !roomTypesError() && roomTypes().length === 0" class="field-empty-text">
+            No room types are configured for this property.
+          </div>
+          <select
+            *ngIf="!roomTypesError() && roomTypes().length > 0"
+            [(ngModel)]="selectedRoomTypeId"
+            name="roomTypeId"
+            class="form-control"
+            required
+            [disabled]="roomTypesLoading()"
+          >
             <option *ngFor="let rt of roomTypes()" [value]="rt.id">
               {{ rt.name }} ({{ rt.code }}) &bull; Max {{ rt.baseOccupancy }} Guests
             </option>
@@ -91,8 +108,25 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Rate Plan <span class="required">*</span></label>
-          <select [(ngModel)]="selectedRatePlanId" name="ratePlanId" class="form-control" required>
+          <label class="form-label">
+            Rate Plan <span class="required">*</span>
+            <span class="loading-inline-hint" *ngIf="ratePlansLoading()"> &bull; Loading rate plans...</span>
+          </label>
+          <div *ngIf="ratePlansError()" class="field-error-row">
+            <span class="field-error-text">⚠️ {{ ratePlansError() }}</span>
+            <button type="button" class="btn-retry" (click)="retryLoadRatePlans()">Retry</button>
+          </div>
+          <div *ngIf="!ratePlansLoading() && !ratePlansError() && ratePlans().length === 0" class="field-empty-text">
+            No rate plans are configured for this property.
+          </div>
+          <select
+            *ngIf="!ratePlansError() && ratePlans().length > 0"
+            [(ngModel)]="selectedRatePlanId"
+            name="ratePlanId"
+            class="form-control"
+            required
+            [disabled]="ratePlansLoading()"
+          >
             <option *ngFor="let rp of ratePlans()" [value]="rp.id">
               {{ rp.name }} ({{ rp.code }}) &bull; {{ rp.currency }} {{ rp.baseRate }}
             </option>
@@ -173,7 +207,7 @@
       <button type="button" class="btn btn-outline" (click)="cancel()">
         Cancel
       </button>
-      <button type="submit" class="btn btn-gold" [disabled]="isSubmitting()">
+      <button type="submit" class="btn btn-gold" [disabled]="isSubmitting() || !selectedRoomTypeId || !selectedRatePlanId || roomTypesLoading() || ratePlansLoading()">
         <span *ngIf="!isSubmitting()">Confirm & Book Reservation</span>
         <span *ngIf="isSubmitting()">Processing Hold...</span>
       </button>

@@ -28,6 +28,7 @@ import {
   ApiSuccessResponse,
 } from '@hms/api-contracts';
 import {
+  RequireAnyPermission,
   RequirePermissions,
   RequirePropertyContext,
 } from '../../../identity/presentation/decorators/authz.decorators';
@@ -40,7 +41,7 @@ export class RatePlanController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermissions('rate-plan:create')
+  @RequireAnyPermission('room-type:create', 'rate-plan:create')
   @ApiOperation({ summary: 'Create a new rate plan with room type bindings' })
   @ApiResponse({ status: 201, description: 'Rate plan created successfully' })
   @ApiResponse({ status: 400, description: 'Currency mismatch or invalid parameters' })
@@ -56,7 +57,7 @@ export class RatePlanController {
   }
 
   @Get()
-  @RequirePermissions('rate-plan:read')
+  @RequireAnyPermission('room-type:read', 'front_office.reservation.read', 'front_office.reservation.create', 'rate-plan:read')
   @ApiOperation({ summary: 'List rate plans for property' })
   @ApiQuery({ name: 'includeInactive', required: false, type: Boolean })
   @ApiResponse({ status: 200, description: 'Rate plans returned successfully' })
@@ -70,7 +71,7 @@ export class RatePlanController {
   }
 
   @Get(':id')
-  @RequirePermissions('rate-plan:read')
+  @RequireAnyPermission('room-type:read', 'front_office.reservation.read', 'front_office.reservation.create', 'rate-plan:read')
   @ApiOperation({ summary: 'Get rate plan by ID' })
   @ApiResponse({ status: 200, description: 'Rate plan found' })
   @ApiResponse({ status: 404, description: 'Rate plan not found' })
@@ -84,7 +85,7 @@ export class RatePlanController {
   }
 
   @Put(':id')
-  @RequirePermissions('rate-plan:update')
+  @RequireAnyPermission('room-type:update', 'rate-plan:update')
   @ApiOperation({ summary: 'Update rate plan' })
   @ApiResponse({ status: 200, description: 'Rate plan updated successfully' })
   @ApiResponse({ status: 404, description: 'Rate plan not found' })
@@ -99,7 +100,7 @@ export class RatePlanController {
   }
 
   @Delete(':id')
-  @RequirePermissions('rate-plan:delete')
+  @RequireAnyPermission('room-type:delete', 'rate-plan:delete')
   @ApiOperation({ summary: 'Soft-delete rate plan (via decoupled deletion validator)' })
   @ApiResponse({ status: 200, description: 'Rate plan soft-deleted successfully' })
   @ApiResponse({ status: 404, description: 'Rate plan not found' })
@@ -114,7 +115,7 @@ export class RatePlanController {
   }
 
   @Patch(':id/room-types/:roomTypeId')
-  @RequirePermissions('rate-plan:update')
+  @RequireAnyPermission('room-type:update', 'rate-plan:update')
   @ApiOperation({ summary: 'Update or deactivate RatePlanRoomType mapping' })
   @ApiResponse({ status: 200, description: 'Mapping updated successfully' })
   @ApiResponse({ status: 404, description: 'Mapping not found' })
@@ -143,7 +144,7 @@ export class DailyRateController {
 
   @Post('overrides')
   @HttpCode(HttpStatus.OK)
-  @RequirePermissions('rate-plan:update')
+  @RequireAnyPermission('room-type:update', 'rate-plan:update')
   @ApiOperation({ summary: 'Set daily rate or restriction override' })
   @ApiResponse({ status: 200, description: 'Override saved successfully' })
   @ApiResponse({ status: 400, description: 'Invalid business date or parameters' })

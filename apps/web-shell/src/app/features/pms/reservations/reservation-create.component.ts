@@ -27,6 +27,11 @@ export class ReservationCreateComponent implements OnInit {
   readonly isSubmitting = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
 
+  readonly roomTypesLoading = signal<boolean>(false);
+  readonly ratePlansLoading = signal<boolean>(false);
+  readonly roomTypesError = signal<string | null>(null);
+  readonly ratePlansError = signal<string | null>(null);
+
   readonly roomTypes = signal<RoomTypeDto[]>([]);
   readonly ratePlans = signal<RatePlanDto[]>([]);
 
@@ -60,37 +65,62 @@ export class ReservationCreateComponent implements OnInit {
   }
 
   loadPrerequisites(propertyId: string): void {
-    this.isLoading.set(true);
-    this.errorMessage.set(null);
+    this.loadRoomTypes(propertyId);
+    this.loadRatePlans(propertyId);
+  }
+
+  loadRoomTypes(propertyId: string): void {
+    this.roomTypesLoading.set(true);
+    this.roomTypesError.set(null);
 
     this.pmsApi.getRoomTypes(propertyId).subscribe({
       next: (rtRes) => {
         const types = rtRes.data || [];
         this.roomTypes.set(types);
-        if (types.length > 0) {
+        if (types.length > 0 && !this.selectedRoomTypeId) {
           this.selectedRoomTypeId = types[0].id;
         }
-
-        this.pmsApi.getRatePlans(propertyId).subscribe({
-          next: (rpRes) => {
-            const plans = rpRes.data || [];
-            this.ratePlans.set(plans);
-            if (plans.length > 0) {
-              this.selectedRatePlanId = plans[0].id;
-            }
-            this.isLoading.set(false);
-          },
-          error: (err) => {
-            this.errorMessage.set(err?.error?.message || 'Failed to load rate plans.');
-            this.isLoading.set(false);
-          },
-        });
+        this.roomTypesLoading.set(false);
       },
       error: (err) => {
-        this.errorMessage.set(err?.error?.message || 'Failed to load room types.');
-        this.isLoading.set(false);
+        this.roomTypesError.set(err?.error?.message || 'Unable to load room types.');
+        this.roomTypesLoading.set(false);
       },
     });
+  }
+
+  loadRatePlans(propertyId: string): void {
+    this.ratePlansLoading.set(true);
+    this.ratePlansError.set(null);
+
+    this.pmsApi.getRatePlans(propertyId).subscribe({
+      next: (rpRes) => {
+        const plans = rpRes.data || [];
+        this.ratePlans.set(plans);
+        if (plans.length > 0 && !this.selectedRatePlanId) {
+          this.selectedRatePlanId = plans[0].id;
+        }
+        this.ratePlansLoading.set(false);
+      },
+      error: (err) => {
+        this.ratePlansError.set(err?.error?.message || 'Unable to load rate plans.');
+        this.ratePlansLoading.set(false);
+      },
+    });
+  }
+
+  retryLoadRoomTypes(): void {
+    const prop = this.activeProperty();
+    if (prop) {
+      this.loadRoomTypes(prop.id);
+    }
+  }
+
+  retryLoadRatePlans(): void {
+    const prop = this.activeProperty();
+    if (prop) {
+      this.loadRatePlans(prop.id);
+    }
   }
 
   onSubmit(): void {

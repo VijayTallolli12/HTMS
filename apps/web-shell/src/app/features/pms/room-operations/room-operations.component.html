@@ -2,15 +2,15 @@
   <!-- Header -->
   <div class="page-header">
     <div>
-      <div class="luxury-badge">HOUSEKEEPING &amp; MAINTENANCE</div>
-      <h1 class="page-title">Room Operations Board</h1>
-      <p class="page-subtitle">Visual tape chart, cleanliness state transitions, and out-of-order controls</p>
+      <div class="luxury-badge">ROOM OPERATIONS</div>
+      <h1 class="page-title">Room Operations &amp; Tape Chart</h1>
+      <p class="page-subtitle">Visual room status, availability and operational controls</p>
     </div>
   </div>
 
   <!-- Error & Success Messages -->
-  <hms-alert type="error">{{ errorMessage() }}</hms-alert>
-  <hms-alert type="success">{{ successMessage() }}</hms-alert>
+  <hms-alert type="error" *ngIf="errorMessage()" (closed)="errorMessage.set(null)">{{ errorMessage() }}</hms-alert>
+  <hms-alert type="success" *ngIf="successMessage()" (closed)="successMessage.set(null)">{{ successMessage() }}</hms-alert>
 
   <!-- Filter Toolbar -->
   <div class="toolbar-card">
@@ -43,6 +43,7 @@
       <hms-room-card
         *ngFor="let room of filteredRooms()"
         [roomNumber]="room.roomNumber"
+        [roomType]="room.roomType?.name || room.roomType?.code || ''"
         [statusClass]="room.effective?.serviceStatus === 'OUT_OF_ORDER' || room.effective?.serviceStatus === 'OUT_OF_SERVICE' ? 'ooo' : room.effective?.occupancyStatus === 'OCCUPIED' ? 'occupied' : room.effective?.housekeepingStatus === 'DIRTY' ? 'dirty' : room.effective?.housekeepingStatus === 'CLEAN' || room.effective?.housekeepingStatus === 'INSPECTED' ? 'clean' : ''"
         [statusKey]="room.effective?.housekeepingStatus || room.housekeepingStatus"
         [statusLabel]="room.effective?.housekeepingStatus || room.housekeepingStatus"

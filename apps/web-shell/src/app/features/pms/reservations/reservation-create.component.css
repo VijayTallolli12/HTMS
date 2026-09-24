@@ -198,3 +198,51 @@ textarea.form-control {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.loading-inline-hint {
+  font-size: 0.72rem;
+  color: var(--gold-accent);
+  font-weight: 500;
+}
+
+.field-error-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  margin-top: 0.35rem;
+}
+
+.field-error-text {
+  font-size: 0.78rem;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.btn-retry {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #ffffff;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-retry:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+}
+
+.field-empty-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 0.4rem 0;
+}

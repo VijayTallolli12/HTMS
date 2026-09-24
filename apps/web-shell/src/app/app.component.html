@@ -46,14 +46,14 @@
       </div>
 
       <!-- Property Context Selector (Compact, Non-Clipping) -->
-      <div class="property-context-box" *ngIf="properties().length > 0">
+      <div class="property-context-box" *ngIf="properties().length > 0" [title]="activeProperty() ? (activeProperty()!.name + ' (' + activeProperty()!.code + ')') : ''">
         <span class="context-icon" aria-hidden="true">
           <svg viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4zm3 1h6v4H7V5zm8 8v2h1v-2h-1zm-2-2H7v4h6v-4zm2 0h1V9h-1v2zm0-4h1V5h-1v2zM5 5h1v2H5V5zm0 4h1v2H5V9zm0 4h1v2H5v-2z" clip-rule="evenodd" />
           </svg>
         </span>
         <div class="context-info">
-          <span class="context-title">PROPERTY CONTEXT</span>
+          <span class="context-title">{{ activeProperty()?.code || 'PROPERTY CONTEXT' }}</span>
           <select
             [ngModel]="activeProperty()?.id"
             (ngModelChange)="onPropertyChange($event)"
@@ -61,7 +61,7 @@
             aria-label="Active Property"
           >
             <option *ngFor="let p of properties()" [value]="p.id">
-              {{ p.name }} ({{ p.code }})
+              {{ p.name }}
             </option>
           </select>
         </div>

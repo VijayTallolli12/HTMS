@@ -23,8 +23,8 @@
   </div>
 
   <!-- Messages -->
-  <hms-alert type="error">{{ errorMessage() }}</hms-alert>
-  <hms-alert type="success">{{ successMessage() }}</hms-alert>
+  <hms-alert type="error" *ngIf="errorMessage()" (closed)="errorMessage.set(null)">{{ errorMessage() }}</hms-alert>
+  <hms-alert type="success" *ngIf="successMessage()" (closed)="successMessage.set(null)">{{ successMessage() }}</hms-alert>
 
   <hms-loading [message]="'Loading ledger...'" *ngIf="isLoading()"></hms-loading>
 

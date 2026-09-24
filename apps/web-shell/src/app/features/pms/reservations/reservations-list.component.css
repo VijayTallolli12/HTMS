@@ -140,13 +140,19 @@
   border-radius: 8px;
   overflow-x: auto;
   box-shadow: var(--shadow-sm);
+  width: 100%;
 }
 
 .data-table {
   width: 100%;
+  min-width: 940px;
   border-collapse: collapse;
   text-align: left;
   font-size: 0.85rem;
+}
+
+.text-right {
+  text-align: right;
 }
 
 .data-table th {
