@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink, RouterLinkActive, Router, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { OrganizationService } from '../../core/services/organization.service';
+import { ApplicationBrandingService } from '../../core/services/application-branding.service';
 import { PropertyDto } from '@hms/api-contracts';
 
 @Component({
@@ -13,11 +14,11 @@ import { PropertyDto } from '@hms/api-contracts';
   template: `
     <div class="hms-shell">
       <header class="hms-topbar" *ngIf="isAuthenticated()">
-        <div class="hms-topbar__brand" routerLink="/dashboard">
-          <div class="hms-topbar__mark">HMS</div>
+        <div class="hms-topbar__brand" routerLink="/dashboard" [title]="branding.applicationName() + ' Dashboard'">
+          <div class="hms-topbar__mark">{{ branding.logoMark() }}</div>
           <div class="hms-topbar__info">
-            <span class="hms-topbar__name">ENTERPRISE HMS</span>
-            <span class="hms-topbar__sub">Hospitality Operating Platform</span>
+            <span class="hms-topbar__name">{{ branding.applicationName() }}</span>
+            <span class="hms-topbar__sub">{{ branding.applicationSubtitle() }}</span>
           </div>
         </div>
 
@@ -104,6 +105,7 @@ import { PropertyDto } from '@hms/api-contracts';
 export class HmsLayoutComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly orgService = inject(OrganizationService);
+  readonly branding = inject(ApplicationBrandingService);
   private readonly router = inject(Router);
 
   readonly isAuthenticated = this.authService.isAuthenticated;

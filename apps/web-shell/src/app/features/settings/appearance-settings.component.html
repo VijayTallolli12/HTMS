@@ -34,6 +34,66 @@
   <div class="settings-grid">
     <!-- Left Configuration Panel -->
     <div class="config-column">
+      <!-- 0. Application Branding -->
+      <section class="settings-card branding-card" aria-label="Application Branding">
+        <div class="card-header">
+          <div class="branding-header-split">
+            <div>
+              <h2 class="card-title">Application Branding</h2>
+              <p class="card-desc">Configure the enterprise product identity and subtitles displayed across all application surfaces.</p>
+            </div>
+            <button
+              type="button"
+              class="branding-reset-action"
+              (click)="resetBrandingDefaults()"
+              title="Reset branding to defaults"
+            >
+              Reset to Default
+            </button>
+          </div>
+        </div>
+
+        <div class="branding-form-row">
+          <div class="branding-field">
+            <label for="brandingAppName" class="token-label">Application Name</label>
+            <input
+              id="brandingAppName"
+              type="text"
+              class="branding-input"
+              [(ngModel)]="brandingEdit.applicationName"
+              (ngModelChange)="onBrandingChange()"
+              placeholder="e.g. Folkslogic HTMS"
+              maxlength="40"
+            />
+          </div>
+
+          <div class="branding-field">
+            <label for="brandingAppSub" class="token-label">Application Subtitle</label>
+            <input
+              id="brandingAppSub"
+              type="text"
+              class="branding-input"
+              [(ngModel)]="brandingEdit.applicationSubtitle"
+              (ngModelChange)="onBrandingChange()"
+              placeholder="e.g. Hotel Management System"
+              maxlength="50"
+            />
+          </div>
+        </div>
+
+        <!-- Live Compact Lockup Preview -->
+        <div class="branding-preview-wrap">
+          <div class="branding-preview-tag">LIVE BRANDING PREVIEW</div>
+          <div class="branding-preview-box">
+            <div class="branding-preview-crest">{{ branding.logoMark() }}</div>
+            <div class="branding-preview-meta">
+              <span class="branding-preview-title">{{ branding.applicationName() }}</span>
+              <span class="branding-preview-sub">{{ branding.applicationSubtitle() }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- 1. Presets -->
       <section class="settings-card">
         <div class="card-header">
@@ -408,8 +468,8 @@
           <!-- Topbar sample -->
           <div class="sample-topbar">
             <div class="sample-brand">
-              <span class="sample-crest">HMS</span>
-              <span class="sample-brand-name">ENTERPRISE HMS</span>
+              <span class="sample-crest">{{ branding.logoMark() }}</span>
+              <span class="sample-brand-name">{{ branding.applicationName() }}</span>
             </div>
             <div class="sample-pill">
               <span>● Tokyo Grandeur</span>

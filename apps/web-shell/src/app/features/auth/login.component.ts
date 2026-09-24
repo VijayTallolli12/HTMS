@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { OrganizationService } from '../../core/services/organization.service';
+import { ApplicationBrandingService } from '../../core/services/application-branding.service';
 import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
 import { HmsButtonComponent, HmsAlertComponent } from '../../shared/index';
 
@@ -215,15 +216,15 @@ interface SlideItem {
                 <div class="hms-crest-mark" aria-hidden="true">
                   <svg viewBox="0 0 40 40" fill="none" class="crest-svg">
                     <rect x="2" y="2" width="36" height="36" rx="8" stroke="#9a7b38" stroke-width="1.5" fill="#fdf8ee" />
-                    <!-- Interlocking H-M-S architectural geometry -->
+                    <!-- Interlocking architectural geometry -->
                     <path d="M12 11V29M12 20H18M18 11V29" stroke="#9a7b38" stroke-width="2" stroke-linecap="round" />
                     <path d="M22 29V11L26 21L30 11V29" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
-                  <span class="crest-monogram">HMS</span>
+                  <span class="crest-monogram">{{ branding.logoMark() }}</span>
                 </div>
                 <div class="brand-titles">
-                  <h1 id="loginHeading" class="platform-title">ENTERPRISE HMS</h1>
-                  <p class="platform-subtitle">Hospitality Operating Platform</p>
+                  <h1 id="loginHeading" class="platform-title">{{ branding.applicationName() }}</h1>
+                  <p class="platform-subtitle">{{ branding.applicationSubtitle() }}</p>
                 </div>
               </div>
             </header>
@@ -382,7 +383,7 @@ interface SlideItem {
             <!-- Enterprise Footer -->
             <footer class="auth-panel-footer">
               <div class="compliance-badges">
-                <span>Enterprise HMS v1.0</span>
+                <span>{{ branding.applicationName() }} v1.0</span>
                 <span class="sep">·</span>
                 <span>Multi-Tenant Sovereignty</span>
                 <span class="sep">·</span>
@@ -399,6 +400,7 @@ interface SlideItem {
 export class LoginComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly orgService = inject(OrganizationService);
+  readonly branding = inject(ApplicationBrandingService);
   private readonly router = inject(Router);
 
   email = 'admin@tokyograndeur.demo';

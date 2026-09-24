@@ -6,7 +6,7 @@ export const routes: Routes = [
     path: 'login',
     loadComponent: () =>
       import('./features/auth/login.component').then((m) => m.LoginComponent),
-    title: 'Enterprise HMS — Sign In',
+    title: 'Sign In',
   },
   {
     path: '',
@@ -17,13 +17,13 @@ export const routes: Routes = [
     path: 'dashboard',
     loadComponent: () =>
       import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
-    title: 'Enterprise HMS — Executive Dashboard',
+    title: 'Dashboard',
     canActivate: [authGuard],
   },
   {
     path: 'pms',
     loadChildren: () => import('./features/pms/pms.routes').then((m) => m.PMS_ROUTES),
-    title: 'Enterprise HMS — Property Management System',
+    title: 'Property Management',
     canActivate: [authGuard],
   },
   {
@@ -32,14 +32,14 @@ export const routes: Routes = [
       import('./features/organization/organization-management.component').then(
         (m) => m.OrganizationManagementComponent,
       ),
-    title: 'Enterprise HMS — Organization Architecture',
+    title: 'Organization',
     canActivate: [authGuard],
   },
   {
     path: 'health',
     loadComponent: () =>
       import('./features/health/health-dashboard.component').then((m) => m.HealthDashboardComponent),
-    title: 'Enterprise HMS — System Status',
+    title: 'System Health',
     canActivate: [authGuard],
   },
   {
@@ -48,7 +48,7 @@ export const routes: Routes = [
       import('./features/settings/appearance-settings.component').then(
         (m) => m.AppearanceSettingsComponent,
       ),
-    title: 'Enterprise HMS — Appearance & Theme Settings',
+    title: 'Settings',
     canActivate: [authGuard],
   },
   {

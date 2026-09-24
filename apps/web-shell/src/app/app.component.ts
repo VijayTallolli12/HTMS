@@ -6,6 +6,7 @@ import { filter } from 'rxjs/operators';
 import { OrganizationService } from './core/services/organization.service';
 import { AuthService } from './core/services/auth.service';
 import { ThemeService } from './core/services/theme.service';
+import { ApplicationBrandingService } from './core/services/application-branding.service';
 import { PropertyDto } from '@hms/api-contracts';
 import { HmsSidebarComponent } from './shared/layout/hms-sidebar.component';
 
@@ -20,6 +21,7 @@ export class AppComponent implements OnInit {
   private readonly orgService = inject(OrganizationService);
   private readonly authService = inject(AuthService);
   private readonly themeService = inject(ThemeService);
+  readonly branding = inject(ApplicationBrandingService);
   private readonly router = inject(Router);
 
   readonly activeProperty = this.orgService.activePropertyContext;
@@ -31,7 +33,9 @@ export class AppComponent implements OnInit {
   readonly isMobileNavOpen = signal(false);
   readonly isUserMenuOpen = signal(false);
 
-  title = 'Enterprise HMS';
+  get title(): string {
+    return this.branding.applicationName();
+  }
 
   get currentWorkspaceLabel(): string {
     const url = this.router.url || '';

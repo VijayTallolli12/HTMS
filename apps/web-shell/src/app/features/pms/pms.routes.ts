@@ -10,7 +10,7 @@ export const PMS_ROUTES: Routes = [
     path: 'reservations',
     loadComponent: () =>
       import('./reservations/reservations-list.component').then((m) => m.ReservationsListComponent),
-    title: 'Enterprise HMS — Reservations Registry',
+    title: 'Reservations',
   },
   {
     path: 'reservations/new',
@@ -18,7 +18,7 @@ export const PMS_ROUTES: Routes = [
       import('./reservations/reservation-create.component').then(
         (m) => m.ReservationCreateComponent,
       ),
-    title: 'Enterprise HMS — New Booking',
+    title: 'New Booking',
   },
   {
     path: 'reservations/:id',
@@ -26,7 +26,7 @@ export const PMS_ROUTES: Routes = [
       import('./reservations/reservation-detail.component').then(
         (m) => m.ReservationDetailComponent,
       ),
-    title: 'Enterprise HMS — Reservation Details',
+    title: 'Reservation Details',
   },
   {
     path: 'room-operations',
@@ -34,46 +34,46 @@ export const PMS_ROUTES: Routes = [
       import('./room-operations/room-operations.component').then(
         (m) => m.RoomOperationsComponent,
       ),
-    title: 'Enterprise HMS — Room Operations & Tape Chart',
+    title: 'Room Operations',
   },
   {
     path: 'housekeeping',
     loadComponent: () =>
       import('./housekeeping/housekeeping.component').then((m) => m.HousekeepingComponent),
-    title: 'Enterprise HMS — Housekeeping Operations',
+    title: 'Housekeeping',
   },
   {
     path: 'front-office',
     loadComponent: () =>
       import('./front-office/front-office.component').then((m) => m.FrontOfficeComponent),
-    title: 'Enterprise HMS — Front Office & Arrivals',
+    title: 'Front Desk',
   },
   {
     path: 'folios',
     loadComponent: () => import('./folios/folio.component').then((m) => m.FolioComponent),
-    title: 'Enterprise HMS — Cashiering & Folio Settlement',
+    title: 'Cashiering',
   },
   {
     path: 'folios/:folioId',
     loadComponent: () => import('./folios/folio.component').then((m) => m.FolioComponent),
-    title: 'Enterprise HMS — Folio Details & Checkout',
+    title: 'Folio Details',
   },
   {
     path: 'room-types',
     loadComponent: () =>
       import('./room-types/room-types.component').then((m) => m.RoomTypesComponent),
-    title: 'Enterprise HMS — Room Types & Capacity',
+    title: 'Room Types',
   },
   {
     path: 'availability',
     loadComponent: () =>
       import('./availability/availability-view.component').then((m) => m.AvailabilityViewComponent),
-    title: 'Enterprise HMS — PMS Availability & Calendar',
+    title: 'Availability',
   },
   {
     path: 'engineering',
     loadComponent: () =>
       import('./engineering/engineering.component').then((m) => m.EngineeringComponent),
-    title: 'Enterprise HMS — Engineering & Facilities',
+    title: 'Engineering',
   },
 ];

@@ -11,6 +11,7 @@ import {
   MotionOption,
   PRESET_THEMES,
 } from '../../core/services/theme.service';
+import { ApplicationBrandingService } from '../../core/services/application-branding.service';
 import { HmsButtonComponent, HmsAlertComponent, HmsStatusPillComponent } from '../../shared/index';
 
 @Component({
@@ -22,6 +23,7 @@ import { HmsButtonComponent, HmsAlertComponent, HmsStatusPillComponent } from '.
 })
 export class AppearanceSettingsComponent {
   readonly themeService = inject(ThemeService);
+  readonly branding = inject(ApplicationBrandingService);
 
   readonly presets = PRESET_THEMES;
   readonly presetKeys: Array<Exclude<ThemePreset, 'custom'>> = ['premium-hospitality', 'classic-hotel', 'modern-slate'];
@@ -32,6 +34,12 @@ export class AppearanceSettingsComponent {
   readonly radius = this.themeService.currentRadius;
   readonly typography = this.themeService.currentTypography;
   readonly motion = this.themeService.currentMotion;
+
+  // Branding edit model
+  brandingEdit = {
+    applicationName: this.branding.applicationName(),
+    applicationSubtitle: this.branding.applicationSubtitle(),
+  };
 
   // Custom edit model
   customHexes: Record<keyof ThemeColors, string> = { ...this.colors() };
@@ -83,10 +91,27 @@ export class AppearanceSettingsComponent {
     this.showSuccess(`Motion animations set to ${motion}.`);
   }
 
+  onBrandingChange(): void {
+    this.branding.updateBranding({
+      applicationName: this.brandingEdit.applicationName,
+      applicationSubtitle: this.brandingEdit.applicationSubtitle,
+    });
+  }
+
+  resetBrandingDefaults(): void {
+    this.branding.resetToDefault();
+    this.brandingEdit = {
+      applicationName: this.branding.applicationName(),
+      applicationSubtitle: this.branding.applicationSubtitle(),
+    };
+    this.showSuccess('Application branding restored to defaults.');
+  }
+
   resetDefaults(): void {
     this.themeService.resetToDefault();
     this.customHexes = { ...this.themeService.currentColors() };
-    this.showSuccess('Appearance settings reset to Premium Hospitality defaults.');
+    this.resetBrandingDefaults();
+    this.showSuccess('Settings reset to system defaults.');
   }
 
   private showSuccess(msg: string): void {
