@@ -10,6 +10,8 @@ import { CommonModule } from '@angular/common';
       [type]="type"
       class="hms-btn hms-btn--{{ variant }}"
       [class.hms-btn--sm]="size === 'sm'"
+      [class.hms-btn--lg]="size === 'lg'"
+      [class.hms-btn--block]="block"
       [disabled]="disabled"
       (click)="onClick($event)"
     >
@@ -22,6 +24,7 @@ export class HmsButtonComponent {
   @Input() type = 'button';
   @Input() variant = 'outline';
   @Input() size = 'md';
+  @Input() block = false;
   @Input() disabled = false;
   @Output() clicked = new EventEmitter<MouseEvent>();
 
