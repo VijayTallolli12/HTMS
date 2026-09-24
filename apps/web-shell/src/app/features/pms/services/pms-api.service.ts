@@ -39,6 +39,27 @@ import {
   HousekeepingTaskDto,
   InspectionResult,
   QueryHousekeepingTasksDto,
+  AddWorkOrderNoteRequest,
+  AssetDto,
+  AssetListResponse,
+  AssignWorkOrderRequest,
+  CloseWorkOrderRequest,
+  CreateAssetRequest,
+  CreateMaintenanceScheduleRequest,
+  CreateWorkOrderRequest,
+  EngineeringSummaryDto,
+  MaintenanceScheduleDto,
+  MaintenanceScheduleListResponse,
+  QueryAssetsDto,
+  QueryMaintenanceSchedulesDto,
+  QueryWorkOrdersDto,
+  UpdateAssetRequest,
+  UpdateMaintenanceScheduleRequest,
+  UpdateWorkOrderStatusRequest,
+  WorkOrderDetailDto,
+  WorkOrderDto,
+  WorkOrderListResponse,
+  WorkOrderNoteDto,
 } from '@hms/api-contracts';
 import { environment } from '../../../../environments/environment';
 
@@ -403,6 +424,131 @@ export class PmsApiService {
     return this.http.post<ApiSuccessResponse<HousekeepingTaskDto>>(
       `${this.pmsUrl(propertyId)}/housekeeping/tasks/${taskId}/inspect`,
       { result, notes },
+    );
+  }
+
+  // ==========================================
+  // ENGINEERING & MAINTENANCE
+  // ==========================================
+  getEngineeringSummary(propertyId: string) {
+    return this.http.get<ApiSuccessResponse<EngineeringSummaryDto>>(
+      `${this.pmsUrl(propertyId)}/engineering/work-orders/summary`,
+    );
+  }
+
+  getWorkOrders(propertyId: string, query?: QueryWorkOrdersDto) {
+    const params: Record<string, string> = {};
+    if (query?.status) params['status'] = query.status;
+    if (query?.priority) params['priority'] = query.priority;
+    if (query?.assignedTechnicianId) params['assignedTechnicianId'] = query.assignedTechnicianId;
+    if (query?.roomId) params['roomId'] = query.roomId;
+    if (query?.assetId) params['assetId'] = query.assetId;
+    if (query?.overdue) params['overdue'] = 'true';
+    if (query?.search) params['search'] = query.search;
+    if (query?.page) params['page'] = String(query.page);
+    if (query?.limit) params['limit'] = String(query.limit);
+
+    return this.http.get<ApiSuccessResponse<WorkOrderListResponse>>(
+      `${this.pmsUrl(propertyId)}/engineering/work-orders`,
+      { params },
+    );
+  }
+
+  getWorkOrder(propertyId: string, workOrderId: string) {
+    return this.http.get<ApiSuccessResponse<WorkOrderDetailDto>>(
+      `${this.pmsUrl(propertyId)}/engineering/work-orders/${workOrderId}`,
+    );
+  }
+
+  createWorkOrder(propertyId: string, req: CreateWorkOrderRequest) {
+    return this.http.post<ApiSuccessResponse<WorkOrderDto>>(
+      `${this.pmsUrl(propertyId)}/engineering/work-orders`,
+      req,
+    );
+  }
+
+  assignWorkOrder(propertyId: string, workOrderId: string, req: AssignWorkOrderRequest) {
+    return this.http.post<ApiSuccessResponse<WorkOrderDto>>(
+      `${this.pmsUrl(propertyId)}/engineering/work-orders/${workOrderId}/assign`,
+      req,
+    );
+  }
+
+  updateWorkOrderStatus(propertyId: string, workOrderId: string, req: UpdateWorkOrderStatusRequest) {
+    return this.http.patch<ApiSuccessResponse<WorkOrderDto>>(
+      `${this.pmsUrl(propertyId)}/engineering/work-orders/${workOrderId}/status`,
+      req,
+    );
+  }
+
+  closeWorkOrder(propertyId: string, workOrderId: string, req: CloseWorkOrderRequest) {
+    return this.http.post<ApiSuccessResponse<WorkOrderDto>>(
+      `${this.pmsUrl(propertyId)}/engineering/work-orders/${workOrderId}/close`,
+      req,
+    );
+  }
+
+  addWorkOrderNote(propertyId: string, workOrderId: string, req: AddWorkOrderNoteRequest) {
+    return this.http.post<ApiSuccessResponse<WorkOrderNoteDto>>(
+      `${this.pmsUrl(propertyId)}/engineering/work-orders/${workOrderId}/notes`,
+      req,
+    );
+  }
+
+  getAssets(propertyId: string, query?: QueryAssetsDto) {
+    const params: Record<string, string> = {};
+    if (query?.status) params['status'] = query.status;
+    if (query?.category) params['category'] = query.category;
+    if (query?.roomId) params['roomId'] = query.roomId;
+    if (query?.search) params['search'] = query.search;
+    if (query?.page) params['page'] = String(query.page);
+    if (query?.limit) params['limit'] = String(query.limit);
+
+    return this.http.get<ApiSuccessResponse<AssetListResponse>>(
+      `${this.pmsUrl(propertyId)}/engineering/assets`,
+      { params },
+    );
+  }
+
+  createAsset(propertyId: string, req: CreateAssetRequest) {
+    return this.http.post<ApiSuccessResponse<AssetDto>>(
+      `${this.pmsUrl(propertyId)}/engineering/assets`,
+      req,
+    );
+  }
+
+  updateAsset(propertyId: string, assetId: string, req: UpdateAssetRequest) {
+    return this.http.patch<ApiSuccessResponse<AssetDto>>(
+      `${this.pmsUrl(propertyId)}/engineering/assets/${assetId}`,
+      req,
+    );
+  }
+
+  getMaintenanceSchedules(propertyId: string, query?: QueryMaintenanceSchedulesDto) {
+    const params: Record<string, string> = {};
+    if (query?.assetId) params['assetId'] = query.assetId;
+    if (query?.isActive !== undefined) params['isActive'] = String(query.isActive);
+    if (query?.dueStatus) params['dueStatus'] = query.dueStatus;
+    if (query?.page) params['page'] = String(query.page);
+    if (query?.limit) params['limit'] = String(query.limit);
+
+    return this.http.get<ApiSuccessResponse<MaintenanceScheduleListResponse>>(
+      `${this.pmsUrl(propertyId)}/engineering/schedules`,
+      { params },
+    );
+  }
+
+  createMaintenanceSchedule(propertyId: string, req: CreateMaintenanceScheduleRequest) {
+    return this.http.post<ApiSuccessResponse<MaintenanceScheduleDto>>(
+      `${this.pmsUrl(propertyId)}/engineering/schedules`,
+      req,
+    );
+  }
+
+  updateMaintenanceSchedule(propertyId: string, scheduleId: string, req: UpdateMaintenanceScheduleRequest) {
+    return this.http.patch<ApiSuccessResponse<MaintenanceScheduleDto>>(
+      `${this.pmsUrl(propertyId)}/engineering/schedules/${scheduleId}`,
+      req,
     );
   }
 }

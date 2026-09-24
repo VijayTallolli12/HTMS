@@ -32,6 +32,9 @@
       <a routerLink="/pms/availability" *ngIf="hasPermission('inventory:read')" routerLinkActive="active-nav" class="nav-link">
         Inventory ATS
       </a>
+      <a routerLink="/pms/engineering" *ngIf="hasPermission('engineering.work_order.view') || hasPermission('engineering.asset.view')" routerLinkActive="active-nav" class="nav-link">
+        Engineering
+      </a>
       <a routerLink="/organization" routerLinkActive="active-nav" class="nav-link">
         Organization
       </a>

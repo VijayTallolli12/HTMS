@@ -28,6 +28,14 @@ export enum PmsEventType {
   HOUSEKEEPING_TASK_CREATED = 'com.enterprise_hms.pms.housekeeping.task_created.v1',
   HOUSEKEEPING_TASK_COMPLETED = 'com.enterprise_hms.pms.housekeeping.task_completed.v1',
   HOUSEKEEPING_TASK_INSPECTED = 'com.enterprise_hms.pms.housekeeping.task_inspected.v1',
+  // Engineering / Maintenance
+  ENGINEERING_WORK_ORDER_CREATED = 'com.enterprise_hms.pms.engineering.work_order_created.v1',
+  ENGINEERING_WORK_ORDER_ASSIGNED = 'com.enterprise_hms.pms.engineering.work_order_assigned.v1',
+  ENGINEERING_WORK_ORDER_STATUS_CHANGED = 'com.enterprise_hms.pms.engineering.work_order_status_changed.v1',
+  ENGINEERING_ASSET_CREATED = 'com.enterprise_hms.pms.engineering.asset_created.v1',
+  ENGINEERING_ASSET_UPDATED = 'com.enterprise_hms.pms.engineering.asset_updated.v1',
+  ENGINEERING_SCHEDULE_CREATED = 'com.enterprise_hms.pms.engineering.schedule_created.v1',
+  ENGINEERING_SCHEDULE_UPDATED = 'com.enterprise_hms.pms.engineering.schedule_updated.v1',
 }
 
 export interface RoomTypeCreatedData {

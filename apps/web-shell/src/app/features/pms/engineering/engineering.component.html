@@ -1,0 +1,1092 @@
+<div class="hms-workspace">
+  <!-- Page Header -->
+  <header class="hms-page-header">
+    <div class="hms-page-header__left">
+      <span class="hms-page-header__badge">FACILITIES &amp; ASSETS</span>
+      <h1 class="hms-page-header__title">Engineering &amp; Maintenance</h1>
+      <p class="hms-page-header__subtitle">
+        Asset lifecycle, responsive repair work orders, and preventive service schedules.
+      </p>
+    </div>
+    <div class="hms-page-header__actions">
+      <hms-button
+        *ngIf="canCreateWorkOrder()"
+        variant="primary"
+        (clicked)="openCreateWorkOrderModal()"
+      >
+        <span class="btn-icon">+</span>
+        <span>New Work Order</span>
+      </hms-button>
+      <hms-button
+        *ngIf="canManageAssets()"
+        variant="outline"
+        (clicked)="openCreateAssetModal()"
+      >
+        <span class="btn-icon">+</span>
+        <span>Register Asset</span>
+      </hms-button>
+    </div>
+  </header>
+
+  <!-- Notification Alerts -->
+  <hms-alert
+    *ngIf="errorMessage()"
+    type="error"
+    [message]="errorMessage()!"
+    (dismiss)="errorMessage.set(null)"
+  ></hms-alert>
+  <hms-alert
+    *ngIf="successMessage()"
+    type="success"
+    [message]="successMessage()!"
+    (dismiss)="successMessage.set(null)"
+  ></hms-alert>
+
+  <!-- Primary Workspace Tabs Navigation -->
+  <nav class="eng-tabs" role="tablist">
+    <button
+      type="button"
+      class="eng-tab-btn"
+      [class.eng-tab-btn--active]="activeTab() === 'overview'"
+      (click)="activeTab.set('overview')"
+    >
+      Overview Briefing
+    </button>
+    <button
+      type="button"
+      class="eng-tab-btn"
+      [class.eng-tab-btn--active]="activeTab() === 'work-orders'"
+      (click)="activeTab.set('work-orders')"
+    >
+      Work Orders ({{ workOrders().length }})
+    </button>
+    <button
+      type="button"
+      class="eng-tab-btn"
+      [class.eng-tab-btn--active]="activeTab() === 'assets'"
+      (click)="activeTab.set('assets')"
+    >
+      Asset Register ({{ assets().length }})
+    </button>
+    <button
+      type="button"
+      class="eng-tab-btn"
+      [class.eng-tab-btn--active]="activeTab() === 'schedules'"
+      (click)="activeTab.set('schedules')"
+    >
+      Preventive Schedules ({{ schedules().length }})
+    </button>
+  </nav>
+
+  <!-- Loading Indicator -->
+  <hms-loading *ngIf="isLoading()" message="Loading engineering registry..."></hms-loading>
+
+  <!-- TAB 1: OVERVIEW / COMMAND CENTER -->
+  <section *ngIf="activeTab() === 'overview' && !isLoading()" class="eng-section">
+    <!-- Operational KPI Strip -->
+    <div class="hms-kpi-strip">
+      <div class="hms-kpi-card" (click)="activeTab.set('work-orders'); selectedWorkOrderStatusFilter.set('OPEN')">
+        <span class="hms-kpi-card__label">Open Work Orders</span>
+        <span class="hms-kpi-card__value text-warning">{{ summary().open }}</span>
+        <span class="hms-kpi-card__desc">Awaiting technician assignment</span>
+      </div>
+      <div class="hms-kpi-card" (click)="activeTab.set('work-orders'); selectedWorkOrderStatusFilter.set('IN_PROGRESS')">
+        <span class="hms-kpi-card__label">Active In Progress</span>
+        <span class="hms-kpi-card__value text-info">{{ summary().inProgress }}</span>
+        <span class="hms-kpi-card__desc">Technicians on-site</span>
+      </div>
+      <div class="hms-kpi-card" (click)="activeTab.set('work-orders'); selectedWorkOrderStatusFilter.set('OVERDUE')">
+        <span class="hms-kpi-card__label">Overdue Service</span>
+        <span class="hms-kpi-card__value text-danger">{{ summary().overdue }}</span>
+        <span class="hms-kpi-card__desc">Past scheduled resolution</span>
+      </div>
+      <div class="hms-kpi-card" (click)="activeTab.set('work-orders'); selectedWorkOrderStatusFilter.set('ALL')">
+        <span class="hms-kpi-card__label">Rooms Blocked (OOO/OOS)</span>
+        <span class="hms-kpi-card__value text-warning">{{ summary().roomsBlocked }}</span>
+        <span class="hms-kpi-card__desc">Impact on hotel sellable capacity</span>
+      </div>
+      <div class="hms-kpi-card" (click)="activeTab.set('schedules')">
+        <span class="hms-kpi-card__label">Schedules Due</span>
+        <span class="hms-kpi-card__value text-primary">{{ summary().schedulesDue }}</span>
+        <span class="hms-kpi-card__desc">Preventive tasks due today</span>
+      </div>
+      <div class="hms-kpi-card">
+        <span class="hms-kpi-card__label">Completed Today</span>
+        <span class="hms-kpi-card__value text-success">{{ summary().completedToday }}</span>
+        <span class="hms-kpi-card__desc">Closed &amp; resolved shifts</span>
+      </div>
+    </div>
+
+    <!-- Quick Operations Matrix -->
+    <div class="eng-overview-grid">
+      <div class="eng-card">
+        <div class="eng-card__header">
+          <h3 class="eng-card__title">Priority Work Orders</h3>
+          <hms-button variant="outline" size="sm" (clicked)="activeTab.set('work-orders')">View All</hms-button>
+        </div>
+        <div class="eng-card__body">
+          <div *ngIf="workOrders().length === 0" class="eng-empty-hint">
+            No work orders reported for this property.
+          </div>
+          <div class="eng-wo-list">
+            <div
+              *ngFor="let wo of workOrders().slice(0, 6)"
+              class="eng-wo-item"
+              (click)="selectWorkOrder(wo)"
+            >
+              <div class="eng-wo-item__left">
+                <span class="eng-code">{{ wo.code }}</span>
+                <span class="eng-wo-title">{{ wo.title }}</span>
+                <span class="eng-wo-sub">
+                  {{ wo.category }} • {{ wo.roomNumber ? 'Room ' + wo.roomNumber : (wo.assetName || 'General Facility') }}
+                </span>
+              </div>
+              <div class="eng-wo-item__right">
+                <span
+                  class="hms-status-pill"
+                  [ngClass]="{
+                    'hms-status-pill--dirty': wo.priority === 'URGENT' || wo.priority === 'HIGH',
+                    'hms-status-pill--warning': wo.priority === 'MEDIUM',
+                    'hms-status-pill--vacant': wo.priority === 'LOW'
+                  }"
+                >
+                  {{ wo.priority }}
+                </span>
+                <span
+                  class="hms-status-pill"
+                  [ngClass]="{
+                    'hms-status-pill--ready': wo.status === 'COMPLETED' || wo.status === 'CLOSED',
+                    'hms-status-pill--cleaning': wo.status === 'IN_PROGRESS',
+                    'hms-status-pill--occupied': wo.status === 'ASSIGNED',
+                    'hms-status-pill--vacant': wo.status === 'OPEN'
+                  }"
+                >
+                  {{ wo.status }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="eng-card">
+        <div class="eng-card__header">
+          <h3 class="eng-card__title">Upcoming Preventive Maintenance</h3>
+          <hms-button *ngIf="canManageSchedules()" variant="outline" size="sm" (clicked)="openCreateScheduleModal()">
+            + Schedule
+          </hms-button>
+        </div>
+        <div class="eng-card__body">
+          <div *ngIf="schedules().length === 0" class="eng-empty-hint">
+            No preventive maintenance schedules configured.
+          </div>
+          <div class="eng-schedule-list">
+            <div *ngFor="let sc of schedules().slice(0, 6)" class="eng-schedule-item">
+              <div class="eng-schedule-item__main">
+                <span class="eng-schedule-name">{{ sc.name }}</span>
+                <span class="eng-schedule-asset">{{ sc.assetName || sc.assetCode }} • {{ sc.frequency }}</span>
+              </div>
+              <div class="eng-schedule-item__badge">
+                <span
+                  class="hms-status-pill"
+                  [ngClass]="{
+                    'hms-status-pill--dirty': sc.dueStatus === 'OVERDUE',
+                    'hms-status-pill--warning': sc.dueStatus === 'DUE',
+                    'hms-status-pill--ready': sc.dueStatus === 'UPCOMING'
+                  }"
+                >
+                  Due: {{ sc.nextDueDate }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 2: WORK ORDERS LIST (SELECT -> INSPECT -> ACT) -->
+  <section *ngIf="activeTab() === 'work-orders' && !isLoading()" class="eng-section">
+    <!-- Filter Toolbar -->
+    <div class="hms-toolbar">
+      <div class="hms-toolbar--chips">
+        <button
+          type="button"
+          class="hms-chip"
+          [class.hms-chip--active]="selectedWorkOrderStatusFilter() === 'ALL'"
+          (click)="selectedWorkOrderStatusFilter.set('ALL')"
+        >
+          All
+        </button>
+        <button
+          type="button"
+          class="hms-chip"
+          [class.hms-chip--active]="selectedWorkOrderStatusFilter() === 'OPEN'"
+          (click)="selectedWorkOrderStatusFilter.set('OPEN')"
+        >
+          Open
+        </button>
+        <button
+          type="button"
+          class="hms-chip"
+          [class.hms-chip--active]="selectedWorkOrderStatusFilter() === 'ASSIGNED'"
+          (click)="selectedWorkOrderStatusFilter.set('ASSIGNED')"
+        >
+          Assigned
+        </button>
+        <button
+          type="button"
+          class="hms-chip"
+          [class.hms-chip--active]="selectedWorkOrderStatusFilter() === 'IN_PROGRESS'"
+          (click)="selectedWorkOrderStatusFilter.set('IN_PROGRESS')"
+        >
+          In Progress
+        </button>
+        <button
+          type="button"
+          class="hms-chip"
+          [class.hms-chip--active]="selectedWorkOrderStatusFilter() === 'COMPLETED'"
+          (click)="selectedWorkOrderStatusFilter.set('COMPLETED')"
+        >
+          Completed
+        </button>
+        <button
+          type="button"
+          class="hms-chip"
+          [class.hms-chip--active]="selectedWorkOrderStatusFilter() === 'CLOSED'"
+          (click)="selectedWorkOrderStatusFilter.set('CLOSED')"
+        >
+          Closed
+        </button>
+        <button
+          type="button"
+          class="hms-chip text-danger"
+          [class.hms-chip--active]="selectedWorkOrderStatusFilter() === 'OVERDUE'"
+          (click)="selectedWorkOrderStatusFilter.set('OVERDUE')"
+        >
+          Overdue
+        </button>
+      </div>
+
+      <div class="eng-toolbar-controls">
+        <select
+          [ngModel]="selectedWorkOrderPriorityFilter()"
+          (ngModelChange)="selectedWorkOrderPriorityFilter.set($event)"
+          class="eng-filter-select"
+        >
+          <option value="ALL">All Priorities</option>
+          <option value="URGENT">Urgent</option>
+          <option value="HIGH">High</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="LOW">Low</option>
+        </select>
+
+        <hms-search
+          [value]="workOrderSearchQuery()"
+          (searchChange)="workOrderSearchQuery.set($event)"
+          placeholder="Search by code, title, room..."
+        ></hms-search>
+
+        <hms-button
+          *ngIf="canCreateWorkOrder()"
+          variant="primary"
+          size="sm"
+          (clicked)="openCreateWorkOrderModal()"
+        >
+          + Work Order
+        </hms-button>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="eng-table-container">
+      <table class="hms-table">
+        <thead>
+          <tr>
+            <th>Order Code</th>
+            <th>Title &amp; Category</th>
+            <th>Priority</th>
+            <th>Room / Asset</th>
+            <th>Technician</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let wo of filteredWorkOrders()"
+            class="eng-clickable-row"
+            [class.eng-row-selected]="selectedWorkOrder()?.id === wo.id"
+            (click)="selectWorkOrder(wo)"
+          >
+            <td class="font-mono font-semibold">{{ wo.code }}</td>
+            <td>
+              <div class="eng-cell-title">{{ wo.title }}</div>
+              <div class="eng-cell-sub">{{ wo.category }}</div>
+            </td>
+            <td>
+              <span
+                class="hms-status-pill"
+                [ngClass]="{
+                  'hms-status-pill--dirty': wo.priority === 'URGENT' || wo.priority === 'HIGH',
+                  'hms-status-pill--warning': wo.priority === 'MEDIUM',
+                  'hms-status-pill--vacant': wo.priority === 'LOW'
+                }"
+              >
+                {{ wo.priority }}
+              </span>
+            </td>
+            <td>
+              <span *ngIf="wo.roomNumber" class="eng-badge-room">Room {{ wo.roomNumber }}</span>
+              <span *ngIf="!wo.roomNumber && wo.assetName">{{ wo.assetName }}</span>
+              <span *ngIf="!wo.roomNumber && !wo.assetName" class="text-muted">General Facility</span>
+            </td>
+            <td>
+              <span *ngIf="wo.assignedTechnicianName">{{ wo.assignedTechnicianName }}</span>
+              <span *ngIf="!wo.assignedTechnicianName" class="text-muted italic">Unassigned</span>
+            </td>
+            <td>
+              <span [class.text-danger]="wo.isOverdue">
+                {{ wo.dueAt ? (wo.dueAt | date: 'mediumDate') : '—' }}
+              </span>
+            </td>
+            <td>
+              <span
+                class="hms-status-pill"
+                [ngClass]="{
+                  'hms-status-pill--ready': wo.status === 'COMPLETED' || wo.status === 'CLOSED',
+                  'hms-status-pill--cleaning': wo.status === 'IN_PROGRESS',
+                  'hms-status-pill--occupied': wo.status === 'ASSIGNED',
+                  'hms-status-pill--vacant': wo.status === 'OPEN'
+                }"
+              >
+                {{ wo.status }}
+              </span>
+            </td>
+            <td class="text-right">
+              <button
+                type="button"
+                class="hms-btn hms-btn--outline hms-btn--sm"
+                (click)="$event.stopPropagation(); selectWorkOrder(wo)"
+              >
+                Inspect
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredWorkOrders().length === 0">
+            <td colspan="8" class="text-center py-6">
+              <hms-empty
+                title="No work orders match filter criteria"
+                message="Adjust filters or create a new repair work order."
+              ></hms-empty>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TAB 3: ASSET REGISTER -->
+  <section *ngIf="activeTab() === 'assets' && !isLoading()" class="eng-section">
+    <div class="hms-toolbar">
+      <div class="hms-toolbar--chips">
+        <button
+          type="button"
+          class="hms-chip"
+          [class.hms-chip--active]="selectedAssetCategoryFilter() === 'ALL'"
+          (click)="selectedAssetCategoryFilter.set('ALL')"
+        >
+          All Categories
+        </button>
+        <button
+          type="button"
+          class="hms-chip"
+          [class.hms-chip--active]="selectedAssetCategoryFilter() === 'HVAC'"
+          (click)="selectedAssetCategoryFilter.set('HVAC')"
+        >
+          HVAC
+        </button>
+        <button
+          type="button"
+          class="hms-chip"
+          [class.hms-chip--active]="selectedAssetCategoryFilter() === 'PLUMBING'"
+          (click)="selectedAssetCategoryFilter.set('PLUMBING')"
+        >
+          Plumbing
+        </button>
+        <button
+          type="button"
+          class="hms-chip"
+          [class.hms-chip--active]="selectedAssetCategoryFilter() === 'ELECTRICAL'"
+          (click)="selectedAssetCategoryFilter.set('ELECTRICAL')"
+        >
+          Electrical
+        </button>
+        <button
+          type="button"
+          class="hms-chip"
+          [class.hms-chip--active]="selectedAssetCategoryFilter() === 'APPLIANCE'"
+          (click)="selectedAssetCategoryFilter.set('APPLIANCE')"
+        >
+          Appliances
+        </button>
+      </div>
+
+      <div class="eng-toolbar-controls">
+        <hms-search
+          [value]="assetSearchQuery()"
+          (searchChange)="assetSearchQuery.set($event)"
+          placeholder="Search code or name..."
+        ></hms-search>
+
+        <hms-button
+          *ngIf="canManageAssets()"
+          variant="primary"
+          size="sm"
+          (clicked)="openCreateAssetModal()"
+        >
+          + Register Asset
+        </hms-button>
+      </div>
+    </div>
+
+    <div class="eng-table-container">
+      <table class="hms-table">
+        <thead>
+          <tr>
+            <th>Asset Code</th>
+            <th>Name &amp; Details</th>
+            <th>Category</th>
+            <th>Location / Room</th>
+            <th>Operating Status</th>
+            <th>Registered</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let asset of filteredAssets()">
+            <td class="font-mono font-semibold">{{ asset.code }}</td>
+            <td>
+              <div class="eng-cell-title">{{ asset.name }}</div>
+              <div *ngIf="asset.description" class="eng-cell-sub">{{ asset.description }}</div>
+            </td>
+            <td>{{ asset.category }}</td>
+            <td>
+              <span *ngIf="asset.roomNumber" class="eng-badge-room">Room {{ asset.roomNumber }}</span>
+              <span *ngIf="!asset.roomNumber" class="text-muted">Central Plant</span>
+            </td>
+            <td>
+              <span
+                class="hms-status-pill"
+                [ngClass]="{
+                  'hms-status-pill--ready': asset.status === 'ACTIVE',
+                  'hms-status-pill--cleaning': asset.status === 'UNDER_MAINTENANCE',
+                  'hms-status-pill--vacant': asset.status === 'INACTIVE'
+                }"
+              >
+                {{ asset.status }}
+              </span>
+            </td>
+            <td>{{ asset.createdAt | date: 'mediumDate' }}</td>
+          </tr>
+          <tr *ngIf="filteredAssets().length === 0">
+            <td colspan="6" class="text-center py-6">
+              <hms-empty
+                title="No assets registered"
+                message="Register plant machinery, appliances, or room hardware."
+              ></hms-empty>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TAB 4: PREVENTIVE SCHEDULES -->
+  <section *ngIf="activeTab() === 'schedules' && !isLoading()" class="eng-section">
+    <div class="hms-toolbar">
+      <div class="eng-toolbar-title">
+        <strong>Scheduled Maintenance Tasks</strong>
+      </div>
+      <div class="eng-toolbar-controls">
+        <hms-button
+          *ngIf="canManageSchedules()"
+          variant="primary"
+          size="sm"
+          (clicked)="openCreateScheduleModal()"
+        >
+          + New Schedule
+        </hms-button>
+      </div>
+    </div>
+
+    <div class="eng-table-container">
+      <table class="hms-table">
+        <thead>
+          <tr>
+            <th>Schedule Name</th>
+            <th>Linked Asset</th>
+            <th>Frequency</th>
+            <th>Next Due Date</th>
+            <th>Due Status</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of schedules()">
+            <td>
+              <div class="eng-cell-title">{{ s.name }}</div>
+              <div *ngIf="s.description" class="eng-cell-sub">{{ s.description }}</div>
+            </td>
+            <td>
+              <span class="font-semibold">{{ s.assetName || s.assetCode }}</span>
+            </td>
+            <td>{{ s.frequency }}</td>
+            <td class="font-mono">{{ s.nextDueDate }}</td>
+            <td>
+              <span
+                class="hms-status-pill"
+                [ngClass]="{
+                  'hms-status-pill--dirty': s.dueStatus === 'OVERDUE',
+                  'hms-status-pill--warning': s.dueStatus === 'DUE',
+                  'hms-status-pill--ready': s.dueStatus === 'UPCOMING'
+                }"
+              >
+                {{ s.dueStatus }}
+              </span>
+            </td>
+            <td>
+              <span
+                class="hms-status-pill"
+                [ngClass]="s.isActive ? 'hms-status-pill--ready' : 'hms-status-pill--vacant'"
+              >
+                {{ s.isActive ? 'Active' : 'Paused' }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="schedules().length === 0">
+            <td colspan="6" class="text-center py-6">
+              <hms-empty
+                title="No preventive maintenance schedules"
+                message="Set up recurring filter changes, inspections, and compliance checks."
+              ></hms-empty>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SELECT -> INSPECT -> ACT Slide-over Command Drawer -->
+  <div *ngIf="selectedWorkOrder()" class="hms-drawer-backdrop" (click)="closeDrawer()"></div>
+  <aside *ngIf="selectedWorkOrder()" class="hms-drawer" role="dialog" aria-modal="true">
+    <div class="hms-drawer__header">
+      <div class="eng-drawer-header-info">
+        <span class="eng-drawer-code">{{ selectedWorkOrder()!.code }}</span>
+        <h2 class="hms-drawer__title">{{ selectedWorkOrder()!.title }}</h2>
+      </div>
+      <button type="button" class="hms-modal__close" (click)="closeDrawer()" aria-label="Close drawer">&times;</button>
+    </div>
+
+    <div class="hms-drawer__body">
+      <!-- Status Badges Bar -->
+      <div class="eng-drawer-badges">
+        <span
+          class="hms-status-pill"
+          [ngClass]="{
+            'hms-status-pill--ready': selectedWorkOrder()!.status === 'COMPLETED' || selectedWorkOrder()!.status === 'CLOSED',
+            'hms-status-pill--cleaning': selectedWorkOrder()!.status === 'IN_PROGRESS',
+            'hms-status-pill--occupied': selectedWorkOrder()!.status === 'ASSIGNED',
+            'hms-status-pill--vacant': selectedWorkOrder()!.status === 'OPEN'
+          }"
+        >
+          Status: {{ selectedWorkOrder()!.status }}
+        </span>
+        <span
+          class="hms-status-pill"
+          [ngClass]="{
+            'hms-status-pill--dirty': selectedWorkOrder()!.priority === 'URGENT' || selectedWorkOrder()!.priority === 'HIGH',
+            'hms-status-pill--warning': selectedWorkOrder()!.priority === 'MEDIUM',
+            'hms-status-pill--vacant': selectedWorkOrder()!.priority === 'LOW'
+          }"
+        >
+          Priority: {{ selectedWorkOrder()!.priority }}
+        </span>
+        <span *ngIf="selectedWorkOrder()!.isOverdue" class="hms-status-pill hms-status-pill--dirty">
+          OVERDUE
+        </span>
+      </div>
+
+      <!-- Description Block -->
+      <div class="eng-drawer-section">
+        <h4 class="eng-drawer-section-title">Description</h4>
+        <p class="eng-drawer-desc">
+          {{ selectedWorkOrder()!.description || 'No detailed issue description provided.' }}
+        </p>
+      </div>
+
+      <!-- Metadata Attributes -->
+      <div class="eng-drawer-section">
+        <h4 class="eng-drawer-section-title">Assignment &amp; Location</h4>
+        <dl class="eng-meta-dl">
+          <dt>Category</dt>
+          <dd>{{ selectedWorkOrder()!.category }}</dd>
+
+          <dt>Assigned Technician</dt>
+          <dd>
+            <span *ngIf="selectedWorkOrder()!.assignedTechnicianName">
+              {{ selectedWorkOrder()!.assignedTechnicianName }}
+            </span>
+            <span *ngIf="!selectedWorkOrder()!.assignedTechnicianName" class="text-muted italic">
+              Unassigned
+            </span>
+          </dd>
+
+          <dt>Target Room</dt>
+          <dd>
+            <span *ngIf="selectedWorkOrder()!.roomNumber" class="eng-badge-room">
+              Room {{ selectedWorkOrder()!.roomNumber }}
+            </span>
+            <span *ngIf="!selectedWorkOrder()!.roomNumber" class="text-muted">—</span>
+          </dd>
+
+          <dt>Facility Asset</dt>
+          <dd>
+            <span *ngIf="selectedWorkOrder()!.assetName">
+              {{ selectedWorkOrder()!.assetName }} ({{ selectedWorkOrder()!.assetCode }})
+            </span>
+            <span *ngIf="!selectedWorkOrder()!.assetName" class="text-muted">—</span>
+          </dd>
+
+          <dt>Due Date</dt>
+          <dd>{{ selectedWorkOrder()!.dueAt ? (selectedWorkOrder()!.dueAt | date: 'medium') : '—' }}</dd>
+
+          <dt *ngIf="selectedWorkOrder()!.maintenanceBlockId">Maintenance Block</dt>
+          <dd *ngIf="selectedWorkOrder()!.maintenanceBlockId" class="text-warning">
+            Active Room Maintenance Block Linked
+          </dd>
+        </dl>
+      </div>
+
+      <!-- CONTEXTUAL OPERATIONAL ACTIONS (ACT) -->
+      <div class="eng-drawer-section eng-actions-box">
+        <h4 class="eng-drawer-section-title">Operational Actions</h4>
+
+        <!-- Action: Assign / Reassign Technician -->
+        <div *ngIf="canAssignWorkOrder() && selectedWorkOrder()!.status !== 'CLOSED'" class="eng-action-row">
+          <label class="hms-form-label">Assign Technician</label>
+          <div class="eng-action-input-group">
+            <select [(ngModel)]="selectedTechnicianId" class="hms-form-control">
+              <option value="">Select Technician...</option>
+              <option *ngFor="let t of technicians()" [value]="t.id">
+                {{ t.name }} ({{ t.role }})
+              </option>
+            </select>
+            <hms-button
+              variant="outline"
+              size="sm"
+              [disabled]="!selectedTechnicianId || isActionInProgress()"
+              (clicked)="assignTechnician()"
+            >
+              Assign
+            </hms-button>
+          </div>
+        </div>
+
+        <!-- Action: Transition Buttons -->
+        <div class="eng-lifecycle-actions">
+          <!-- Start Work (OPEN or ASSIGNED -> IN_PROGRESS) -->
+          <hms-button
+            *ngIf="canUpdateWorkOrderStatus() && (selectedWorkOrder()!.status === 'OPEN' || selectedWorkOrder()!.status === 'ASSIGNED')"
+            variant="primary"
+            [disabled]="isActionInProgress()"
+            (clicked)="startWork()"
+          >
+            Start Work
+          </hms-button>
+
+          <!-- Complete Work (IN_PROGRESS -> COMPLETED) -->
+          <div *ngIf="canUpdateWorkOrderStatus() && selectedWorkOrder()!.status === 'IN_PROGRESS'" class="eng-complete-box">
+            <label class="hms-form-label">Completion Notes</label>
+            <textarea
+              [(ngModel)]="actionCompletionNotes"
+              class="hms-form-control"
+              rows="2"
+              placeholder="Parts replaced, test result..."
+            ></textarea>
+            <hms-button
+              variant="success"
+              [disabled]="isActionInProgress()"
+              (clicked)="completeWork()"
+            >
+              Mark Completed
+            </hms-button>
+          </div>
+
+          <!-- Close Work Order (COMPLETED -> CLOSED) -->
+          <div *ngIf="canCloseWorkOrder() && selectedWorkOrder()!.status === 'COMPLETED'" class="eng-close-box">
+            <label class="hms-form-label">Supervisory Verification Notes</label>
+            <textarea
+              [(ngModel)]="actionCompletionNotes"
+              class="hms-form-control"
+              rows="2"
+              placeholder="Inspected and verified satisfactory..."
+            ></textarea>
+            <hms-button
+              variant="primary"
+              [disabled]="isActionInProgress()"
+              (clicked)="closeWorkOrder()"
+            >
+              Verify &amp; Close Work Order
+            </hms-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes Log & Add Note -->
+      <div class="eng-drawer-section">
+        <h4 class="eng-drawer-section-title">Technician Notes &amp; Activity</h4>
+        <div class="eng-notes-stream">
+          <div *ngFor="let n of selectedWorkOrder()!.notes" class="eng-note-item">
+            <div class="eng-note-header">
+              <span class="eng-note-author">{{ n.authorName || 'Staff' }}</span>
+              <span class="eng-note-time">{{ n.createdAt | date: 'short' }}</span>
+            </div>
+            <div class="eng-note-body">{{ n.body }}</div>
+          </div>
+          <div *ngIf="selectedWorkOrder()!.notes.length === 0" class="eng-empty-hint">
+            No activity notes recorded yet.
+          </div>
+        </div>
+
+        <div class="eng-add-note-box">
+          <textarea
+            [(ngModel)]="drawerNoteBody"
+            class="hms-form-control"
+            rows="2"
+            placeholder="Add on-site status note..."
+          ></textarea>
+          <div class="text-right mt-2">
+            <hms-button
+              variant="outline"
+              size="sm"
+              [disabled]="!drawerNoteBody.trim() || isActionInProgress()"
+              (clicked)="addDrawerNote()"
+            >
+              Add Note
+            </hms-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hms-drawer__footer">
+      <hms-button variant="outline" (clicked)="closeDrawer()">Done</hms-button>
+    </div>
+  </aside>
+
+  <!-- MODAL: CREATE WORK ORDER -->
+  <div *ngIf="isCreateWorkOrderModalOpen()" class="hms-modal-backdrop" (click)="isCreateWorkOrderModalOpen.set(false)">
+    <div class="hms-modal hms-modal--wide" (click)="$event.stopPropagation()">
+      <div class="hms-modal__header">
+        <h3 class="hms-modal__title">Create Maintenance Work Order</h3>
+        <button type="button" class="hms-modal__close" (click)="isCreateWorkOrderModalOpen.set(false)">&times;</button>
+      </div>
+
+      <div class="hms-modal__body">
+        <div class="hms-form-group">
+          <label class="hms-form-label">Work Order Title *</label>
+          <input
+            type="text"
+            [(ngModel)]="newWorkOrder.title"
+            class="hms-form-control"
+            placeholder="e.g. Master Bedroom AC Not Cooling"
+          />
+        </div>
+
+        <div class="eng-form-grid">
+          <div class="hms-form-group">
+            <label class="hms-form-label">Category *</label>
+            <select [(ngModel)]="newWorkOrder.category" class="hms-form-control">
+              <option value="HVAC">HVAC / Air Conditioning</option>
+              <option value="PLUMBING">Plumbing &amp; Water</option>
+              <option value="ELECTRICAL">Electrical &amp; Lighting</option>
+              <option value="CARPENTRY">Carpentry &amp; Doors</option>
+              <option value="PAINTING">Painting &amp; Wall</option>
+              <option value="APPLIANCE">Appliances &amp; Minibar</option>
+              <option value="IT_NETWORK">TV &amp; Network</option>
+              <option value="OTHER">Other Facility</option>
+            </select>
+          </div>
+
+          <div class="hms-form-group">
+            <label class="hms-form-label">Priority</label>
+            <select [(ngModel)]="newWorkOrder.priority" class="hms-form-control">
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium (Standard)</option>
+              <option value="HIGH">High (Urgent Guest Impact)</option>
+              <option value="URGENT">Urgent (Immediate Safety / OOO)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="eng-form-grid">
+          <div class="hms-form-group">
+            <label class="hms-form-label">Affected Room (Optional)</label>
+            <select [(ngModel)]="newWorkOrder.roomId" class="hms-form-control">
+              <option value="">None (Common Area / Central Plant)</option>
+              <option *ngFor="let r of rooms()" [value]="r.id">
+                Room {{ r.roomNumber }}
+              </option>
+            </select>
+          </div>
+
+          <div class="hms-form-group">
+            <label class="hms-form-label">Affected Asset (Optional)</label>
+            <select [(ngModel)]="newWorkOrder.assetId" class="hms-form-control">
+              <option value="">None (Non-catalogued item)</option>
+              <option *ngFor="let a of assets()" [value]="a.id">
+                {{ a.name }} ({{ a.code }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="eng-form-grid">
+          <div class="hms-form-group">
+            <label class="hms-form-label">Assign Technician (Optional)</label>
+            <select [(ngModel)]="newWorkOrder.assignToTechnicianId" class="hms-form-control">
+              <option value="">Leave Unassigned (Open Queue)</option>
+              <option *ngFor="let t of technicians()" [value]="t.id">
+                {{ t.name }} ({{ t.role }})
+              </option>
+            </select>
+          </div>
+
+          <div class="hms-form-group">
+            <label class="hms-form-label">Due Date &amp; Time (Optional)</label>
+            <input
+              type="datetime-local"
+              [(ngModel)]="newWorkOrder.dueAt"
+              class="hms-form-control"
+            />
+          </div>
+        </div>
+
+        <div class="hms-form-group">
+          <label class="hms-form-label">Issue Details</label>
+          <textarea
+            [(ngModel)]="newWorkOrder.description"
+            class="hms-form-control"
+            rows="3"
+            placeholder="Describe symptoms, noise, leaks, or guest report..."
+          ></textarea>
+        </div>
+
+        <!-- Optional Room Maintenance Block Integration -->
+        <div *ngIf="newWorkOrder.roomId" class="eng-block-toggle-card">
+          <div class="eng-checkbox-row">
+            <input
+              type="checkbox"
+              id="cb-room-block"
+              [(ngModel)]="newWorkOrder.createRoomBlock"
+            />
+            <label for="cb-room-block" class="eng-checkbox-label">
+              <strong>Block Room from Sellable Inventory (T06 Authority)</strong>
+              <span>Places the room into Out-of-Order or Out-of-Service via Room Maintenance Engine</span>
+            </label>
+          </div>
+
+          <div *ngIf="newWorkOrder.createRoomBlock" class="eng-block-details">
+            <div class="eng-form-grid">
+              <div class="hms-form-group">
+                <label class="hms-form-label">Block Type</label>
+                <select [(ngModel)]="newWorkOrder.blockType" class="hms-form-control">
+                  <option value="OUT_OF_ORDER">Out of Order (OOO — Reduces Inventory)</option>
+                  <option value="OUT_OF_SERVICE">Out of Service (OOS — Minor Defect)</option>
+                </select>
+              </div>
+              <div class="hms-form-group">
+                <label class="hms-form-label">Reason</label>
+                <input
+                  type="text"
+                  [(ngModel)]="newWorkOrder.blockReason"
+                  class="hms-form-control"
+                  placeholder="e.g. Broken AC Compressor"
+                />
+              </div>
+            </div>
+            <div class="eng-form-grid">
+              <div class="hms-form-group">
+                <label class="hms-form-label">Start Date</label>
+                <input type="date" [(ngModel)]="newWorkOrder.blockStartDate" class="hms-form-control" />
+              </div>
+              <div class="hms-form-group">
+                <label class="hms-form-label">End Date (Exclusive)</label>
+                <input type="date" [(ngModel)]="newWorkOrder.blockEndDate" class="hms-form-control" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hms-modal__footer">
+        <hms-button variant="outline" (clicked)="isCreateWorkOrderModalOpen.set(false)">Cancel</hms-button>
+        <hms-button
+          variant="primary"
+          [disabled]="!newWorkOrder.title.trim() || isActionInProgress()"
+          (clicked)="submitCreateWorkOrder()"
+        >
+          Create Work Order
+        </hms-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTER ASSET -->
+  <div *ngIf="isCreateAssetModalOpen()" class="hms-modal-backdrop" (click)="isCreateAssetModalOpen.set(false)">
+    <div class="hms-modal" (click)="$event.stopPropagation()">
+      <div class="hms-modal__header">
+        <h3 class="hms-modal__title">Register Facility Asset</h3>
+        <button type="button" class="hms-modal__close" (click)="isCreateAssetModalOpen.set(false)">&times;</button>
+      </div>
+
+      <div class="hms-modal__body">
+        <div class="hms-form-group">
+          <label class="hms-form-label">Asset Code * (Unique)</label>
+          <input
+            type="text"
+            [(ngModel)]="newAsset.code"
+            class="hms-form-control font-mono"
+            placeholder="e.g. AC-CHILLER-01"
+          />
+        </div>
+
+        <div class="hms-form-group">
+          <label class="hms-form-label">Asset Name *</label>
+          <input
+            type="text"
+            [(ngModel)]="newAsset.name"
+            class="hms-form-control"
+            placeholder="e.g. Carrier Central Chiller Unit 1"
+          />
+        </div>
+
+        <div class="eng-form-grid">
+          <div class="hms-form-group">
+            <label class="hms-form-label">Category *</label>
+            <select [(ngModel)]="newAsset.category" class="hms-form-control">
+              <option value="HVAC">HVAC</option>
+              <option value="PLUMBING">Plumbing</option>
+              <option value="ELECTRICAL">Electrical</option>
+              <option value="APPLIANCE">Appliance</option>
+              <option value="ELEVATOR">Elevator</option>
+              <option value="FIRE_SAFETY">Fire &amp; Safety</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+
+          <div class="hms-form-group">
+            <label class="hms-form-label">Location / Room</label>
+            <select [(ngModel)]="newAsset.roomId" class="hms-form-control">
+              <option value="">Central Facility / Plant</option>
+              <option *ngFor="let r of rooms()" [value]="r.id">Room {{ r.roomNumber }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="hms-form-group">
+          <label class="hms-form-label">Description / Specifications</label>
+          <textarea
+            [(ngModel)]="newAsset.description"
+            class="hms-form-control"
+            rows="2"
+            placeholder="Model number, serial number, warranty details..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="hms-modal__footer">
+        <hms-button variant="outline" (clicked)="isCreateAssetModalOpen.set(false)">Cancel</hms-button>
+        <hms-button
+          variant="primary"
+          [disabled]="!newAsset.code.trim() || !newAsset.name.trim() || isActionInProgress()"
+          (clicked)="submitCreateAsset()"
+        >
+          Save Asset
+        </hms-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CREATE SCHEDULE -->
+  <div *ngIf="isCreateScheduleModalOpen()" class="hms-modal-backdrop" (click)="isCreateScheduleModalOpen.set(false)">
+    <div class="hms-modal" (click)="$event.stopPropagation()">
+      <div class="hms-modal__header">
+        <h3 class="hms-modal__title">Create Preventive Maintenance Schedule</h3>
+        <button type="button" class="hms-modal__close" (click)="isCreateScheduleModalOpen.set(false)">&times;</button>
+      </div>
+
+      <div class="hms-modal__body">
+        <div class="hms-form-group">
+          <label class="hms-form-label">Schedule Name *</label>
+          <input
+            type="text"
+            [(ngModel)]="newSchedule.name"
+            class="hms-form-control"
+            placeholder="e.g. Monthly Chiller Filter Inspection"
+          />
+        </div>
+
+        <div class="hms-form-group">
+          <label class="hms-form-label">Target Asset *</label>
+          <select [(ngModel)]="newSchedule.assetId" class="hms-form-control">
+            <option *ngFor="let a of assets()" [value]="a.id">
+              {{ a.name }} ({{ a.code }})
+            </option>
+          </select>
+        </div>
+
+        <div class="eng-form-grid">
+          <div class="hms-form-group">
+            <label class="hms-form-label">Frequency *</label>
+            <select [(ngModel)]="newSchedule.frequency" class="hms-form-control">
+              <option value="DAILY">Daily</option>
+              <option value="WEEKLY">Weekly</option>
+              <option value="MONTHLY">Monthly</option>
+              <option value="QUARTERLY">Quarterly</option>
+              <option value="ANNUAL">Annual</option>
+            </select>
+          </div>
+
+          <div class="hms-form-group">
+            <label class="hms-form-label">First Due Date *</label>
+            <input type="date" [(ngModel)]="newSchedule.nextDueDate" class="hms-form-control" />
+          </div>
+        </div>
+
+        <div class="hms-form-group">
+          <label class="hms-form-label">Service Checklist Notes</label>
+          <textarea
+            [(ngModel)]="newSchedule.description"
+            class="hms-form-control"
+            rows="2"
+            placeholder="Inspection items, lubricant specs, cleaning protocol..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="hms-modal__footer">
+        <hms-button variant="outline" (clicked)="isCreateScheduleModalOpen.set(false)">Cancel</hms-button>
+        <hms-button
+          variant="primary"
+          [disabled]="!newSchedule.name.trim() || !newSchedule.assetId || isActionInProgress()"
+          (clicked)="submitCreateSchedule()"
+        >
+          Create Schedule
+        </hms-button>
+      </div>
+    </div>
+  </div>
+</div>
+
