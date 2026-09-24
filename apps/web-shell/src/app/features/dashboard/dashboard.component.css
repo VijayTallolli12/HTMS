@@ -204,8 +204,29 @@
   transform: translateX(4px);
 }
 
+.btn-svg {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .gateway-icon {
-  font-size: 1.5rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--gold-accent);
+}
+
+.gateway-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .gateway-info {

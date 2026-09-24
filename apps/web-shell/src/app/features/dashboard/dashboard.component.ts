@@ -69,6 +69,34 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     return this.auth.hasPermission(permission);
   }
 
+  get primaryRoleCode(): string {
+    const primary = this.auth.primaryRole();
+    if (primary?.code) return primary.code;
+    const roles = this.auth.roles();
+    if (roles.length > 0) return roles[0].code;
+    return this.auth.currentUser()?.role || '';
+  }
+
+  isExecutive(): boolean {
+    const code = this.primaryRoleCode;
+    return code === 'CORP_ADMIN' || code === 'PROPERTY_GM' || (!code && this.hasPermission('front_office.reservation.read'));
+  }
+
+  isFrontDeskAgent(): boolean {
+    const code = this.primaryRoleCode;
+    return code === 'FRONT_DESK_AGENT' || code === 'FDA';
+  }
+
+  isHousekeepingSupervisor(): boolean {
+    const code = this.primaryRoleCode;
+    return code === 'HK_SUPERVISOR' || (!this.isExecutive() && this.hasPermission('housekeeping.task.view') && !this.hasPermission('front_office.reservation.read'));
+  }
+
+  isMaintenanceTech(): boolean {
+    const code = this.primaryRoleCode;
+    return code === 'MAINT_TECH' || (!this.isExecutive() && this.hasPermission('engineering.asset.view') && !this.hasPermission('front_office.reservation.read'));
+  }
+
   canAccessOperationsHub(): boolean {
     return (
       this.hasPermission('front_office.reservation.read') ||

@@ -102,19 +102,19 @@
       <h3 class="section-title">Change Cleanliness Status</h3>
       <div class="actions-grid">
         <hms-button variant="success" [disabled]="isUpdating() || selectedRoom()!.effective?.housekeepingStatus === 'CLEAN'" (click)="changeHousekeepingStatus('CLEAN')">
-          🧹 Mark Clean
+          Mark Clean
         </hms-button>
         <hms-button variant="info" [disabled]="isUpdating() || selectedRoom()!.effective?.housekeepingStatus === 'INSPECTED'" (click)="changeHousekeepingStatus('INSPECTED')">
-          ⭐ Inspect (Supervisor)
+          Inspect (Supervisor)
         </hms-button>
         <hms-button variant="warning" [disabled]="isUpdating() || selectedRoom()!.effective?.housekeepingStatus === 'DIRTY'" (click)="changeHousekeepingStatus('DIRTY')">
-          🧺 Mark Dirty
+          Mark Dirty
         </hms-button>
         <hms-button variant="info" [disabled]="isUpdating() || selectedRoom()!.effective?.housekeepingStatus === 'CLEANING'" (click)="changeHousekeepingStatus('CLEANING')">
-          ⏳ Cleaning In Progress
+          Cleaning In Progress
         </hms-button>
         <hms-button variant="outline" [disabled]="isUpdating() || selectedRoom()!.effective?.housekeepingStatus === 'PICKUP'" (click)="changeHousekeepingStatus('PICKUP')">
-          📦 Touch-Up / Pickup
+          Touch-Up / Pickup
         </hms-button>
       </div>
     </div>

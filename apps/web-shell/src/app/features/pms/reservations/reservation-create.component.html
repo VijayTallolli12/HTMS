@@ -9,7 +9,7 @@
   </div>
 
   <div class="error-banner" *ngIf="errorMessage()">
-    <span>⚠️ {{ errorMessage() }}</span>
+    <span>{{ errorMessage() }}</span>
   </div>
 
   <div class="loading-state" *ngIf="isLoading()">
@@ -87,7 +87,7 @@
             <span class="loading-inline-hint" *ngIf="roomTypesLoading()"> &bull; Loading room types...</span>
           </label>
           <div *ngIf="roomTypesError()" class="field-error-row">
-            <span class="field-error-text">⚠️ {{ roomTypesError() }}</span>
+            <span class="field-error-text">{{ roomTypesError() }}</span>
             <button type="button" class="btn-retry" (click)="retryLoadRoomTypes()">Retry</button>
           </div>
           <div *ngIf="!roomTypesLoading() && !roomTypesError() && roomTypes().length === 0" class="field-empty-text">
@@ -113,7 +113,7 @@
             <span class="loading-inline-hint" *ngIf="ratePlansLoading()"> &bull; Loading rate plans...</span>
           </label>
           <div *ngIf="ratePlansError()" class="field-error-row">
-            <span class="field-error-text">⚠️ {{ ratePlansError() }}</span>
+            <span class="field-error-text">{{ ratePlansError() }}</span>
             <button type="button" class="btn-retry" (click)="retryLoadRatePlans()">Retry</button>
           </div>
           <div *ngIf="!ratePlansLoading() && !ratePlansError() && ratePlans().length === 0" class="field-empty-text">

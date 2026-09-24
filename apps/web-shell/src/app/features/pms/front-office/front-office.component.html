@@ -8,7 +8,11 @@
     </div>
     <div class="header-actions">
       <a routerLink="/pms/reservations/new" class="hms-btn hms-btn--gold">
-        <span class="btn-icon">＋</span> New Walk-In / Reservation
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>New Walk-In / Reservation</span>
       </a>
     </div>
   </div>
@@ -97,10 +101,10 @@
   <hms-modal [title]="'Execute Guest Check-In'" [wide]="true" *ngIf="showCheckInModal()">
     <!-- Success State -->
     <div class="checkin-success" *ngIf="checkInSuccessData()">
-      <hms-empty [icon]="'🎉'" [title]="'Guest Checked In Successfully!'" [desc]="'Room is now OCCUPIED.'"></hms-empty>
+      <hms-empty [title]="'Guest Checked In Successfully!'" [desc]="'Room is now OCCUPIED.'"></hms-empty>
       <div class="mt-1">
         <hms-button variant="gold" (click)="navigateToFolio(selectedReservation()!.id)">
-          💳 Go to Guest Folio & Cashiering &rarr;
+          Go to Guest Folio &amp; Cashiering &rarr;
         </hms-button>
       </div>
     </div>
@@ -167,7 +171,7 @@
   <span class="stay-dates">{{ row?.arrivalDate }} &rarr; {{ row?.departureDate }} <span class="nights-tag">({{ row?.nightsCount }}n)</span></span>
 </ng-template>
 <ng-template #allocatedRoomCell let-value let-row="row">
-  <span *ngIf="row?.assignedRoom" class="badge-assigned font-mono">🚪 Room {{ row?.assignedRoom?.roomNumber }}</span>
+  <span *ngIf="row?.assignedRoom" class="badge-assigned font-mono">Room {{ row?.assignedRoom?.roomNumber }}</span>
   <span *ngIf="!row?.assignedRoom" class="badge-unassigned">Unassigned</span>
 </ng-template>
 <ng-template #statusCell let-value let-row="row">

@@ -122,6 +122,35 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Buttons must NEVER inherit anchor underline behavior */
+button,
+[type="button"],
+[type="submit"],
+[type="reset"],
+.hms-button,
+.hms-btn,
+.btn,
+.btn-action,
+.btn-gold,
+.btn-outline,
+.tab-btn,
+.eng-tab-btn,
+.hk-tab-btn,
+button:hover,
+[type="button"]:hover,
+[type="submit"]:hover,
+.hms-button:hover,
+.hms-btn:hover,
+.btn:hover,
+.btn-action:hover,
+.btn-gold:hover,
+.btn-outline:hover,
+.tab-btn:hover,
+.eng-tab-btn:hover,
+.hk-tab-btn:hover {
+  text-decoration: none !important;
+}
+
 /* Shared Layout */
 .hms-shell {
   display: flex;

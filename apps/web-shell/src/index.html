@@ -6,6 +6,44 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <script>
+      (function() {
+        try {
+          var stored = localStorage.getItem('hms_theme_preferences');
+          if (stored) {
+            var prefs = JSON.parse(stored);
+            if (prefs && prefs.colors) {
+              var c = prefs.colors;
+              var root = document.documentElement;
+              if (c.background) {
+                root.style.setProperty('--surface-root', c.background);
+                root.style.setProperty('--navy-primary', c.background);
+              }
+              if (c.surface) {
+                root.style.setProperty('--surface-card', c.surface);
+                root.style.setProperty('--navy-secondary', c.surface);
+              }
+              if (c.secondary) root.style.setProperty('--surface-raised', c.secondary);
+              if (c.border) {
+                root.style.setProperty('--surface-border', c.border);
+                root.style.setProperty('--surface-border-subtle', c.border);
+              }
+              if (c.text) {
+                root.style.setProperty('--text-primary', c.text);
+                root.style.setProperty('--text-secondary', c.text);
+              }
+              if (c.mutedText) root.style.setProperty('--text-muted', c.mutedText);
+              if (c.primary) {
+                root.style.setProperty('--gold-accent', c.primary);
+                root.style.setProperty('--gold-hover', c.primary);
+                root.style.setProperty('--gold-dark', c.primary);
+              }
+              if (c.accent) root.style.setProperty('--accent-color', c.accent);
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <app-root></app-root>

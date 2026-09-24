@@ -9,11 +9,11 @@
   </div>
 
   <div class="error-banner" *ngIf="errorMessage()">
-    <span>⚠️ {{ errorMessage() }}</span>
+    <span>{{ errorMessage() }}</span>
   </div>
 
   <div class="success-banner" *ngIf="successMessage()">
-    <span>✓ {{ successMessage() }}</span>
+    <span>{{ successMessage() }}</span>
   </div>
 
   <div *ngIf="!isLoading() && reservation()" class="detail-content">
@@ -68,7 +68,7 @@
           class="btn btn-gold"
           (click)="navigateTo('/pms/front-office', { reservationId: reservation()!.id })"
         >
-          🛎️ Front Desk Check-In
+          Front Desk Check-In
         </button>
         <button
           *ngIf="reservation()!.status === 'CONFIRMED'"
@@ -84,7 +84,7 @@
           class="btn btn-gold"
           (click)="navigateTo('/pms/folios', { reservationId: reservation()!.id })"
         >
-          💳 View Folio & Cashiering
+          View Folio &amp; Cashiering
         </button>
       </div>
     </div>
@@ -175,7 +175,14 @@
           </div>
 
           <div *ngIf="!reservation()!.assignedRoom" class="unassigned-box">
-            <div class="unassigned-icon">🚪</div>
+            <div class="unassigned-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="callout-svg">
+                <path d="M2 4v16"></path>
+                <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
+                <path d="M2 17h20"></path>
+                <path d="M6 8v9"></path>
+              </svg>
+            </div>
             <p class="unassigned-text">No physical room assigned yet.</p>
             <button
               *ngIf="reservation()!.status === 'CONFIRMED'"

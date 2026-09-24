@@ -53,6 +53,7 @@ export class HousekeepingComponent implements OnInit {
   readonly tasks = signal<HousekeepingTaskDto[]>([]);
   readonly filteredTasks = signal<HousekeepingTaskDto[]>([]);
 
+  readonly activeWorkspaceTab = signal<'overview' | 'tasks' | 'inspections' | 'readiness'>('overview');
   readonly selectedStatusFilter = signal<string>('ACTIVE');
   readonly priorityFilter = signal<string>('ALL');
   readonly searchQuery = signal<string>('');
@@ -193,6 +194,19 @@ export class HousekeepingComponent implements OnInit {
     }
 
     this.filteredTasks.set(result);
+  }
+
+  setWorkspaceTab(tab: 'overview' | 'tasks' | 'inspections' | 'readiness'): void {
+    this.activeWorkspaceTab.set(tab);
+    if (tab === 'overview') {
+      this.setStatusFilter('ACTIVE');
+    } else if (tab === 'tasks') {
+      this.setStatusFilter('ALL');
+    } else if (tab === 'inspections') {
+      this.setStatusFilter('CLEANED');
+    } else if (tab === 'readiness') {
+      this.setStatusFilter('INSPECTED');
+    }
   }
 
   setStatusFilter(status: string): void {

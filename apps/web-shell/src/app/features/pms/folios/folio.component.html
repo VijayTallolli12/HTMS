@@ -30,7 +30,6 @@
 
   <!-- Empty / No Folio State -->
   <hms-empty
-    icon="💳"
     [title]="'No Billing Folio Open'"
     [desc]="'No folio initialized for this reservation.'"
     [actionLabel]="'Open Master Billing Folio'"
@@ -81,10 +80,10 @@
         </span>
         <div class="balance-status-tag">
           <span *ngIf="isZeroBalance()" class="text-success font-bold">
-            ✓ ZERO BALANCE &bull; READY FOR CHECKOUT
+            ZERO BALANCE &bull; READY FOR CHECKOUT
           </span>
           <span *ngIf="!isZeroBalance()" class="text-warning font-bold">
-            ⚠️ OUTSTANDING BALANCE MUST BE SETTLED PRIOR TO DEPARTURE
+            OUTSTANDING BALANCE MUST BE SETTLED PRIOR TO DEPARTURE
           </span>
         </div>
       </div>
@@ -94,17 +93,17 @@
     <div class="folio-actions-bar">
       <div class="left-actions">
         <hms-button variant="outline" [disabled]="activeFolio()!.status === 'CLOSED'" (click)="openPostChargeModal()">
-          ＋ Post Room Charge / Service
+          Post Room Charge / Service
         </hms-button>
         <hms-button variant="outline" class="btn-payment" [disabled]="activeFolio()!.status === 'CLOSED'" (click)="openRecordPaymentModal()">
-          💵 Record Guest Payment
+          Record Guest Payment
         </hms-button>
       </div>
 
       <!-- Departure Checkout Action (Strict Zero-Balance Enforced) -->
       <div class="right-actions">
         <hms-button variant="gold" class="checkout-btn" [disabled]="!isZeroBalance() || activeFolio()!.status === 'CLOSED' || isCheckingOut()" (click)="executeCheckout()">
-          <span *ngIf="!isCheckingOut()">🚪 Execute Zero-Balance Checkout</span>
+          <span *ngIf="!isCheckingOut()">Execute Zero-Balance Checkout</span>
           <span *ngIf="isCheckingOut()">Processing Departure...</span>
         </hms-button>
       </div>
@@ -120,7 +119,7 @@
             <span class="card-sub">{{ activeFolio()!.transactions.length }} posted items</span>
           </div>
           <hms-button variant="outline" size="sm" [disabled]="activeFolio()!.status === 'CLOSED'" (click)="openPostChargeModal()">
-            ＋ Charge
+            Post Charge
           </hms-button>
         </div>
 
@@ -143,7 +142,7 @@
             <span class="card-sub">{{ activeFolio()!.payments.length }} recorded receipts</span>
           </div>
           <hms-button variant="outline" size="sm" class="btn-payment" [disabled]="activeFolio()!.status === 'CLOSED'" (click)="openRecordPaymentModal()">
-            💵 Payment
+            Record Payment
           </hms-button>
         </div>
 
@@ -257,7 +256,12 @@
   <!-- Checkout Departure Receipt Modal -->
   <hms-modal [title]="'Checkout Settlement Receipt'" *ngIf="checkoutReceipt()" (closed)="closeReceiptModal()">
     <div class="modal-body text-center">
-      <div class="success-icon">🌟</div>
+      <div class="success-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="callout-svg">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
       <h3 class="success-title">Guest Departure Finalized</h3>
       <p class="receipt-text mt-1">
         Reservation <strong>{{ checkoutReceipt()!.reservation.confirmationNumber }}</strong> is now <strong>CHECKED_OUT</strong>.

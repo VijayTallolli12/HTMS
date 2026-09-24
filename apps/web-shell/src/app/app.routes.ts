@@ -43,6 +43,20 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'settings',
+    loadComponent: () =>
+      import('./features/settings/appearance-settings.component').then(
+        (m) => m.AppearanceSettingsComponent,
+      ),
+    title: 'Enterprise HMS — Appearance & Theme Settings',
+    canActivate: [authGuard],
+  },
+  {
+    path: 'settings/appearance',
+    redirectTo: 'settings',
+    pathMatch: 'full',
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

@@ -2,7 +2,11 @@
   <!-- Top Welcome / Property Header -->
   <header class="dashboard-header">
     <div class="header-titles">
-      <div class="luxury-badge">EXECUTIVE OPERATIONS CONSOLE</div>
+      <div class="luxury-badge" *ngIf="isHousekeepingSupervisor()">HOUSEKEEPING OPERATIONS CONSOLE</div>
+      <div class="luxury-badge" *ngIf="isMaintenanceTech()">FACILITIES &amp; ENGINEERING CONSOLE</div>
+      <div class="luxury-badge" *ngIf="isFrontDeskAgent()">FRONT OFFICE OPERATIONS CONSOLE</div>
+      <div class="luxury-badge" *ngIf="!isHousekeepingSupervisor() && !isMaintenanceTech() && !isFrontDeskAgent()">EXECUTIVE OPERATIONS CONSOLE</div>
+
       <h1 class="hotel-title">
         <span *ngIf="activeProperty()">{{ activeProperty()!.name }}</span>
         <span *ngIf="!activeProperty()">Grand Luxury Hospitality Portfolio</span>
@@ -17,20 +21,53 @@
 
     <!-- Quick Actions -->
     <div class="header-actions">
+      <!-- Executive / Front Desk Actions -->
       <hms-button variant="gold" *ngIf="hasPermission('front_office.reservation.create')" (click)="navigateTo('/pms/reservations/new')">
-        <span class="btn-icon">＋</span> New Reservation
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>New Reservation</span>
       </hms-button>
+
       <hms-button variant="outline" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/front-office')">
-        <span class="btn-icon">🛎️</span> Front Desk
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span>Front Desk</span>
       </hms-button>
+
       <hms-button variant="outline" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
-        <span class="btn-icon">📋</span> Tape Chart
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
+          <path d="M2 4v16"></path>
+          <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
+          <path d="M2 17h20"></path>
+          <path d="M6 8v9"></path>
+        </svg>
+        <span>Tape Chart</span>
+      </hms-button>
+
+      <!-- Housekeeping Supervisor Specific Quick Action -->
+      <hms-button variant="gold" *ngIf="isHousekeepingSupervisor()" (click)="navigateTo('/pms/housekeeping')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+        </svg>
+        <span>Housekeeping Board</span>
+      </hms-button>
+
+      <!-- Maintenance Technician Specific Quick Action -->
+      <hms-button variant="gold" *ngIf="isMaintenanceTech()" (click)="navigateTo('/pms/engineering')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+        </svg>
+        <span>Engineering Workspace</span>
       </hms-button>
     </div>
   </header>
 
   <!-- Error Banner -->
-  <hms-alert type="error" [icon]="'⚠️'" *ngIf="errorMessage()">
+  <hms-alert type="error" *ngIf="errorMessage()">
     {{ errorMessage() }}
   </hms-alert>
 
@@ -70,7 +107,7 @@
       </div>
     </div>
 
-    <!-- Right: Quick Operations Hub -->
+    <!-- Right: Quick Operations Hub (Executive / Front Desk) -->
     <div class="panel-card" *ngIf="canAccessOperationsHub()">
       <div class="panel-header">
         <div>
@@ -82,34 +119,60 @@
       <div class="panel-body">
         <div class="quick-gateways-list">
           <div class="gateway-item" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/front-office')">
-            <div class="gateway-icon">🛎️</div>
+            <div class="gateway-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </div>
             <div class="gateway-info">
-              <h3 class="gateway-title">Front Desk & Arrivals</h3>
+              <h3 class="gateway-title">Front Desk &amp; Arrivals</h3>
               <p class="gateway-desc">Perform room assignments, check-ins, and key issuances.</p>
             </div>
             <div class="gateway-arrow">&rarr;</div>
           </div>
 
           <div class="gateway-item" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
-            <div class="gateway-icon">🧹</div>
+            <div class="gateway-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 4v16"></path>
+                <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
+                <path d="M2 17h20"></path>
+                <path d="M6 8v9"></path>
+              </svg>
+            </div>
             <div class="gateway-info">
-              <h3 class="gateway-title">Room Operations & Tape Chart</h3>
+              <h3 class="gateway-title">Room Operations &amp; Tape Chart</h3>
               <p class="gateway-desc">Live room board, housekeeping states, and maintenance controls.</p>
             </div>
             <div class="gateway-arrow">&rarr;</div>
           </div>
 
           <div class="gateway-item" *ngIf="hasPermission('folio:view')" (click)="navigateTo('/pms/folios')">
-            <div class="gateway-icon">💳</div>
+            <div class="gateway-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+            </div>
             <div class="gateway-info">
-              <h3 class="gateway-title">Cashiering & Folio Settlement</h3>
+              <h3 class="gateway-title">Cashiering &amp; Folio Settlement</h3>
               <p class="gateway-desc">Post charges, record payments, and execute zero-balance checkouts.</p>
             </div>
             <div class="gateway-arrow">&rarr;</div>
           </div>
 
           <div class="gateway-item" *ngIf="hasPermission('front_office.reservation.create')" (click)="navigateTo('/pms/reservations/new')">
-            <div class="gateway-icon">📅</div>
+            <div class="gateway-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+                <line x1="12" y1="14" x2="12" y2="18"></line>
+                <line x1="10" y1="16" x2="14" y2="16"></line>
+              </svg>
+            </div>
             <div class="gateway-info">
               <h3 class="gateway-title">New Booking Engine</h3>
               <p class="gateway-desc">Book inventory with atomic hold and stay rate pricing.</p>
@@ -120,18 +183,87 @@
       </div>
     </div>
 
-    <!-- Fallback panel for scoped departmental roles -->
-    <div class="panel-card" *ngIf="!hasPermission('front_office.reservation.read') && !canAccessOperationsHub()">
+    <!-- Dedicated Departmental Hero Card for Housekeeping Supervisor -->
+    <div class="panel-card" *ngIf="isHousekeepingSupervisor() && !canAccessOperationsHub()">
       <div class="panel-header">
         <div>
-          <h2 class="panel-title">Departmental Operations</h2>
-          <p class="panel-subtitle">Access your assigned operational module</p>
+          <h2 class="panel-title">Housekeeping Operations</h2>
+          <p class="panel-subtitle">Room turnover, task dispatch &amp; supervisor quality audits</p>
         </div>
       </div>
       <div class="panel-body">
-        <p style="padding: 1.5rem; color: #a1a1aa; font-size: 0.95rem;">
-          You are logged in with departmental credentials. Please select your assigned operational module from the navigation sidebar.
-        </p>
+        <div class="quick-gateways-list">
+          <div class="gateway-item" (click)="navigateTo('/pms/housekeeping')">
+            <div class="gateway-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+              </svg>
+            </div>
+            <div class="gateway-info">
+              <h3 class="gateway-title">Open Housekeeping Workspace</h3>
+              <p class="gateway-desc">View assigned attendant queues, log room turnover completions, and certify inspected status.</p>
+            </div>
+            <div class="gateway-arrow">&rarr;</div>
+          </div>
+
+          <div class="gateway-item" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
+            <div class="gateway-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 4v16"></path>
+                <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
+                <path d="M2 17h20"></path>
+                <path d="M6 8v9"></path>
+              </svg>
+            </div>
+            <div class="gateway-info">
+              <h3 class="gateway-title">Room Operations &amp; Readiness Board</h3>
+              <p class="gateway-desc">Check floor plan status, occupancy states, and maintenance blocks.</p>
+            </div>
+            <div class="gateway-arrow">&rarr;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dedicated Departmental Hero Card for Maintenance Technician -->
+    <div class="panel-card" *ngIf="isMaintenanceTech() && !canAccessOperationsHub()">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Engineering &amp; Maintenance Operations</h2>
+          <p class="panel-subtitle">Asset register, work orders &amp; preventive maintenance</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="quick-gateways-list">
+          <div class="gateway-item" (click)="navigateTo('/pms/engineering')">
+            <div class="gateway-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+              </svg>
+            </div>
+            <div class="gateway-info">
+              <h3 class="gateway-title">Open Engineering Workspace</h3>
+              <p class="gateway-desc">Manage repair tickets, update work order lifecycle, and view preventive schedules.</p>
+            </div>
+            <div class="gateway-arrow">&rarr;</div>
+          </div>
+
+          <div class="gateway-item" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
+            <div class="gateway-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 4v16"></path>
+                <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
+                <path d="M2 17h20"></path>
+                <path d="M6 8v9"></path>
+              </svg>
+            </div>
+            <div class="gateway-info">
+              <h3 class="gateway-title">Out-of-Order (OOO) Room Controls</h3>
+              <p class="gateway-desc">Inspect room service states, place maintenance holds, or return rooms to service.</p>
+            </div>
+            <div class="gateway-arrow">&rarr;</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>

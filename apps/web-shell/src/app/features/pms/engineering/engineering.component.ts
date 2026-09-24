@@ -252,18 +252,22 @@ export class EngineeringComponent implements OnInit {
       error: () => {},
     });
 
-    // Rooms for selector
-    this.pmsApi.getRooms(propertyId).subscribe({
-      next: (res) => {
-        if (res.data) {
-          this.rooms.set(res.data);
-        }
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.isLoading.set(false);
-      },
-    });
+    // Rooms for selector (only if permitted)
+    if (this.hasPermission('room:read')) {
+      this.pmsApi.getRooms(propertyId).subscribe({
+        next: (res) => {
+          if (res.data) {
+            this.rooms.set(res.data);
+          }
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.isLoading.set(false);
+        },
+      });
+    } else {
+      this.isLoading.set(false);
+    }
   }
 
   // ── Filtered Views ────────────────────────────────────────────────

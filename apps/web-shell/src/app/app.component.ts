@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { filter } from 'rxjs/operators';
 import { OrganizationService } from './core/services/organization.service';
 import { AuthService } from './core/services/auth.service';
+import { ThemeService } from './core/services/theme.service';
 import { PropertyDto } from '@hms/api-contracts';
 import { HmsSidebarComponent } from './shared/layout/hms-sidebar.component';
 
@@ -18,6 +19,7 @@ import { HmsSidebarComponent } from './shared/layout/hms-sidebar.component';
 export class AppComponent implements OnInit {
   private readonly orgService = inject(OrganizationService);
   private readonly authService = inject(AuthService);
+  private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
 
   readonly activeProperty = this.orgService.activePropertyContext;
@@ -33,6 +35,7 @@ export class AppComponent implements OnInit {
 
   get currentWorkspaceLabel(): string {
     const url = this.router.url || '';
+    if (url.includes('/settings')) return 'Appearance & Theme Preferences';
     if (url.includes('/pms/reservations')) return 'Reservations Registry';
     if (url.includes('/pms/front-office')) return 'Front Desk & Arrivals';
     if (url.includes('/pms/room-operations')) return 'Room Operations & Tape Chart';

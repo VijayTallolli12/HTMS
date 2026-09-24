@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
           <span class="hms-room-card__number">ROOM {{ roomNumber }}</span>
           <span class="hms-room-card__type" *ngIf="roomType">{{ roomType }}</span>
         </div>
-        <span class="ready-badge" *ngIf="ready">✓ Ready</span>
+        <span class="ready-badge" *ngIf="ready">Ready</span>
       </div>
 
       <div class="hms-room-card__status-stack">
@@ -21,11 +21,14 @@ import { CommonModule } from '@angular/common';
             <span class="dot"></span> {{ occupancyLabel || occupancyKey }}
           </span>
           <span class="status-pill status-pill--{{ housekeepingNormalized }}">
-            {{ housekeepingIcon }} {{ statusLabel || statusKey }}
+            <span class="dot"></span> {{ statusLabel || statusKey }}
           </span>
         </div>
         <div class="maintenance-tag" *ngIf="serviceStatus && serviceStatus !== 'IN_SERVICE'">
-          🔧 {{ serviceLabel }}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tag-svg" aria-hidden="true">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+          </svg>
+          <span>{{ serviceLabel }}</span>
         </div>
       </div>
 
@@ -183,6 +186,13 @@ import { CommonModule } from '@angular/common';
       .hms-room-card--ooo {
         border-left: 3px solid #ea580c;
         background: #fffdfc;
+      }
+      .tag-svg {
+        width: 13px;
+        height: 13px;
+        display: inline-block;
+        vertical-align: -2px;
+        margin-right: 3px;
       }
     `,
   ],

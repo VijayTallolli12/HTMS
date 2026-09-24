@@ -9,14 +9,18 @@
 
     <div class="header-actions">
       <button class="btn btn-gold" (click)="navigateTo('/pms/reservations/new')">
-        <span class="btn-icon">＋</span> New Reservation
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>New Reservation</span>
       </button>
     </div>
   </div>
 
   <!-- Error Banner -->
   <div class="error-banner" *ngIf="errorMessage()">
-    <span>⚠️ {{ errorMessage() }}</span>
+    <span>{{ errorMessage() }}</span>
   </div>
 
   <!-- Filters & Search Toolbar -->
@@ -117,7 +121,7 @@
           <td class="text-center">{{ r.nightsCount }}</td>
           <td>
             <span *ngIf="r.assignedRoom" class="badge-assigned">
-              🚪 Room {{ r.assignedRoom.roomNumber }}
+              Room {{ r.assignedRoom.roomNumber }}
             </span>
             <span *ngIf="!r.assignedRoom" class="text-muted text-xs">
               Unassigned

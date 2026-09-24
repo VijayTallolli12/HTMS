@@ -20,6 +20,42 @@
 
   <hms-alert type="success" *ngIf="successMessage()" (closed)="successMessage.set(null)">{{ successMessage() }}</hms-alert>
 
+  <!-- Workspace Subnavigation Tabs -->
+  <nav class="hk-tabs" role="tablist">
+    <button
+      type="button"
+      class="hk-tab-btn"
+      [class.hk-tab-btn--active]="activeWorkspaceTab() === 'overview'"
+      (click)="setWorkspaceTab('overview')"
+    >
+      Overview
+    </button>
+    <button
+      type="button"
+      class="hk-tab-btn"
+      [class.hk-tab-btn--active]="activeWorkspaceTab() === 'tasks'"
+      (click)="setWorkspaceTab('tasks')"
+    >
+      Tasks Queue
+    </button>
+    <button
+      type="button"
+      class="hk-tab-btn"
+      [class.hk-tab-btn--active]="activeWorkspaceTab() === 'inspections'"
+      (click)="setWorkspaceTab('inspections')"
+    >
+      Inspections ({{ cleanedCount() }})
+    </button>
+    <button
+      type="button"
+      class="hk-tab-btn"
+      [class.hk-tab-btn--active]="activeWorkspaceTab() === 'readiness'"
+      (click)="setWorkspaceTab('readiness')"
+    >
+      Room Readiness ({{ inspectedCount() }})
+    </button>
+  </nav>
+
   <!-- Operational KPI Metric Cards -->
   <div class="kpi-grid">
     <div class="kpi-card" (click)="setStatusFilter('PENDING')" [class.kpi-active]="selectedStatusFilter() === 'PENDING'">
@@ -114,7 +150,6 @@
 
     <!-- Empty State -->
     <hms-empty
-      [icon]="'🧹'"
       [title]="'No Housekeeping Tasks Found'"
       [desc]="'No tasks matching criteria.'"
       [actionLabel]="'Reset Filters'"
@@ -185,7 +220,13 @@
     <!-- Rejection / Inspection Notes Callout if Rejected -->
     <div class="rejection-callout" *ngIf="selectedTask()?.status === 'REJECTED' && selectedTask()?.notes">
       <div class="callout-header">
-        <span class="callout-icon">⚠️</span>
+        <span class="callout-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="callout-svg">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </span>
         <span class="callout-title">Supervisor Inspection Rejection Notes</span>
       </div>
       <p class="callout-body">{{ selectedTask()?.notes }}</p>
@@ -194,7 +235,12 @@
     <!-- Inspection Passed Callout if Inspected -->
     <div class="inspected-callout" *ngIf="selectedTask()?.status === 'INSPECTED'">
       <div class="callout-header">
-        <span class="callout-icon">✓</span>
+        <span class="callout-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="callout-svg">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </span>
         <span class="callout-title">Room Certified Clean & Inspected</span>
       </div>
       <p class="callout-body">
@@ -298,7 +344,7 @@
 
         <div class="action-card-body">
           <hms-button variant="gold" [disabled]="isActionInProgress()" (click)="completeCleaning()">
-            <span *ngIf="!isActionInProgress()">✓ Mark Cleaning Complete</span>
+            <span *ngIf="!isActionInProgress()">Mark Cleaning Complete</span>
             <span *ngIf="isActionInProgress()">Completing...</span>
           </hms-button>
         </div>
@@ -334,11 +380,11 @@
 
           <div class="btn-group">
             <hms-button variant="gold" [disabled]="isActionInProgress()" (click)="passInspection()">
-              <span *ngIf="!isActionInProgress()">✓ Pass Inspection (Certify Room)</span>
+              <span *ngIf="!isActionInProgress()">Pass Inspection (Certify Room)</span>
               <span *ngIf="isActionInProgress()">Submitting...</span>
             </hms-button>
             <hms-button variant="danger" [disabled]="isActionInProgress()" (click)="failInspection()">
-              <span *ngIf="!isActionInProgress()">✕ Reject (Require Re-Clean)</span>
+              <span *ngIf="!isActionInProgress()">Reject (Require Re-Clean)</span>
               <span *ngIf="isActionInProgress()">Rejecting...</span>
             </hms-button>
           </div>
@@ -350,7 +396,12 @@
         class="action-completed-box"
         *ngIf="selectedTask()?.status === 'INSPECTED'"
       >
-        <div class="completed-icon">★</div>
+        <div class="completed-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="callout-svg">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
         <div class="completed-content">
           <h4>Turnover Lifecycle Closed</h4>
           <p>

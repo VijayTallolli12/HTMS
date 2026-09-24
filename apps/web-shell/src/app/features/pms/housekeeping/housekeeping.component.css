@@ -15,6 +15,40 @@
   border-bottom: 1px solid var(--surface-border);
 }
 
+/* Housekeeping Workspace Navigation Tabs */
+.hk-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--surface-border);
+  margin-top: -0.5rem;
+  margin-bottom: 0.5rem;
+  overflow-x: auto;
+}
+
+.hk-tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  text-decoration: none !important;
+}
+
+.hk-tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.hk-tab-btn--active {
+  color: var(--gold-accent);
+  border-bottom-color: var(--gold-accent);
+  font-weight: 600;
+}
+
 .luxury-badge {
   display: inline-block;
   font-size: 0.7rem;
