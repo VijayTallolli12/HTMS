@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -8,133 +8,464 @@ import { AuthService } from '../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
-    <div class="hms-sidebar__section">
-      <div class="hms-sidebar__section-title">Workspace</div>
-      <a routerLink="/dashboard" routerLinkActive="hms-sidebar__item--active" class="hms-sidebar__item">
-        <span class="hms-sidebar__item-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M4 13h7V4H4v9zm0 7h7v-5H4v5zm9 0h7V11h-7v9zm0-16v5h7V4h-7z"/></svg>
-        </span>
-        <span>Dashboard</span>
-      </a>
-    </div>
+    <nav class="hms-sidebar" [class.is-collapsed]="isCollapsed" aria-label="Main Navigation">
+      <!-- Scrollable Navigation Area -->
+      <div class="hms-sidebar__nav">
+        <!-- 1. OVERVIEW -->
+        <div class="hms-sidebar__section">
+          <div class="hms-sidebar__section-title" *ngIf="!isCollapsed">Overview</div>
+          <a
+            routerLink="/dashboard"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Dashboard'"
+            [attr.aria-label]="'Dashboard'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Dashboard</span>
+          </a>
+        </div>
 
-    <div class="hms-sidebar__section" *ngIf="canAccessOperations()">
-      <div class="hms-sidebar__section-title">Operations</div>
-      <a
-        *ngIf="hasPermission('front_office.reservation.read')"
-        routerLink="/pms/front-office"
-        routerLinkActive="hms-sidebar__item--active"
-        class="hms-sidebar__item"
-      >
-        <span class="hms-sidebar__item-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9zm2.5-.5a.5.5 0 0 0-.5.5v9c0 .28.22.5.5.5h13a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-13zm2 3.5h9v2h-9v-2zm0 4h6v2h-6v-2z"/></svg>
-        </span>
-        <span>Front Desk</span>
-      </a>
-      <a
-        *ngIf="hasPermission('housekeeping.task.view')"
-        routerLink="/pms/housekeeping"
-        routerLinkActive="hms-sidebar__item--active"
-        class="hms-sidebar__item"
-      >
-        <span class="hms-sidebar__item-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M12 2c2.5 2.4 3.5 4.3 3.5 6.3A3.5 3.5 0 0 1 12 12a3.5 3.5 0 0 1-3.5-3.7C8.5 6.3 9.5 4.4 12 2zm7 14.5c0 3.4-3.1 5.5-7 5.5s-7-2.1-7-5.5c0-2.4 1.9-4.5 4.8-5.1l1.8 2.1c-1.1.4-1.8 1.5-1.8 2.8 0 1.8 1.5 3.3 3.3 3.3 1.8 0 3.3-1.5 3.3-3.3 0-1.3-.7-2.4-1.8-2.8l1.8-2.1c2.9.6 4.8 2.7 4.8 5.1z"/></svg>
-        </span>
-        <span>Housekeeping</span>
-      </a>
-      <a
-        *ngIf="hasPermission('room_operations.status.read')"
-        routerLink="/pms/room-operations"
-        routerLinkActive="hms-sidebar__item--active"
-        class="hms-sidebar__item"
-      >
-        <span class="hms-sidebar__item-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm1 4h10v2H7V8zm0 4h7v2H7v-2zm0 4h5v2H7v-2z"/></svg>
-        </span>
-        <span>Room Operations</span>
-      </a>
-      <a
-        *ngIf="hasPermission('engineering.work_order.view') || hasPermission('engineering.asset.view')"
-        routerLink="/pms/engineering"
-        routerLinkActive="hms-sidebar__item--active"
-        class="hms-sidebar__item"
-      >
-        <span class="hms-sidebar__item-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
-        </span>
-        <span>Engineering</span>
-      </a>
-      <a
-        *ngIf="hasPermission('inventory:read')"
-        routerLink="/pms/availability"
-        routerLinkActive="hms-sidebar__item--active"
-        class="hms-sidebar__item"
-      >
-        <span class="hms-sidebar__item-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2zm13 8H4v9h16v-9zm-9 2v2H6v-2h5zm7 0v2h-5v-2h5z"/></svg>
-        </span>
-        <span>Inventory ATS</span>
-      </a>
-      <a
-        *ngIf="hasPermission('front_office.reservation.read')"
-        routerLink="/pms/reservations"
-        routerLinkActive="hms-sidebar__item--active"
-        class="hms-sidebar__item"
-      >
-        <span class="hms-sidebar__item-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2zm13 8H4v9h16v-9zm-9 2v2H6v-2h5zm7 0v2h-5v-2h5z"/></svg>
-        </span>
-        <span>Reservations</span>
-      </a>
-    </div>
+        <!-- 2. FRONT OFFICE -->
+        <div class="hms-sidebar__section" *ngIf="canAccessFrontOffice()">
+          <div class="hms-sidebar__section-title" *ngIf="!isCollapsed">Front Office</div>
 
-    <div class="hms-sidebar__section" *ngIf="hasPermission('folio:view')">
-      <div class="hms-sidebar__section-title">Finance</div>
-      <a
-        routerLink="/pms/folios"
-        routerLinkActive="hms-sidebar__item--active"
-        class="hms-sidebar__item"
-      >
-        <span class="hms-sidebar__item-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M12 2a5 5 0 0 1 5 5v1h1a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3h1V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v1h6V7a3 3 0 0 0-3-3zm-5 7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1H7zm5 2.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z"/></svg>
-        </span>
-        <span>Cashiering</span>
-      </a>
-    </div>
+          <a
+            *ngIf="hasPermission('front_office.reservation.read')"
+            routerLink="/pms/reservations"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Reservations'"
+            [attr.aria-label]="'Reservations'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Reservations</span>
+          </a>
 
-    <div class="hms-sidebar__section">
-      <div class="hms-sidebar__section-title">System</div>
-      <a routerLink="/organization" routerLinkActive="hms-sidebar__item--active" class="hms-sidebar__item">
-        <span class="hms-sidebar__item-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M4 19h16v2H4v-2zm2-2h2V7H6v10zm5 0h2V4h-2v13zm5 0h2V9h-2v8z"/></svg>
-        </span>
-        <span>Organization</span>
-      </a>
-      <a routerLink="/health" routerLinkActive="hms-sidebar__item--active" class="hms-sidebar__item">
-        <span class="hms-sidebar__item-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4c1.74 0 3.41.81 4.5 2.09A6.17 6.17 0 0 1 15.5 4 4.5 4.5 0 0 1 20 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-        </span>
-        <span>System Status</span>
-      </a>
-    </div>
+          <a
+            *ngIf="hasPermission('front_office.reservation.read')"
+            routerLink="/pms/front-office"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Front Desk'"
+            [attr.aria-label]="'Front Desk'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Front Desk</span>
+          </a>
+
+          <a
+            *ngIf="hasPermission('folio:view')"
+            routerLink="/pms/folios"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Cashiering'"
+            [attr.aria-label]="'Cashiering'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Cashiering</span>
+          </a>
+        </div>
+
+        <!-- 3. ROOMS -->
+        <div class="hms-sidebar__section" *ngIf="canAccessRooms()">
+          <div class="hms-sidebar__section-title" *ngIf="!isCollapsed">Rooms</div>
+
+          <a
+            *ngIf="hasPermission('room_operations.status.read')"
+            routerLink="/pms/room-operations"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Room Operations'"
+            [attr.aria-label]="'Room Operations'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 4v16"></path>
+                <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
+                <path d="M2 17h20"></path>
+                <path d="M6 8v9"></path>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Room Operations</span>
+          </a>
+
+          <a
+            *ngIf="hasPermission('inventory:read')"
+            routerLink="/pms/availability"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Availability'"
+            [attr.aria-label]="'Availability'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Availability</span>
+          </a>
+        </div>
+
+        <!-- 4. OPERATIONS -->
+        <div class="hms-sidebar__section" *ngIf="canAccessOperations()">
+          <div class="hms-sidebar__section-title" *ngIf="!isCollapsed">Operations</div>
+
+          <a
+            *ngIf="hasPermission('housekeeping.task.view')"
+            routerLink="/pms/housekeeping"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Housekeeping'"
+            [attr.aria-label]="'Housekeeping'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Housekeeping</span>
+          </a>
+
+          <a
+            *ngIf="hasPermission('engineering.asset.view')"
+            routerLink="/pms/engineering"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Engineering'"
+            [attr.aria-label]="'Engineering'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Engineering</span>
+          </a>
+        </div>
+
+        <!-- 5. ADMINISTRATION -->
+        <div class="hms-sidebar__section" *ngIf="canAccessAdmin()">
+          <div class="hms-sidebar__section-title" *ngIf="!isCollapsed">Administration</div>
+
+          <a
+            *ngIf="canAccessAdmin()"
+            routerLink="/organization"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Organization'"
+            [attr.aria-label]="'Organization'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 21h18"></path>
+                <path d="M5 21V7l8-4v18"></path>
+                <path d="M19 21V11l-6-4"></path>
+                <path d="M9 9v.01"></path>
+                <path d="M9 12v.01"></path>
+                <path d="M9 15v.01"></path>
+                <path d="M9 18v.01"></path>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Organization</span>
+          </a>
+
+          <a
+            *ngIf="canAccessAdmin()"
+            routerLink="/health"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'System Health'"
+            [attr.aria-label]="'System Health'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">System Health</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Collapse / Expand Footer Toggle Button -->
+      <div class="hms-sidebar__footer">
+        <button
+          type="button"
+          class="sidebar-collapse-trigger"
+          (click)="onCollapseToggle()"
+          [title]="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+          [attr.aria-label]="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        >
+          <span class="trigger-icon" aria-hidden="true">
+            <svg *ngIf="!isCollapsed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-svg">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            <svg *ngIf="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-svg">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </span>
+          <span class="trigger-label" *ngIf="!isCollapsed">Collapse Sidebar</span>
+        </button>
+      </div>
+    </nav>
   `,
-  styles: [],
+  styles: [`
+    :host {
+      display: block;
+      height: 100%;
+    }
+
+    .hms-sidebar {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 240px;
+      background: var(--surface-card);
+      border-right: 1px solid var(--surface-border);
+      transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    .hms-sidebar.is-collapsed {
+      width: 68px;
+    }
+
+    .hms-sidebar__nav {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 1rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .hms-sidebar__section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .hms-sidebar__section-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: 0.25rem 0.75rem 0.4rem;
+      white-space: nowrap;
+    }
+
+    .hms-sidebar__item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      height: 40px;
+      padding: 0 0.75rem;
+      border-radius: 6px;
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: background 0.15s ease, color 0.15s ease;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .hms-sidebar.is-collapsed .hms-sidebar__item {
+      padding: 0;
+      justify-content: center;
+    }
+
+    .hms-sidebar__item:hover {
+      background: var(--surface-raised);
+      color: var(--text-primary);
+    }
+
+    .hms-sidebar__item-icon {
+      width: 19px;
+      height: 19px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--text-muted);
+      transition: color 0.15s ease;
+    }
+
+    .hms-sidebar__item-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .hms-sidebar__item:hover .hms-sidebar__item-icon {
+      color: var(--text-primary);
+    }
+
+    .hms-sidebar__item-label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Active Navigation State */
+    .hms-sidebar__item.hms-sidebar__item--active {
+      background: var(--gold-light);
+      color: var(--gold-dark);
+      font-weight: 600;
+    }
+
+    .hms-sidebar__item.hms-sidebar__item--active .hms-sidebar__item-icon {
+      color: var(--gold-accent);
+    }
+
+    .hms-sidebar__item.hms-sidebar__item--active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      bottom: 6px;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: var(--gold-accent);
+    }
+
+    /* Footer Collapse Trigger */
+    .hms-sidebar__footer {
+      padding: 0.65rem;
+      border-top: 1px solid var(--surface-border);
+      background: var(--surface-card);
+    }
+
+    .sidebar-collapse-trigger {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      width: 100%;
+      height: 38px;
+      padding: 0 0.75rem;
+      background: transparent;
+      border: 1px solid var(--surface-border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .hms-sidebar.is-collapsed .sidebar-collapse-trigger {
+      padding: 0;
+      justify-content: center;
+    }
+
+    .sidebar-collapse-trigger:hover {
+      background: var(--surface-raised);
+      color: var(--text-primary);
+      border-color: var(--gold-accent);
+    }
+
+    .trigger-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .arrow-svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hms-sidebar {
+        transition: none !important;
+      }
+    }
+  `],
 })
 export class HmsSidebarComponent {
   private readonly authService = inject(AuthService);
+
+  @Input() isCollapsed = false;
+  @Output() collapseToggle = new EventEmitter<void>();
+  @Output() navItemClick = new EventEmitter<void>();
 
   hasPermission(permission: string): boolean {
     return this.authService.hasPermission(permission);
   }
 
-  canAccessOperations(): boolean {
+  canAccessFrontOffice(): boolean {
     return (
       this.hasPermission('front_office.reservation.read') ||
-      this.hasPermission('housekeeping.task.view') ||
+      this.hasPermission('folio:view')
+    );
+  }
+
+  canAccessRooms(): boolean {
+    return (
       this.hasPermission('room_operations.status.read') ||
-      this.hasPermission('inventory:read') ||
-      this.hasPermission('engineering.work_order.view') ||
+      this.hasPermission('inventory:read')
+    );
+  }
+
+  canAccessOperations(): boolean {
+    return (
+      this.hasPermission('housekeeping.task.view') ||
       this.hasPermission('engineering.asset.view')
     );
+  }
+
+  canAccessAdmin(): boolean {
+    const roles = this.authService.roles();
+    return roles.some((r) => r.code === 'CORP_ADMIN' || r.code === 'PROPERTY_GM');
+  }
+
+  onItemClick(): void {
+    this.navItemClick.emit();
+  }
+
+  onCollapseToggle(): void {
+    this.collapseToggle.emit();
   }
 }

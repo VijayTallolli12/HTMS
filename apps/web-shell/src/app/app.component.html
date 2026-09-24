@@ -1,89 +1,169 @@
-<!-- Header: only visible when authenticated -->
-<header class="app-header" *ngIf="isAuthenticated()">
-  <div class="brand-area" routerLink="/dashboard">
-    <div class="brand-mark">HMS</div>
-    <div class="brand-info">
-      <span class="brand-name">ENTERPRISE HMS</span>
-      <span class="brand-sub">Hospitality Operating Platform</span>
-    </div>
-  </div>
-
-  <!-- Main Navigation Bar -->
-  <div class="header-center">
-    <nav class="header-nav">
-      <a routerLink="/dashboard" routerLinkActive="active-nav" class="nav-link">
-        Dashboard
-      </a>
-      <a routerLink="/pms/reservations" *ngIf="hasPermission('front_office.reservation.read')" routerLinkActive="active-nav" class="nav-link">
-        Reservations
-      </a>
-      <a routerLink="/pms/front-office" *ngIf="hasPermission('front_office.reservation.read')" routerLinkActive="active-nav" class="nav-link">
-        Front Desk
-      </a>
-      <a routerLink="/pms/room-operations" *ngIf="hasPermission('room_operations.status.read')" routerLinkActive="active-nav" class="nav-link">
-        Room Ops
-      </a>
-      <a routerLink="/pms/housekeeping" *ngIf="hasPermission('housekeeping.task.view')" routerLinkActive="active-nav" class="nav-link">
-        Housekeeping
-      </a>
-      <a routerLink="/pms/folios" *ngIf="hasPermission('folio:view')" routerLinkActive="active-nav" class="nav-link">
-        Cashiering
-      </a>
-      <a routerLink="/pms/availability" *ngIf="hasPermission('inventory:read')" routerLinkActive="active-nav" class="nav-link">
-        Inventory ATS
-      </a>
-      <a routerLink="/pms/engineering" *ngIf="hasPermission('engineering.work_order.view') || hasPermission('engineering.asset.view')" routerLinkActive="active-nav" class="nav-link">
-        Engineering
-      </a>
-      <a routerLink="/organization" routerLinkActive="active-nav" class="nav-link">
-        Organization
-      </a>
-      <a routerLink="/health" routerLinkActive="active-nav" class="nav-link">
-        Status
-      </a>
-    </nav>
-
-    <!-- Active Property Selector -->
-    <div class="property-selector">
-      <span class="selector-label">ACTIVE PROPERTY CONTEXT</span>
-      <select
-        *ngIf="properties().length > 0"
-        [ngModel]="activeProperty()?.id"
-        (ngModelChange)="onPropertyChange($event)"
-        class="property-dropdown"
+<!-- Authenticated Shell: Topbar + Left Sidebar + Main Content -->
+<div class="hms-app-layout" *ngIf="isAuthenticated()">
+  <!-- Slim, Compact Topbar -->
+  <header class="hms-topbar">
+    <div class="hms-topbar__left">
+      <!-- Sidebar Collapse / Mobile Drawer Hamburger Toggle Button -->
+      <button
+        type="button"
+        class="hms-sidebar-toggle-btn"
+        (click)="toggleSidebar()"
+        [title]="isSidebarCollapsed() ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'"
+        [attr.aria-label]="isSidebarCollapsed() ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'"
+        [attr.aria-expanded]="!isSidebarCollapsed()"
       >
-        <option *ngFor="let p of properties()" [value]="p.id">
-          {{ p.name }} ({{ p.code }})
-        </option>
-      </select>
-      <span class="selector-value" *ngIf="properties().length === 0 && activeProperty()">
-        {{ activeProperty()!.name }} ({{ activeProperty()!.code }})
-      </span>
-      <span class="selector-value text-muted" *ngIf="properties().length === 0 && !activeProperty()">
-        Portfolio Master (All Properties)
-      </span>
-    </div>
-  </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="toggle-svg" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
 
-  <!-- User Profile & Mode -->
-  <div class="header-right">
-    <span class="env-tag">DEMO MODE</span>
-    <div class="user-profile">
-      <div class="user-avatar">
-        {{ (currentUser()?.firstName || 'F')[0] }}{{ (currentUser()?.lastName || 'A')[0] }}
+      <!-- Brand Mark & Identity Lockup -->
+      <div class="hms-topbar__brand" routerLink="/dashboard" title="HMS Dashboard">
+        <div class="brand-crest" aria-hidden="true">HMS</div>
+        <div class="brand-headings">
+          <span class="brand-title">ENTERPRISE HMS</span>
+          <span class="brand-subtitle">Hospitality Operating Platform</span>
+        </div>
       </div>
-      <div class="user-details">
-        <span class="user-name">
-          {{ currentUser()?.firstName || 'Front Desk' }} {{ currentUser()?.lastName || 'Agent' }}
+    </div>
+
+    <!-- Center Context: Workspace Breadcrumb / Current View Indicator -->
+    <div class="hms-topbar__center">
+      <div class="workspace-pill">
+        <span class="workspace-dot" aria-hidden="true"></span>
+        <span class="workspace-label">{{ currentWorkspaceLabel }}</span>
+      </div>
+    </div>
+
+    <!-- Right Controls: Demo Badge + Property Context + User Menu + Sign Out -->
+    <div class="hms-topbar__right">
+      <!-- Demo Environment Badge -->
+      <div class="demo-env-badge" title="Deterministic Demo Environment Active">
+        <span class="demo-indicator-dot" aria-hidden="true"></span>
+        <span>DEMO</span>
+      </div>
+
+      <!-- Property Context Selector (Compact, Non-Clipping) -->
+      <div class="property-context-box" *ngIf="properties().length > 0">
+        <span class="context-icon" aria-hidden="true">
+          <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4zm3 1h6v4H7V5zm8 8v2h1v-2h-1zm-2-2H7v4h6v-4zm2 0h1V9h-1v2zm0-4h1V5h-1v2zM5 5h1v2H5V5zm0 4h1v2H5V9zm0 4h1v2H5v-2z" clip-rule="evenodd" />
+          </svg>
         </span>
-        <span class="user-role">{{ primaryRole }}</span>
+        <div class="context-info">
+          <span class="context-title">PROPERTY CONTEXT</span>
+          <select
+            [ngModel]="activeProperty()?.id"
+            (ngModelChange)="onPropertyChange($event)"
+            class="property-select"
+            aria-label="Active Property"
+          >
+            <option *ngFor="let p of properties()" [value]="p.id">
+              {{ p.name }} ({{ p.code }})
+            </option>
+          </select>
+        </div>
       </div>
-    </div>
-    <button class="logout-btn" (click)="onLogout()" title="Sign Out">X</button>
-  </div>
-</header>
+      <div class="property-context-box static" *ngIf="properties().length === 0 && activeProperty()">
+        <span class="context-title">PROPERTY</span>
+        <span class="context-static-val">{{ activeProperty()!.name }}</span>
+      </div>
 
-<!-- Single router-outlet: login renders without header, everything else renders with header -->
-<main class="app-main" [class.with-header]="isAuthenticated()">
+      <!-- User Profile Dropdown Menu -->
+      <div class="user-menu-wrapper">
+        <button
+          type="button"
+          class="user-profile-trigger"
+          (click)="toggleUserMenu()"
+          [attr.aria-expanded]="isUserMenuOpen()"
+          aria-haspopup="true"
+          aria-label="User Account Menu"
+        >
+          <div class="user-avatar" aria-hidden="true">
+            {{ userInitials }}
+          </div>
+          <div class="user-meta">
+            <span class="user-full-name">{{ userDisplayName }}</span>
+            <span class="user-role-label">{{ primaryRole }}</span>
+          </div>
+          <span class="user-chevron" [class.is-open]="isUserMenuOpen()" aria-hidden="true">⌄</span>
+        </button>
+
+        <!-- Dropdown Menu Overlay -->
+        <div class="user-dropdown-card" *ngIf="isUserMenuOpen()" role="menu">
+          <div class="dropdown-user-header">
+            <div class="dropdown-name">{{ userDisplayName }}</div>
+            <div class="dropdown-email">{{ currentUser()?.email }}</div>
+            <div class="dropdown-role-tag">{{ primaryRole }}</div>
+          </div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-row">
+            <span class="row-label">Property Context:</span>
+            <span class="row-value">{{ activeProperty()?.name || 'Tokyo Grandeur Palace' }}</span>
+          </div>
+          <div class="dropdown-row">
+            <span class="row-label">System Tier:</span>
+            <span class="row-value">Enterprise Luxury</span>
+          </div>
+          <div class="dropdown-divider"></div>
+          <button type="button" class="dropdown-signout-btn" (click)="onLogout()" role="menuitem">
+            <svg viewBox="0 0 20 20" fill="currentColor" class="signout-svg" aria-hidden="true">
+              <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
+            </svg>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Sign Out Button (matches .logout-btn for automated verification & immediate staff logout) -->
+      <button
+        type="button"
+        class="logout-btn"
+        (click)="onLogout()"
+        title="Sign Out"
+        aria-label="Sign Out"
+      >
+        <svg viewBox="0 0 20 20" fill="currentColor" class="logout-svg" aria-hidden="true">
+          <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Shell Body: Left Sidebar + Main Content -->
+  <div class="hms-shell-body">
+    <!-- Left Sidebar (Desktop expanded/collapsed + Mobile overlay drawer) -->
+    <aside
+      class="hms-sidebar-aside"
+      [class.is-collapsed]="isSidebarCollapsed()"
+      [class.mobile-open]="isMobileNavOpen()"
+      aria-label="Workspace Navigation"
+    >
+      <hms-sidebar
+        [isCollapsed]="isSidebarCollapsed()"
+        (collapseToggle)="toggleSidebar()"
+        (navItemClick)="closeMobileNav()"
+      ></hms-sidebar>
+    </aside>
+
+    <!-- Mobile Drawer Backdrop -->
+    <div
+      class="hms-mobile-backdrop"
+      *ngIf="isMobileNavOpen()"
+      (click)="closeMobileNav()"
+      aria-hidden="true"
+    ></div>
+
+    <!-- Main Workspace Content with Router Outlet -->
+    <main class="hms-main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+
+<!-- Non-Authenticated Shell (e.g. /login page) -->
+<main class="hms-unauth-root" *ngIf="!isAuthenticated()">
   <router-outlet></router-outlet>
 </main>
