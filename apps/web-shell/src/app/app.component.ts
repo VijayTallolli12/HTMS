@@ -49,6 +49,22 @@ export class AppComponent implements OnInit {
     return 'Executive Operations Console';
   }
 
+  get currentWorkspaceCategory(): string {
+    const url = this.router.url || '';
+    if (url.includes('/settings')) return 'SYSTEM PREFERENCES';
+    if (url.includes('/pms/reservations')) return 'FRONT OFFICE';
+    if (url.includes('/pms/front-office')) return 'FRONT OFFICE';
+    if (url.includes('/pms/room-operations')) return 'ROOM OPERATIONS';
+    if (url.includes('/pms/housekeeping')) return 'HOUSEKEEPING';
+    if (url.includes('/pms/folios')) return 'FINANCE & CASHIERING';
+    if (url.includes('/pms/availability')) return 'INVENTORY';
+    if (url.includes('/pms/engineering')) return 'ENGINEERING';
+    if (url.includes('/organization')) return 'ADMINISTRATION';
+    if (url.includes('/health')) return 'SYSTEM STATUS';
+    if (url.includes('/dashboard')) return 'OVERVIEW';
+    return 'OPERATIONS';
+  }
+
   private propertiesLoaded = false;
 
   constructor() {

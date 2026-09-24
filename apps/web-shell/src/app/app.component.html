@@ -1,6 +1,6 @@
 <!-- Authenticated Shell: Topbar + Left Sidebar + Main Content -->
 <div class="hms-app-layout" *ngIf="isAuthenticated()">
-  <!-- Slim, Compact Topbar -->
+  <!-- Slim, Compact Enterprise Topbar (60px Desktop / 56px Mobile) -->
   <header class="hms-topbar">
     <div class="hms-topbar__left">
       <!-- Sidebar Collapse / Mobile Drawer Hamburger Toggle Button -->
@@ -24,54 +24,56 @@
         <div class="brand-crest" aria-hidden="true">HMS</div>
         <div class="brand-headings">
           <span class="brand-title">ENTERPRISE HMS</span>
-          <span class="brand-subtitle">Hospitality Operating Platform</span>
+          <span class="brand-subtitle">Hospitality Operations Platform</span>
         </div>
       </div>
     </div>
 
-    <!-- Center Context: Workspace Breadcrumb / Current View Indicator -->
+    <!-- Center Context: Clean Contextual Workspace Context (NO Pill, Clean Typography) -->
     <div class="hms-topbar__center">
-      <div class="workspace-pill">
-        <span class="workspace-dot" aria-hidden="true"></span>
-        <span class="workspace-label">{{ currentWorkspaceLabel }}</span>
+      <div class="workspace-context" aria-current="page">
+        <span class="workspace-eyebrow">{{ currentWorkspaceCategory }}</span>
+        <span class="workspace-title workspace-label">{{ currentWorkspaceLabel }}</span>
       </div>
     </div>
 
-    <!-- Right Controls: Demo Badge + Property Context + User Menu + Sign Out -->
+    <!-- Right Controls: Hierarchy: [DEMO] -> [Property Selector] -> [User Menu] -> [Sign Out] -->
     <div class="hms-topbar__right">
-      <!-- Demo Environment Badge -->
-      <div class="demo-env-badge" title="Deterministic Demo Environment Active">
+      <!-- 1. Environment: Quiet semantic indicator -->
+      <div class="demo-env-badge" title="Deterministic Demo Environment Active" aria-label="Demo environment active">
         <span class="demo-indicator-dot" aria-hidden="true"></span>
-        <span>DEMO</span>
+        <span class="demo-text">DEMO</span>
       </div>
 
-      <!-- Property Context Selector (Compact, Non-Clipping) -->
+      <!-- 2. Property Selector: Primary Right-side Control with Clear Hierarchy -->
       <div class="property-context-box" *ngIf="properties().length > 0" [title]="activeProperty() ? (activeProperty()!.name + ' (' + activeProperty()!.code + ')') : ''">
-        <span class="context-icon" aria-hidden="true">
-          <svg viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4zm3 1h6v4H7V5zm8 8v2h1v-2h-1zm-2-2H7v4h6v-4zm2 0h1V9h-1v2zm0-4h1V5h-1v2zM5 5h1v2H5V5zm0 4h1v2H5V9zm0 4h1v2H5v-2z" clip-rule="evenodd" />
-          </svg>
-        </span>
         <div class="context-info">
-          <span class="context-title">{{ activeProperty()?.code || 'PROPERTY CONTEXT' }}</span>
-          <select
-            [ngModel]="activeProperty()?.id"
-            (ngModelChange)="onPropertyChange($event)"
-            class="property-select"
-            aria-label="Active Property"
-          >
-            <option *ngFor="let p of properties()" [value]="p.id">
-              {{ p.name }}
-            </option>
-          </select>
+          <span class="context-code">{{ activeProperty()?.code || 'PROPERTY CONTEXT' }}</span>
+          <div class="property-select-wrap">
+            <select
+              [ngModel]="activeProperty()?.id"
+              (ngModelChange)="onPropertyChange($event)"
+              class="property-select"
+              aria-label="Active Property"
+            >
+              <option *ngFor="let p of properties()" [value]="p.id">
+                {{ p.name }}
+              </option>
+            </select>
+            <svg class="select-chevron-svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M6 8l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
         </div>
       </div>
       <div class="property-context-box static" *ngIf="properties().length === 0 && activeProperty()">
-        <span class="context-title">PROPERTY</span>
-        <span class="context-static-val">{{ activeProperty()!.name }}</span>
+        <div class="context-info">
+          <span class="context-code">{{ activeProperty()!.code || 'PROPERTY' }}</span>
+          <span class="context-static-val">{{ activeProperty()!.name }}</span>
+        </div>
       </div>
 
-      <!-- User Profile Dropdown Menu -->
+      <!-- 3. User Area: Unenclosed, Natural Clickable Stack with Avatar & Chevron -->
       <div class="user-menu-wrapper">
         <button
           type="button"
@@ -88,7 +90,9 @@
             <span class="user-full-name">{{ userDisplayName }}</span>
             <span class="user-role-label">{{ primaryRole }}</span>
           </div>
-          <span class="user-chevron" [class.is-open]="isUserMenuOpen()" aria-hidden="true">⌄</span>
+          <svg class="user-chevron-svg" [class.is-open]="isUserMenuOpen()" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M6 8l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </button>
 
         <!-- Dropdown Menu Overlay -->
@@ -135,7 +139,7 @@
         </div>
       </div>
 
-      <!-- Quick Sign Out Button (matches .logout-btn for automated verification & immediate staff logout) -->
+      <!-- 4. Logout Action: Square Neutral Border, Monochrome SVG, Subtle Danger Hover -->
       <button
         type="button"
         class="logout-btn"
@@ -143,8 +147,10 @@
         title="Sign Out"
         aria-label="Sign Out"
       >
-        <svg viewBox="0 0 20 20" fill="currentColor" class="logout-svg" aria-hidden="true">
-          <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="logout-svg" aria-hidden="true">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
         </svg>
       </button>
     </div>

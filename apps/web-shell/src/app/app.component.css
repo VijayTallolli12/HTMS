@@ -19,43 +19,45 @@
 }
 
 /* =========================================================
-   1. SLIM, COMPACT TOPBAR (56px)
+   1. ENTERPRISE TOPBAR (60px Desktop / 56px Mobile)
    ========================================================= */
 .hms-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
+  height: 60px;
   padding: 0 1.25rem;
   background: var(--surface-card);
   border-bottom: 1px solid var(--surface-border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   z-index: 50;
   flex-shrink: 0;
   box-sizing: border-box;
 }
 
-/* Left: Toggle & Brand */
+/* Zone 1: LEFT - Menu & Brand */
 .hms-topbar__left {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   flex-shrink: 0;
+  min-width: 240px;
 }
 
 .hms-sidebar-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   background: transparent;
   border: 1px solid var(--surface-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm, 6px);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .hms-sidebar-toggle-btn:hover {
@@ -79,17 +81,20 @@
   align-items: center;
   gap: 0.65rem;
   cursor: pointer;
-  text-decoration: none;
+  text-decoration: none !important;
+  user-select: none;
 }
 
 .brand-crest {
-  background: linear-gradient(135deg, var(--gold-accent), var(--gold-dark));
-  color: var(--text-inverse);
-  font-weight: 800;
-  font-size: 0.85rem;
+  background: var(--gold-accent);
+  color: var(--text-inverse, #ffffff);
+  font-weight: 700;
+  font-size: 0.78rem;
   letter-spacing: 0.05em;
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.45rem;
   border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .brand-headings {
@@ -98,54 +103,69 @@
 }
 
 .brand-title {
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   color: var(--text-primary);
-  line-height: 1.15;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .brand-subtitle {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
+  font-weight: 500;
   color: var(--text-muted);
   letter-spacing: 0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
-/* Center: Workspace Label */
+/* Zone 2: CENTER - Clean Contextual Workspace Context (NO Pill UI) */
 .hms-topbar__center {
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 1;
   padding: 0 1rem;
+  min-width: 0;
 }
 
-.workspace-pill {
-  display: inline-flex;
+.workspace-context {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.25rem 0.85rem;
-  background: var(--surface-raised);
-  border: 1px solid var(--surface-border);
-  border-radius: 9999px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.02em;
+  text-align: center;
+  user-select: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
-.workspace-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--gold-accent);
-}
-
-.workspace-label {
+.workspace-eyebrow {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold-accent);
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 2px;
   white-space: nowrap;
 }
 
-/* Right Controls */
+.workspace-title {
+  font-size: 0.875rem; /* 14px */
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Zone 3: RIGHT - Hierarchy: Environment -> Property -> User -> Logout */
 .hms-topbar__right {
   display: flex;
   align-items: center;
@@ -153,19 +173,21 @@
   flex-shrink: 0;
 }
 
-/* Demo Environment Badge */
+/* 1. Environment: Quiet semantic indicator */
 .demo-env-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   padding: 0.2rem 0.5rem;
-  background: rgba(5, 150, 105, 0.08);
-  border: 1px solid rgba(5, 150, 105, 0.25);
-  border-radius: 4px;
-  font-size: 0.68rem;
+  background: rgba(5, 150, 105, 0.06);
+  border: 1px solid rgba(5, 150, 105, 0.2);
+  border-radius: var(--radius-sm, 4px);
+  font-size: 0.68rem; /* ~11px */
   font-weight: 700;
   color: var(--status-success);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+  user-select: none;
 }
 
 .demo-indicator-dot {
@@ -173,70 +195,102 @@
   height: 5px;
   border-radius: 50%;
   background: var(--status-success);
+  flex-shrink: 0;
 }
 
-/* Property Context Selector (Compact, Non-Clipping) */
+.demo-text {
+  line-height: 1;
+}
+
+/* 2. Property Selector: Primary Right-side Control with Clear Hierarchy */
 .property-context-box {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
   background: var(--surface-raised);
   border: 1px solid var(--surface-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm, 6px);
   padding: 0.25rem 0.65rem;
-  min-width: 170px;
-  max-width: 230px;
+  width: 230px;
+  min-width: 200px;
+  max-width: 250px;
+  height: 38px;
   box-sizing: border-box;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.property-context-box:hover {
+  background: var(--surface-card);
+  border-color: var(--gold-accent);
 }
 
 .property-context-box.static {
   min-width: auto;
 }
 
-.context-icon {
-  width: 16px;
-  height: 16px;
-  color: var(--gold-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.context-icon svg {
-  width: 15px;
-  height: 15px;
-}
-
 .context-info {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  justify-content: center;
   width: 100%;
+  overflow: hidden;
 }
 
-.context-title {
-  font-size: 0.58rem;
-  font-weight: 700;
+.context-code {
+  font-size: 0.62rem; /* ~10px */
+  font-weight: 600;
   letter-spacing: 0.06em;
   color: var(--gold-accent);
   line-height: 1;
   margin-bottom: 2px;
+  text-transform: uppercase;
+}
+
+.property-select-wrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
 }
 
 .property-select {
   background: transparent;
   border: none;
-  font-size: 0.78rem;
+  font-size: 0.8125rem; /* 13px */
   font-weight: 600;
   color: var(--text-primary);
   outline: none;
   cursor: pointer;
-  padding: 0;
+  padding: 0 1.25rem 0 0;
   width: 100%;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  font-family: inherit;
+  line-height: 1.2;
+}
+
+.property-select:focus-visible {
+  outline: none;
+}
+
+.property-context-box:focus-within {
+  outline: 2px solid var(--gold-accent);
+  outline-offset: 1px;
+}
+
+.select-chevron-svg {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
 }
 
 .property-select option {
@@ -245,27 +299,34 @@
 }
 
 .context-static-val {
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
-/* User Menu & Dropdown */
+/* 3. User Menu & Dropdown */
 .user-menu-wrapper {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .user-profile-trigger {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm, 6px);
+  padding: 0.25rem 0.5rem;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  height: 38px;
+  box-sizing: border-box;
 }
 
 .user-profile-trigger:hover {
@@ -279,18 +340,19 @@
 }
 
 .user-avatar {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: var(--gold-light);
-  color: var(--gold-dark);
-  border: 1px solid rgba(154, 123, 56, 0.4);
-  font-size: 0.72rem;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--surface-border);
+  font-size: 0.75rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  letter-spacing: 0.02em;
 }
 
 .user-meta {
@@ -300,24 +362,29 @@
 }
 
 .user-full-name {
-  font-size: 0.78rem;
+  font-size: 0.8125rem; /* 13px */
   font-weight: 600;
   color: var(--text-primary);
-  line-height: 1.15;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .user-role-label {
-  font-size: 0.65rem;
+  font-size: 0.6875rem; /* 11px */
   color: var(--text-muted);
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
-.user-chevron {
-  font-size: 0.75rem;
+.user-chevron-svg {
+  width: 14px;
+  height: 14px;
   color: var(--text-muted);
   transition: transform 0.15s ease;
+  flex-shrink: 0;
 }
 
-.user-chevron.is-open {
+.user-chevron-svg.is-open {
   transform: rotate(180deg);
 }
 
@@ -325,11 +392,11 @@
   position: absolute;
   right: 0;
   top: calc(100% + 6px);
-  width: 280px;
+  width: 290px;
   background: var(--surface-card);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-md, 8px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   padding: 1rem;
   z-index: 1000;
   animation: fadeIn 0.15s ease;
@@ -346,9 +413,9 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: var(--gold-light);
-  color: var(--gold-dark);
-  border: 1.5px solid rgba(154, 123, 56, 0.45);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1.5px solid var(--surface-border);
   font-size: 0.95rem;
   font-weight: 700;
   display: flex;
@@ -387,9 +454,9 @@
   font-weight: 600;
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
-  background: var(--gold-light);
-  color: var(--gold-dark);
-  border: 1px solid rgba(154, 123, 56, 0.25);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  border: 1px solid var(--surface-border);
 }
 
 .dropdown-divider {
@@ -426,7 +493,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.65rem;
-  border-radius: 6px;
+  border-radius: var(--radius-sm, 6px);
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
@@ -441,6 +508,7 @@
   background: var(--surface-root);
   color: var(--gold-accent);
   border-color: var(--gold-accent);
+  text-decoration: none !important;
 }
 
 .link-svg {
@@ -458,7 +526,7 @@
   padding: 0.5rem 0.65rem;
   background: #fef2f2;
   border: 1px solid #fecaca;
-  border-radius: 6px;
+  border-radius: var(--radius-sm, 6px);
   color: var(--status-danger);
   font-size: 0.8rem;
   font-weight: 600;
@@ -470,6 +538,7 @@
 .dropdown-signout-btn:hover {
   background: #fee2e2;
   border-color: var(--status-danger);
+  text-decoration: none !important;
 }
 
 .signout-svg {
@@ -477,26 +546,29 @@
   height: 15px;
 }
 
-/* Quick Sign Out Action (Matches .logout-btn) */
+/* 4. Logout Action (36px square, neutral border, subtle danger on hover only) */
 .logout-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   background: transparent;
   border: 1px solid var(--surface-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm, 6px);
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
+  flex-shrink: 0;
+  text-decoration: none !important;
 }
 
 .logout-btn:hover {
   background: #fef2f2;
   border-color: #fecaca;
   color: var(--status-danger);
+  text-decoration: none !important;
 }
 
 .logout-btn:focus-visible {
@@ -505,8 +577,23 @@
 }
 
 .logout-svg {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
+}
+
+/* Prevent any accidental text decoration on topbar elements */
+.hms-topbar a,
+.hms-topbar button,
+.hms-topbar__brand,
+.user-profile-trigger {
+  text-decoration: none !important;
+}
+
+.hms-topbar a:hover,
+.hms-topbar button:hover,
+.hms-topbar__brand:hover,
+.user-profile-trigger:hover {
+  text-decoration: none !important;
 }
 
 /* =========================================================
@@ -515,7 +602,8 @@
 .hms-shell-body {
   display: flex;
   flex: 1;
-  height: calc(100vh - 56px);
+  min-height: 0;
+  height: calc(100vh - 60px);
   overflow: hidden;
   position: relative;
 }
@@ -557,8 +645,26 @@
    3. RESPONSIVE DESIGN (TABLET & MOBILE)
    ========================================================= */
 @media (max-width: 1024px) {
-  .hms-topbar__center {
+  .hms-topbar {
+    height: 58px;
+    padding: 0 1rem;
+  }
+
+  .hms-shell-body {
+    height: calc(100vh - 58px);
+  }
+
+  .brand-subtitle {
     display: none;
+  }
+
+  .user-role-label {
+    display: none;
+  }
+
+  .property-context-box {
+    width: 200px;
+    min-width: 170px;
   }
 
   .hms-sidebar-aside {
@@ -586,41 +692,72 @@
     z-index: 1000;
     backdrop-filter: blur(2px);
   }
-
-  .user-role-label {
-    display: none;
-  }
 }
 
 @media (max-width: 768px) {
   .hms-topbar {
+    height: 56px;
     padding: 0 0.85rem;
   }
 
-  .brand-subtitle {
+  .hms-shell-body {
+    height: calc(100vh - 56px);
+  }
+
+  .hms-topbar__left {
+    min-width: auto;
+  }
+
+  .demo-env-badge {
     display: none;
   }
 
   .property-context-box {
-    max-width: 150px;
-    padding: 0.2rem 0.4rem;
-  }
-
-  .context-icon {
-    display: none;
+    width: 160px;
+    min-width: 130px;
+    padding: 0.2rem 0.5rem;
   }
 
   .user-meta {
     display: none;
   }
+
+  .user-chevron-svg {
+    display: none;
+  }
 }
 
-@media (max-width: 480px) {
-  .brand-title {
-    font-size: 0.82rem;
+@media (max-width: 560px) {
+  .hms-topbar__center {
+    display: none;
   }
 
-  .demo-env-badge {
+  .brand-headings {
+    display: none;
+  }
+
+  .property-context-box {
+    width: 130px;
+    min-width: 100px;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .context-code {
+    display: none;
+  }
+}
+
+@media (max-width: 375px) {
+  .hms-topbar {
+    padding: 0 0.5rem;
+  }
+
+  .property-context-box {
+    width: 110px;
+    min-width: 90px;
+  }
+
+  .logout-btn {
     display: none;
   }
 }
