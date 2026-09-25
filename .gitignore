@@ -48,3 +48,8 @@ tmp/
 scratch/
 *.local
 *.tsbuildinfo
+
+.vercel
+.env*
+.agents/
+skills-lock.json

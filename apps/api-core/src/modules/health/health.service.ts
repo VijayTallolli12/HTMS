@@ -104,18 +104,25 @@ export class HealthService implements OnModuleDestroy {
 
   async checkRedis(): Promise<ServiceHealth> {
     const startTime = Date.now();
-    const host = this.configService.get<string>('REDIS_HOST', 'localhost');
-    const port = this.configService.get<number>('REDIS_PORT', 6379);
-    const password = this.configService.get<string>('REDIS_PASSWORD', '');
+    const redisUrl =
+      this.configService.get<string>('REDIS_URL') ||
+      process.env.REDIS_URL ||
+      process.env.KV_URL;
 
-    const redis = new Redis({
-      host,
-      port,
-      password: password || undefined,
-      connectTimeout: 3000,
-      lazyConnect: true,
-      maxRetriesPerRequest: 1,
-    });
+    const redis = redisUrl
+      ? new Redis(redisUrl, {
+          connectTimeout: 3000,
+          lazyConnect: true,
+          maxRetriesPerRequest: 1,
+        })
+      : new Redis({
+          host: this.configService.get<string>('REDIS_HOST', 'localhost'),
+          port: this.configService.get<number>('REDIS_PORT', 6379),
+          password: this.configService.get<string>('REDIS_PASSWORD', '') || undefined,
+          connectTimeout: 3000,
+          lazyConnect: true,
+          maxRetriesPerRequest: 1,
+        });
 
     try {
       await redis.connect();

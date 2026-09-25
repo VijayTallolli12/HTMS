@@ -25,6 +25,7 @@ export interface EnvironmentConfig {
   REDIS_HOST: string;
   REDIS_PORT: number;
   REDIS_PASSWORD?: string;
+  REDIS_URL?: string;
   // Mailpit
   MAILPIT_HOST: string;
   MAILPIT_SMTP_PORT: number;
@@ -75,6 +76,7 @@ export function parseEnvironment(env: Record<string, string | undefined>): Envir
     REDIS_HOST: env.REDIS_HOST || 'localhost',
     REDIS_PORT: parseInt(env.REDIS_PORT || '6379', 10),
     REDIS_PASSWORD: env.REDIS_PASSWORD,
+    REDIS_URL: env.REDIS_URL || env.KV_URL,
     MAILPIT_HOST: env.MAILPIT_HOST || 'localhost',
     MAILPIT_SMTP_PORT: parseInt(env.MAILPIT_SMTP_PORT || '1025', 10),
     MAILPIT_HTTP_PORT: parseInt(env.MAILPIT_HTTP_PORT || '8025', 10),
