@@ -30,5 +30,5 @@ export async function seedGuests(propertyId: string): Promise<GuestIds> {
     } else { console.log(`  Guest exists: ${g.firstName} ${g.lastName}`); }
     result[key] = existing.id;
   }
-  return result as GuestIds;
+  return result as unknown as GuestIds;
 }

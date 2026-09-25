@@ -1,0 +1,536 @@
+<div class="night-audit-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="luxury-badge">FRONT DESK & FINANCE</div>
+      <h1 class="page-title">Night Audit & Hotel Business Date</h1>
+      <p class="page-subtitle">
+        Authoritative hotel business date management, automated room and tax folio posting, and end-of-day operational rollover.
+      </p>
+    </div>
+    <div class="header-actions">
+      <hms-button
+        *ngIf="isAuditInProgress()"
+        variant="danger"
+        (click)="openRecoveryModal()"
+        title="Emergency lock recovery"
+      >
+        Emergency Unlock
+      </hms-button>
+      <hms-button
+        variant="outline"
+        [disabled]="isLoading() || isValidating()"
+        (click)="runValidation()"
+        title="Inspect and validate all front office and housekeeping state"
+      >
+        {{ isValidating() ? 'Evaluating...' : 'Run Pre-Audit Checks' }}
+      </hms-button>
+      <hms-button
+        variant="primary"
+        [disabled]="isLoading() || isRunning() || isAuditInProgress()"
+        (click)="openRunConfirm()"
+        title="Execute night audit rollover"
+      >
+        {{ isRunning() ? 'Rolling Over...' : 'Run Night Audit' }}
+      </hms-button>
+    </div>
+  </div>
+
+  <!-- Operational Alert Banners -->
+  <hms-alert type="error" *ngIf="errorMessage()" (closed)="errorMessage.set(null)">{{ errorMessage() }}</hms-alert>
+  <hms-alert type="success" *ngIf="successMessage()" (closed)="successMessage.set(null)">{{ successMessage() }}</hms-alert>
+
+  <!-- Business Date Status Hero Ribbon -->
+  <div class="date-hero-grid" *ngIf="businessDate(); else loadingHero">
+    <div class="hero-card hero-card--primary">
+      <div class="hero-card__label">HOTEL BUSINESS DATE</div>
+      <div class="hero-card__value hero-card__value--highlight">
+        {{ businessDate()!.currentBusinessDate }}
+      </div>
+      <div class="hero-card__subtext">
+        Rolls to <strong>{{ statusData()?.lastCompletedRun?.nextBusinessDate || 'Next Day' }}</strong> at audit completion
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <div class="hero-card__label">CALENDAR SYNC</div>
+      <div class="hero-card__value">
+        {{ businessDate()!.systemCalendarDate }}
+      </div>
+      <div class="hero-card__subtext">
+        <span *ngIf="daysBehind() === 0" class="badge-sync badge-sync--ok">In Sync with Real Time</span>
+        <span *ngIf="daysBehind() > 0" class="badge-sync badge-sync--behind">
+          {{ daysBehind() }} day(s) behind calendar
+        </span>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <div class="hero-card__label">PROPERTY TIMEZONE</div>
+      <div class="hero-card__value hero-card__value--sm">
+        {{ businessDate()!.propertyTimeZone }}
+      </div>
+      <div class="hero-card__subtext">Authoritative time standard</div>
+    </div>
+
+    <div class="hero-card">
+      <div class="hero-card__label">OPERATIONAL STATE</div>
+      <div class="hero-card__value hero-card__value--sm">
+        <hms-status-pill
+          [label]="isAuditInProgress() ? 'IN PROGRESS (LOCKED)' : 'READY FOR AUDIT'"
+          [variant]="isAuditInProgress() ? 'warning' : 'success'"
+        ></hms-status-pill>
+      </div>
+      <div class="hero-card__subtext">
+        Last audited: {{ businessDate()!.lastAuditedAt ? (businessDate()!.lastAuditedAt | date: 'short') : 'Never' }}
+      </div>
+    </div>
+  </div>
+
+  <ng-template #loadingHero>
+    <div class="loading-state-box">
+      <hms-loading text="Loading Hotel Business Date context..."></hms-loading>
+    </div>
+  </ng-template>
+
+  <!-- Navigation Tabs -->
+  <nav class="audit-tabs" role="tablist">
+    <button
+      type="button"
+      class="audit-tab-btn"
+      [class.audit-tab-btn--active]="activeTab() === 'overview'"
+      (click)="activeTab.set('overview')"
+    >
+      Overview & Controls
+    </button>
+    <button
+      type="button"
+      class="audit-tab-btn"
+      [class.audit-tab-btn--active]="activeTab() === 'validation'"
+      (click)="activeTab.set('validation')"
+    >
+      Pre-Audit Checks
+      <span *ngIf="validationReport()?.issues?.length" class="badge-count">
+        {{ validationReport()!.issues.length }}
+      </span>
+    </button>
+    <button
+      type="button"
+      class="audit-tab-btn"
+      [class.audit-tab-btn--active]="activeTab() === 'history'"
+      (click)="activeTab.set('history')"
+    >
+      Audit History ({{ auditHistory().length }})
+    </button>
+  </nav>
+
+  <!-- TAB 1: OVERVIEW -->
+  <div *ngIf="activeTab() === 'overview'" class="tab-content">
+    <div class="overview-grid">
+      <!-- Left Column: Operations Card -->
+      <div class="panel-card">
+        <div class="panel-card__header">
+          <h2 class="panel-card__title">End of Day Execution</h2>
+          <span class="panel-card__badge">Standard PMS Procedure</span>
+        </div>
+        <div class="panel-card__body">
+          <p class="panel-card__desc">
+            Executing the night audit sequentially verifies all operational invariants, marks remaining unarrived guests as no-shows, posts automated room charges to active guest folios, advances the hotel business date, and publishes domain events.
+          </p>
+
+          <div class="steps-preview">
+            <div class="step-item">
+              <span class="step-num">1</span>
+              <div class="step-info">
+                <strong>Operational Validation</strong>
+                <span>Checks pending arrivals, pending departures, and unassigned rooms.</span>
+              </div>
+            </div>
+            <div class="step-item">
+              <span class="step-num">2</span>
+              <div class="step-info">
+                <strong>No-Show Processing</strong>
+                <span>Transitions confirmed/guaranteed arrivals for today to NO_SHOW.</span>
+              </div>
+            </div>
+            <div class="step-item">
+              <span class="step-num">3</span>
+              <div class="step-info">
+                <strong>Automated Room & Tax Posting</strong>
+                <span>Posts immutable ROOM_CHARGE transactions to all in-house guest folios.</span>
+              </div>
+            </div>
+            <div class="step-item">
+              <span class="step-num">4</span>
+              <div class="step-info">
+                <strong>Business Date Rollover</strong>
+                <span>Atomically advances PropertyBusinessDate to the next calendar day.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <hms-button
+              variant="primary"
+              [disabled]="isRunning() || isAuditInProgress()"
+              (click)="openRunConfirm()"
+            >
+              {{ isRunning() ? 'Executing Audit...' : 'Execute Night Audit' }}
+            </hms-button>
+            <hms-button variant="outline" (click)="runValidation()">
+              Run Readiness Checks
+            </hms-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Operational KPI Summary -->
+      <div class="panel-card">
+        <div class="panel-card__header">
+          <h2 class="panel-card__title">Current Property Snapshot</h2>
+          <span class="panel-card__badge">Live PMS Data</span>
+        </div>
+        <div class="panel-card__body">
+          <div *ngIf="validationReport(); else noValidationReport" class="metrics-stack">
+            <div class="metric-row">
+              <span class="metric-row__label">Pending Arrivals Today:</span>
+              <span class="metric-row__val" [class.val-warning]="validationReport()!.metrics.pendingArrivalsCount > 0">
+                {{ validationReport()!.metrics.pendingArrivalsCount }}
+              </span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-row__label">Pending Departures (Due Outs):</span>
+              <span class="metric-row__val" [class.val-warning]="validationReport()!.metrics.pendingDeparturesCount > 0">
+                {{ validationReport()!.metrics.pendingDeparturesCount }}
+              </span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-row__label">In-House Guest Reservations:</span>
+              <span class="metric-row__val">
+                {{ validationReport()!.metrics.inHouseReservationsCount }}
+              </span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-row__label">Occupied Rooms:</span>
+              <span class="metric-row__val">
+                {{ validationReport()!.metrics.occupiedRoomsCount }}
+              </span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-row__label">Dirty Rooms (Housekeeping):</span>
+              <span class="metric-row__val" [class.val-warning]="validationReport()!.metrics.dirtyRoomsCount > 0">
+                {{ validationReport()!.metrics.dirtyRoomsCount }}
+              </span>
+            </div>
+            <div class="metric-row metric-row--highlight">
+              <span class="metric-row__label">Projected Room Revenue:</span>
+              <span class="metric-row__val val-money">
+                ${{ validationReport()!.metrics.expectedRoomRevenue | number: '1.2-2' }}
+              </span>
+            </div>
+          </div>
+
+          <ng-template #noValidationReport>
+            <div class="empty-snapshot">
+              <p>Run pre-audit checks to inspect pending arrivals, departures, and projected room charges for this business date.</p>
+              <hms-button variant="outline" (click)="runValidation()">Run Checks Now</hms-button>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: VALIDATION REPORT -->
+  <div *ngIf="activeTab() === 'validation'" class="tab-content">
+    <div class="panel-card" *ngIf="validationReport(); else promptValidation">
+      <div class="panel-card__header">
+        <div>
+          <h2 class="panel-card__title">Operational Pre-Audit Report</h2>
+          <span class="panel-card__sub">Evaluated for Date: {{ validationReport()!.businessDate }}</span>
+        </div>
+        <div class="validation-status-pill">
+          <hms-status-pill
+            *ngIf="!validationReport()!.hasBlockingIssues && !validationReport()!.hasWarnings"
+            label="ALL CLEAR (READY)"
+            variant="success"
+          ></hms-status-pill>
+          <hms-status-pill
+            *ngIf="validationReport()!.hasWarnings && !validationReport()!.hasBlockingIssues"
+            label="WARNINGS DETECTED"
+            variant="warning"
+          ></hms-status-pill>
+          <hms-status-pill
+            *ngIf="validationReport()!.hasBlockingIssues"
+            label="BLOCKING ISSUES FOUND"
+            variant="error"
+          ></hms-status-pill>
+        </div>
+      </div>
+
+      <div class="panel-card__body">
+        <!-- Issues List -->
+        <div *ngIf="validationReport()!.issues.length > 0; else zeroIssues" class="issues-list">
+          <div
+            *ngFor="let issue of validationReport()!.issues"
+            class="issue-card"
+            [class.issue-card--blocking]="issue.severity === 'BLOCKING'"
+            [class.issue-card--warning]="issue.severity === 'WARNING'"
+          >
+            <div class="issue-card__badge">
+              <span class="badge-tag">{{ issue.category }}</span>
+              <hms-status-pill
+                [label]="issue.severity"
+                [variant]="issue.severity === 'BLOCKING' ? 'error' : 'warning'"
+              ></hms-status-pill>
+            </div>
+            <div class="issue-card__content">
+              <div class="issue-card__msg">{{ issue.message }}</div>
+              <div *ngIf="issue.details?.sampleReservations?.length" class="issue-card__meta">
+                Reservations: {{ issue.details.sampleReservations.join(', ') }}
+              </div>
+              <div *ngIf="issue.details?.sampleRooms?.length" class="issue-card__meta">
+                Rooms: {{ issue.details.sampleRooms.join(', ') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #zeroIssues>
+          <div class="zero-issues-box">
+            <span class="check-icon">✓</span>
+            <h3>No Operational Issues Detected</h3>
+            <p>All in-house folios and room assignments are balanced. System is ready for rollover.</p>
+          </div>
+        </ng-template>
+
+        <!-- Override Box if warnings -->
+        <div *ngIf="validationReport()!.hasWarnings" class="override-box">
+          <div class="override-box__header">
+            <h4>Operational Warning Override Authorization</h4>
+            <p>Warnings will not block the audit if acknowledged with an operational justification.</p>
+          </div>
+          <label class="override-checkbox-label">
+            <input type="checkbox" [(ngModel)]="overrideWarnings" />
+            <span>I acknowledge the operational warnings and authorize advancing the business date</span>
+          </label>
+          <div class="form-group" *ngIf="overrideWarnings()">
+            <label class="form-label">Operational Justification (Mandatory):</label>
+            <textarea
+              class="form-control"
+              [(ngModel)]="overrideReason"
+              placeholder="e.g. Front desk confirmed pending arrivals will check in as late arrivals; approved by Duty GM"
+              rows="2"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="action-footer">
+          <hms-button
+            variant="primary"
+            [disabled]="validationReport()!.hasBlockingIssues || (validationReport()!.hasWarnings && !overrideWarnings()) || isRunning()"
+            (click)="executeAudit()"
+          >
+            Advance Date & Complete Audit
+          </hms-button>
+          <hms-button variant="outline" (click)="runValidation()">
+            Re-evaluate Checks
+          </hms-button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #promptValidation>
+      <div class="empty-state-box">
+        <h3>Pre-Audit Checks Not Yet Run</h3>
+        <p>Run operational checks to identify any unassigned arrivals, due-outs, or dirty rooms before advancing the business date.</p>
+        <hms-button variant="primary" (click)="runValidation()">Run Checks</hms-button>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- TAB 3: AUDIT HISTORY -->
+  <div *ngIf="activeTab() === 'history'" class="tab-content">
+    <div class="panel-card">
+      <div class="panel-card__header">
+        <h2 class="panel-card__title">Audit Execution Log</h2>
+        <span class="panel-card__badge">{{ auditHistory().length }} Runs Recorded</span>
+      </div>
+      <div class="panel-card__body">
+        <div class="table-responsive" *ngIf="auditHistory().length > 0; else zeroHistory">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Business Date</th>
+                <th>Rollover To</th>
+                <th>Status</th>
+                <th>Charges Posted</th>
+                <th>Revenue Posted</th>
+                <th>Executed By</th>
+                <th>Completed At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let run of auditHistory()">
+                <td><strong>{{ run.businessDate }}</strong></td>
+                <td>{{ run.nextBusinessDate }}</td>
+                <td>
+                  <hms-status-pill
+                    [label]="run.status"
+                    [variant]="getStatusBadgeVariant(run.status)"
+                  ></hms-status-pill>
+                </td>
+                <td>{{ run.metrics?.roomNightsPosted ?? '-' }}</td>
+                <td>
+                  <span *ngIf="run.metrics?.roomRevenuePosted !== undefined">
+                    ${{ run.metrics?.roomRevenuePosted | number: '1.2-2' }}
+                  </span>
+                  <span *ngIf="run.metrics?.roomRevenuePosted === undefined">-</span>
+                </td>
+                <td>{{ run.executedBy }}</td>
+                <td>{{ run.completedAt ? (run.completedAt | date: 'short') : '-' }}</td>
+                <td>
+                  <hms-button variant="ghost" size="sm" (click)="inspectRun(run)">
+                    Inspect
+                  </hms-button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #zeroHistory>
+          <div class="empty-history-box">
+            <p>No historical night audit runs recorded for this property yet.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <!-- RUN CONFIRMATION MODAL -->
+  <hms-modal
+    *ngIf="showConfirmModal()"
+    title="Confirm Night Audit Execution"
+    (closed)="closeRunConfirm()"
+  >
+    <div class="modal-body">
+      <p class="modal-warning-text">
+        You are about to advance the hotel business date from
+        <strong>{{ businessDate()?.currentBusinessDate }}</strong> to
+        <strong>{{ statusData()?.lastCompletedRun?.nextBusinessDate || 'the next day' }}</strong>.
+      </p>
+
+      <ul class="modal-checklist">
+        <li>Automated room charges will be posted to all open in-house folios.</li>
+        <li>Unarrived reservations for today will be processed according to no-show policy.</li>
+        <li>This action acquires an OCC concurrency lock and cannot be undone.</li>
+      </ul>
+
+      <div *ngIf="validationReport()?.hasWarnings" class="modal-override-section">
+        <label class="override-checkbox-label">
+          <input type="checkbox" [(ngModel)]="overrideWarnings" />
+          <span>I authorize overriding the operational warnings detected</span>
+        </label>
+        <div class="form-group" *ngIf="overrideWarnings()">
+          <label class="form-label">Justification:</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="overrideReason"
+            placeholder="Operational justification"
+          />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" hmsModalFooter>
+      <hms-button variant="outline" (click)="closeRunConfirm()">Cancel</hms-button>
+      <hms-button
+        variant="primary"
+        [disabled]="isRunning() || (validationReport()?.hasWarnings && (!overrideWarnings() || !overrideReason().trim()))"
+        (click)="executeAudit()"
+      >
+        {{ isRunning() ? 'Running...' : 'Confirm & Advance Date' }}
+      </hms-button>
+    </div>
+  </hms-modal>
+
+  <!-- EMERGENCY RECOVERY MODAL -->
+  <hms-modal
+    *ngIf="showRecoveryModal()"
+    title="Emergency Night Audit Unlock"
+    (closed)="closeRecoveryModal()"
+  >
+    <div class="modal-body">
+      <p class="modal-danger-text">
+        <strong>Caution:</strong> Only use this if a previous audit run crashed or timed out and left the business date locked.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Operational Reason for Recovery (Mandatory):</label>
+        <textarea
+          class="form-control"
+          [(ngModel)]="recoveryReason"
+          rows="3"
+          placeholder="e.g. Worker timed out during charge posting; manual audit confirmed database intact"
+        ></textarea>
+      </div>
+    </div>
+    <div class="modal-footer" hmsModalFooter>
+      <hms-button variant="outline" (click)="closeRecoveryModal()">Cancel</hms-button>
+      <hms-button
+        variant="danger"
+        [disabled]="isRecovering() || !recoveryReason().trim()"
+        (click)="executeRecovery()"
+      >
+        {{ isRecovering() ? 'Unlocking...' : 'Forcibly Unlock' }}
+      </hms-button>
+    </div>
+  </hms-modal>
+
+  <!-- RUN DETAIL MODAL -->
+  <hms-modal
+    *ngIf="showRunDetailModal()"
+    title="Night Audit Execution Details"
+    (closed)="closeRunDetail()"
+  >
+    <div class="modal-body" *ngIf="selectedRun()">
+      <div class="run-detail-header">
+        <div>
+          <h4>Audit Run: {{ selectedRun()!.id }}</h4>
+          <p>Date: {{ selectedRun()!.businessDate }} → {{ selectedRun()!.nextBusinessDate }}</p>
+        </div>
+        <hms-status-pill
+          [label]="selectedRun()!.status"
+          [variant]="getStatusBadgeVariant(selectedRun()!.status)"
+        ></hms-status-pill>
+      </div>
+
+      <div class="steps-list" *ngIf="selectedRun()!.steps?.length">
+        <div *ngFor="let step of selectedRun()!.steps" class="step-card">
+          <div class="step-card__header">
+            <span class="step-card__num">{{ step.orderIndex }}</span>
+            <span class="step-card__name">{{ step.name }}</span>
+            <hms-status-pill
+              [label]="step.status"
+              [variant]="getStatusBadgeVariant(step.status)"
+            ></hms-status-pill>
+          </div>
+          <div class="step-card__body">
+            <div>Items Processed: {{ step.itemsProcessed }}</div>
+            <div *ngIf="step.details" class="step-card__details">
+              <pre>{{ step.details | json }}</pre>
+            </div>
+            <div *ngIf="step.errorMessage" class="step-card__error">
+              {{ step.errorMessage }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" hmsModalFooter>
+      <hms-button variant="outline" (click)="closeRunDetail()">Close</hms-button>
+    </div>
+  </hms-modal>
+</div>
+

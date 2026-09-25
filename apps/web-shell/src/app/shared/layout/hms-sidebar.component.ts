@@ -93,6 +93,23 @@ import { AuthService } from '../../core/services/auth.service';
             </span>
             <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Cashiering</span>
           </a>
+
+          <a
+            *ngIf="hasPermission('night_audit:view')"
+            routerLink="/pms/night-audit"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Night Audit'"
+            [attr.aria-label]="'Night Audit'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Night Audit</span>
+          </a>
         </div>
 
         <!-- 3. ROOMS -->
@@ -460,7 +477,8 @@ export class HmsSidebarComponent {
   canAccessFrontOffice(): boolean {
     return (
       this.hasPermission('front_office.reservation.read') ||
-      this.hasPermission('folio:view')
+      this.hasPermission('folio:view') ||
+      this.hasPermission('night_audit:view')
     );
   }
 

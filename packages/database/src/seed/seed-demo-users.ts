@@ -64,5 +64,5 @@ export async function seedDemoUsers(propertyId: string, hotelGroupId: string): P
       console.log(`  Created UserRoleScope: ${def.email} -> ${def.roleCode} [${def.scopeType}]`);
     }
   }
-  return result as DemoUserIds;
+  return result as unknown as DemoUserIds;
 }

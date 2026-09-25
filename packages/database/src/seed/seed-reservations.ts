@@ -95,5 +95,5 @@ export async function seedReservations(
   }
   console.log('  bookedCount reconciliation complete');
 
-  return result as ReservationIds;
+  return result as unknown as ReservationIds;
 }

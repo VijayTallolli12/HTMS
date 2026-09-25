@@ -76,4 +76,10 @@ export const PMS_ROUTES: Routes = [
       import('./engineering/engineering.component').then((m) => m.EngineeringComponent),
     title: 'Engineering',
   },
+  {
+    path: 'night-audit',
+    loadComponent: () =>
+      import('./night-audit/night-audit.component').then((m) => m.NightAuditComponent),
+    title: 'Night Audit',
+  },
 ];

@@ -327,6 +327,31 @@ export async function seedIamBaseline() {
       description: 'Create and update recurring preventive maintenance schedules',
       module: 'ENGINEERING',
     },
+    // ── Night Audit ──────────────────────────────────────────────────
+    {
+      code: 'night_audit:view',
+      name: 'View Night Audit & Business Date',
+      description: 'View current hotel business date, audit status, and historical logs',
+      module: 'NIGHT_AUDIT',
+    },
+    {
+      code: 'night_audit:run',
+      name: 'Run Night Audit',
+      description: 'Execute pre-audit validation and hotel business date rollover',
+      module: 'NIGHT_AUDIT',
+    },
+    {
+      code: 'night_audit:approve',
+      name: 'Approve Night Audit Overrides',
+      description: 'Acknowledge and override operational validation warnings during audit',
+      module: 'NIGHT_AUDIT',
+    },
+    {
+      code: 'night_audit:recover',
+      name: 'Recover Night Audit',
+      description: 'Reset or recover an aborted or locked night audit process',
+      module: 'NIGHT_AUDIT',
+    },
   ];
 
   const permMap = new Map<string, string>();
@@ -386,6 +411,26 @@ export async function seedIamBaseline() {
         'engineering.work_order.note',
         'engineering.schedule.view',
         'engineering.schedule.manage',
+        'night_audit:view',
+        'night_audit:run',
+        'night_audit:approve',
+        'night_audit:recover',
+      ],
+    },
+    {
+      roleCode: 'NIGHT_AUDITOR',
+      permCodes: [
+        'night_audit:view',
+        'night_audit:run',
+        'night_audit:approve',
+        'night_audit:recover',
+        'front_office.reservation.read',
+        'room_operations.status.read',
+        'inventory:read',
+        'folio:view',
+        'folio:post_charge',
+        'folio:post_payment',
+        'frontdesk:checkout',
       ],
     },
     {

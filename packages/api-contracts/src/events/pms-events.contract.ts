@@ -36,6 +36,11 @@ export enum PmsEventType {
   ENGINEERING_ASSET_UPDATED = 'com.enterprise_hms.pms.engineering.asset_updated.v1',
   ENGINEERING_SCHEDULE_CREATED = 'com.enterprise_hms.pms.engineering.schedule_created.v1',
   ENGINEERING_SCHEDULE_UPDATED = 'com.enterprise_hms.pms.engineering.schedule_updated.v1',
+  // Night Audit & Business Date
+  NIGHT_AUDIT_STARTED = 'com.enterprise_hms.pms.night_audit.started.v1',
+  NIGHT_AUDIT_COMPLETED = 'com.enterprise_hms.pms.night_audit.completed.v1',
+  NIGHT_AUDIT_FAILED = 'com.enterprise_hms.pms.night_audit.failed.v1',
+  BUSINESS_DATE_ADVANCED = 'com.enterprise_hms.pms.night_audit.business_date_advanced.v1',
 }
 
 export interface RoomTypeCreatedData {
@@ -288,4 +293,41 @@ export interface HousekeepingTaskInspectedData {
   inspectedBy: string;
   inspectedAt: string;
   rejectionReason?: string | null;
+}
+
+export interface NightAuditStartedData {
+  propertyId: string;
+  auditRunId: string;
+  businessDate: string;
+  nextBusinessDate: string;
+  executedBy: string;
+  startedAt: string;
+}
+
+export interface NightAuditCompletedData {
+  propertyId: string;
+  auditRunId: string;
+  businessDate: string;
+  nextBusinessDate: string;
+  executedBy: string;
+  completedAt: string;
+  roomRevenuePosted: number;
+  roomNightsPosted: number;
+}
+
+export interface NightAuditFailedData {
+  propertyId: string;
+  auditRunId: string;
+  businessDate: string;
+  failureReason: string;
+  failedAt: string;
+}
+
+export interface BusinessDateAdvancedData {
+  propertyId: string;
+  auditRunId: string;
+  previousBusinessDate: string;
+  newBusinessDate: string;
+  advancedAt: string;
+  advancedBy: string;
 }

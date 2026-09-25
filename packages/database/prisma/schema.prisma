@@ -129,6 +129,8 @@ model Property {
   assets                    Asset[]
   workOrders                WorkOrder[]
   maintenanceSchedules      MaintenanceSchedule[]
+  propertyBusinessDate      PropertyBusinessDate?
+  nightAuditRuns            NightAuditRun[]
 
   @@index([countryId])
   @@index([status])
@@ -1109,5 +1111,75 @@ model MaintenanceSchedule {
   @@unique([propertyId, id], name: "uq_maintenance_schedules_property_id")
   @@index([propertyId, isActive, nextDueDate], name: "idx_maintenance_schedules_due_lookup")
   @@map("maintenance_schedules")
+  @@schema("pms_schema")
+}
+
+// ════════════════════════════════════════════════════════════════════
+// NIGHT AUDIT & HOTEL BUSINESS DATE (pms_schema)
+// Property-scoped authoritative operational business date, audit runs,
+// and step execution tracking.
+// ════════════════════════════════════════════════════════════════════
+
+model PropertyBusinessDate {
+  propertyId           String    @id @map("property_id")
+  currentBusinessDate  DateTime  @map("current_business_date") @db.Date
+  previousBusinessDate DateTime? @map("previous_business_date") @db.Date
+  isAuditInProgress    Boolean   @default(false) @map("is_audit_in_progress")
+  lastAuditRunId       String?   @map("last_audit_run_id")
+  lastAuditedAt        DateTime? @map("last_audited_at") @db.Timestamptz(6)
+  version              Int       @default(0)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  property             Property       @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  lastAuditRun         NightAuditRun? @relation("LastAuditRun", fields: [lastAuditRunId], references: [id], onDelete: SetNull)
+
+  @@map("property_business_dates")
+  @@schema("pms_schema")
+}
+
+model NightAuditRun {
+  id               String    @id
+  propertyId       String    @map("property_id")
+  businessDate     DateTime  @map("business_date") @db.Date
+  nextBusinessDate DateTime  @map("next_business_date") @db.Date
+  status           String    @default("PENDING") @db.VarChar(20) // PENDING | IN_PROGRESS | COMPLETED | FAILED
+  executedBy       String    @map("executed_by")
+  startedAt        DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz(6)
+  failureReason    String?   @map("failure_reason") @db.VarChar(1000)
+  metrics          Json?     @map("metrics")
+  version          Int       @default(0)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  property              Property               @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  steps                 NightAuditStep[]
+  propertyBusinessDates PropertyBusinessDate[] @relation("LastAuditRun")
+
+  @@unique([propertyId, businessDate], name: "uq_night_audit_property_date")
+  @@index([propertyId, status], name: "idx_night_audit_property_status")
+  @@map("night_audit_runs")
+  @@schema("pms_schema")
+}
+
+model NightAuditStep {
+  id             String    @id
+  auditRunId     String    @map("audit_run_id")
+  stepKey        String    @map("step_key") @db.VarChar(50) // VALIDATION | ROOM_CHARGES | NO_SHOWS | ROLLOVER
+  name           String    @db.VarChar(100)
+  orderIndex     Int       @map("order_index")
+  status         String    @default("PENDING") @db.VarChar(20) // PENDING | RUNNING | COMPLETED | FAILED | SKIPPED
+  startedAt      DateTime? @map("started_at") @db.Timestamptz(6)
+  completedAt    DateTime? @map("completed_at") @db.Timestamptz(6)
+  itemsProcessed Int       @default(0) @map("items_processed")
+  details        Json?     @map("details")
+  errorMessage   String?   @map("error_message") @db.VarChar(1000)
+
+  auditRun       NightAuditRun @relation(fields: [auditRunId], references: [id], onDelete: Cascade)
+
+  @@unique([auditRunId, stepKey], name: "uq_night_audit_steps_run_key")
+  @@index([auditRunId, orderIndex], name: "idx_night_audit_steps_order")
+  @@map("night_audit_steps")
   @@schema("pms_schema")
 }

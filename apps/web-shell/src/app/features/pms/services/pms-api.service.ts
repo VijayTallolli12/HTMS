@@ -60,6 +60,12 @@ import {
   WorkOrderDto,
   WorkOrderListResponse,
   WorkOrderNoteDto,
+  NightAuditStatusDto,
+  NightAuditValidationReportDto,
+  NightAuditRunDto,
+  RunNightAuditRequest,
+  NightAuditRecoveryRequest,
+  PropertyBusinessDateDto,
 } from '@hms/api-contracts';
 import { environment } from '../../../../environments/environment';
 
@@ -555,6 +561,48 @@ export class PmsApiService {
     return this.http.patch<ApiSuccessResponse<MaintenanceScheduleDto>>(
       `${this.pmsUrl(propertyId)}/engineering/schedules/${scheduleId}`,
       req,
+    );
+  }
+
+  // ==========================================
+  // NIGHT AUDIT & HOTEL BUSINESS DATE
+  // ==========================================
+  getNightAuditStatus(propertyId: string) {
+    return this.http.get<ApiSuccessResponse<NightAuditStatusDto>>(
+      `${this.pmsUrl(propertyId)}/night-audit/status`,
+    );
+  }
+
+  validateNightAudit(propertyId: string) {
+    return this.http.post<ApiSuccessResponse<NightAuditValidationReportDto>>(
+      `${this.pmsUrl(propertyId)}/night-audit/validate`,
+      {},
+    );
+  }
+
+  runNightAudit(propertyId: string, req: RunNightAuditRequest) {
+    return this.http.post<ApiSuccessResponse<NightAuditRunDto>>(
+      `${this.pmsUrl(propertyId)}/night-audit/run`,
+      req,
+    );
+  }
+
+  recoverNightAudit(propertyId: string, req: NightAuditRecoveryRequest) {
+    return this.http.post<ApiSuccessResponse<PropertyBusinessDateDto>>(
+      `${this.pmsUrl(propertyId)}/night-audit/recover`,
+      req,
+    );
+  }
+
+  getNightAuditHistory(propertyId: string, limit = 20) {
+    return this.http.get<ApiSuccessResponse<NightAuditRunDto[]>>(
+      `${this.pmsUrl(propertyId)}/night-audit/history?limit=${limit}`,
+    );
+  }
+
+  getNightAuditRunById(propertyId: string, runId: string) {
+    return this.http.get<ApiSuccessResponse<NightAuditRunDto>>(
+      `${this.pmsUrl(propertyId)}/night-audit/runs/${runId}`,
     );
   }
 }

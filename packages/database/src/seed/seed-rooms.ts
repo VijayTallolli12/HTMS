@@ -76,5 +76,5 @@ export async function seedRooms(propertyId: string, buildings: Array<{ id: strin
   for (const def of ROOM_DEFS) { roomCounts[def.roomTypeCode] = (roomCounts[def.roomTypeCode] || 0) + 1; }
   for (const [code, count] of Object.entries(roomCounts)) { await prisma.dailyInventory.updateMany({ where: { propertyId, roomTypeId: rtMap[code] }, data: { totalRooms: count } }); }
   console.log('  Updated DailyInventory totalRooms');
-  return result as RoomIds;
+  return result as unknown as RoomIds;
 }

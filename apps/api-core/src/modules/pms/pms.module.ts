@@ -50,8 +50,19 @@ import { HousekeepingModule } from './housekeeping/housekeeping.module';
 // Engineering
 import { EngineeringModule } from './engineering/engineering.module';
 
+// Night Audit
+import { NightAuditModule } from './night-audit/night-audit.module';
+
 @Module({
-  imports: [ReservationsModule, RoomOperationsModule, FrontOfficeModule, FinanceModule, HousekeepingModule, EngineeringModule],
+  imports: [
+    ReservationsModule,
+    RoomOperationsModule,
+    FrontOfficeModule,
+    FinanceModule,
+    HousekeepingModule,
+    EngineeringModule,
+    NightAuditModule,
+  ],
   controllers: [
     RoomTypeController,
     RoomController,
@@ -110,6 +121,7 @@ import { EngineeringModule } from './engineering/engineering.module';
     FinanceModule,
     HousekeepingModule,
     EngineeringModule,
+    NightAuditModule,
   ],
 })
 export class PmsModule {}

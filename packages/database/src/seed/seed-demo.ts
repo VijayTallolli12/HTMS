@@ -38,8 +38,8 @@ export async function seedDemo(): Promise<void> {
   await seedDemoUsers(property.id, group.id);
 
   console.log('\n--- Phase 4: Reservations & Folios ---');
-  await seedReservations(property.id, guestIds, roomTypeIds, roomIds);
-  await seedFolios(property.id, guestIds);
+  await seedReservations(property.id, guestIds as unknown as Record<string, string>, roomTypeIds, roomIds as unknown as Record<string, string>);
+  await seedFolios(property.id, guestIds as unknown as Record<string, string>);
 
   console.log('\n=== HMS Demo Seed - Complete ===\n');
   const counts = {
