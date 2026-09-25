@@ -2,7 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npx prisma generate --schema=packages/database/prisma/schema.prisma && npm run build:web",
   "outputDirectory": "apps/web-shell/dist/web-shell/browser",
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/api",
@@ -17,7 +16,7 @@
       "destination": "/api"
     },
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
