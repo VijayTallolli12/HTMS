@@ -5,11 +5,19 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://YOUR_BACKEND_API_URL/api/:path*"
+      "source": "/api",
+      "destination": "/api/index.ts"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/api/(.*)",
+      "destination": "/api/index.ts"
+    },
+    {
+      "source": "/.well-known/(.*)",
+      "destination": "/api/index.ts"
+    },
+    {
+      "source": "/((?!api|\\.well-known).*)",
       "destination": "/index.html"
     }
   ]
