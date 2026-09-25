@@ -151,6 +151,21 @@ button:hover,
   text-decoration: none !important;
 }
 
+/* Button text and icon layout */
+.btn,
+.hms-button,
+.hms-btn {
+  white-space: nowrap;
+}
+
+.btn-svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 /* Shared Layout */
 .hms-shell {
   display: flex;
