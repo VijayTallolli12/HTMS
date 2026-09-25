@@ -53,6 +53,10 @@ async function bootstrapServer(): Promise<Express> {
 }
 
 export default async function handler(req: Request, res: Response): Promise<void> {
+  const matchedPath = (req.headers['x-matched-path'] || req.headers['x-forwarded-uri']) as string;
+  if (matchedPath && matchedPath !== '/api') {
+    req.url = matchedPath;
+  }
   const server = await bootstrapServer();
   server(req, res);
 }
