@@ -88,4 +88,10 @@ export const PMS_ROUTES: Routes = [
       import('../fnb/fnb-workspace.component').then((m) => m.FnbWorkspaceComponent),
     title: 'Restaurant & F&B',
   },
+  {
+    path: 'spa',
+    loadComponent: () =>
+      import('../spa/spa-workspace.component').then((m) => m.SpaWorkspaceComponent),
+    title: 'Spa & Wellness',
+  },
 ];

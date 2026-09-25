@@ -1,0 +1,606 @@
+<div class="spa-container">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="header-pretitle">OPERATIONS &bull; WELLNESS & SPA</div>
+      <h1 class="page-title">Spa Operations</h1>
+      <p class="page-subtitle">
+        Schedule wellness therapies, manage therapist rosters, assign treatment suites, and post charges directly to hotel guest folios.
+      </p>
+    </div>
+
+    <div class="header-right">
+      <div class="property-tag" *ngIf="activeProperty()">
+        <span class="indicator-dot"></span>
+        <span>{{ activeProperty()?.name }}</span>
+      </div>
+      <hms-button
+        variant="gold"
+        *ngIf="hasPermission('spa.appointment.create')"
+        (click)="openBookModal()"
+      >
+        + Book Appointment
+      </hms-button>
+    </div>
+  </header>
+
+  <!-- Global Alerts -->
+  <div class="alerts-container">
+    <hms-alert
+      *ngIf="errorMessage()"
+      type="error"
+      [message]="errorMessage()!"
+      (dismissed)="errorMessage.set(null)"
+    ></hms-alert>
+    <hms-alert
+      *ngIf="successMessage()"
+      type="success"
+      [message]="successMessage()!"
+      (dismissed)="successMessage.set(null)"
+    ></hms-alert>
+  </div>
+
+  <!-- Main Tabs Bar -->
+  <div class="tabs-nav-bar">
+    <div class="nav-tabs">
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'appointments'"
+        (click)="activeTab.set('appointments')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Today's Schedule & Appointments
+        <span class="tab-count-badge" *ngIf="appointments().length > 0">
+          {{ appointments().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'services'"
+        (click)="activeTab.set('services')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        Treatments & Services ({{ services().length }})
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'team'"
+        (click)="activeTab.set('team')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        Therapists & Suites
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <hms-loading *ngIf="isLoading()" message="Loading spa operations..."></hms-loading>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 1: SCHEDULE & APPOINTMENTS -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'appointments'" class="tab-content">
+    <!-- Sub-toolbar: Date Picker & Status Filter -->
+    <div class="sub-toolbar-card">
+      <div class="toolbar-left">
+        <label class="control-label">Schedule Date:</label>
+        <input
+          type="date"
+          class="date-input"
+          [ngModel]="selectedDate()"
+          (ngModelChange)="onDateChange($event)"
+        />
+      </div>
+
+      <div class="toolbar-right">
+        <div class="status-chips">
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="statusFilter() === 'ALL'"
+            (click)="statusFilter.set('ALL')"
+          >
+            All Statuses
+          </button>
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="statusFilter() === 'SCHEDULED'"
+            (click)="statusFilter.set('SCHEDULED')"
+          >
+            Scheduled
+          </button>
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="statusFilter() === 'CONFIRMED'"
+            (click)="statusFilter.set('CONFIRMED')"
+          >
+            Confirmed
+          </button>
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="statusFilter() === 'IN_PROGRESS'"
+            (click)="statusFilter.set('IN_PROGRESS')"
+          >
+            In Progress
+          </button>
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="statusFilter() === 'COMPLETED'"
+            (click)="statusFilter.set('COMPLETED')"
+          >
+            Completed
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredAppointments().length === 0" class="empty-wrap">
+      <hms-empty
+        title="No Appointments Found"
+        description="There are no spa appointments matching the selected date and status filters."
+      ></hms-empty>
+    </div>
+
+    <!-- Appointments List -->
+    <div class="appointments-grid" *ngIf="filteredAppointments().length > 0">
+      <div
+        *ngFor="let appt of filteredAppointments()"
+        class="appt-card"
+        [class.status-completed]="appt.status === 'COMPLETED'"
+        [class.status-in-progress]="appt.status === 'IN_PROGRESS'"
+        [class.status-confirmed]="appt.status === 'CONFIRMED'"
+        [class.status-scheduled]="appt.status === 'SCHEDULED'"
+      >
+        <div class="appt-card-header">
+          <div class="appt-time-box">
+            <span class="appt-time font-mono">{{ formatTimeRange(appt.startTime, appt.endTime) }}</span>
+            <span class="appt-duration">{{ appt.durationMinutes }} mins</span>
+          </div>
+          <hms-status-pill
+            [status]="getStatusPillVariant(appt.status)"
+            [label]="appt.status"
+          ></hms-status-pill>
+        </div>
+
+        <div class="appt-card-body">
+          <div class="appt-service-name">{{ appt.serviceName }}</div>
+          <div class="appt-details">
+            <div class="detail-row">
+              <span class="detail-label">Therapist:</span>
+              <span class="detail-value"><strong>{{ appt.therapistName }}</strong></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Treatment Suite:</span>
+              <span class="detail-value"><strong>{{ appt.roomName }}</strong></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Guest:</span>
+              <span class="detail-value">
+                {{ appt.guestName || 'Walk-in Guest' }}
+                <span class="room-pill font-mono" *ngIf="appt.roomNumber">Room {{ appt.roomNumber }}</span>
+              </span>
+            </div>
+            <div class="detail-row" *ngIf="appt.notes">
+              <span class="detail-label">Notes:</span>
+              <span class="detail-value text-italic">{{ appt.notes }}</span>
+            </div>
+          </div>
+
+          <div class="appt-price-row">
+            <span class="price-label">Price:</span>
+            <span class="price-value font-mono">{{ formatPrice(appt.price, appt.currency) }}</span>
+          </div>
+
+          <!-- Completed Settlement Banner -->
+          <div *ngIf="appt.status === 'COMPLETED'" class="completed-settlement-info">
+            <span class="check-icon">&check;</span>
+            <div class="settlement-text" *ngIf="appt.settlementType === 'ROOM_CHARGE'">
+              Charged to Room {{ appt.roomNumber }} Folio
+              <br /><small class="font-mono">Tx Ref: {{ appt.folioTransactionId || 'RESTAURANT/SPA' }}</small>
+            </div>
+            <div class="settlement-text" *ngIf="appt.settlementType === 'DIRECT_PAY'">
+              Paid via {{ appt.paymentMethod }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Action Footer -->
+        <div class="appt-card-footer" *ngIf="appt.status !== 'COMPLETED' && appt.status !== 'CANCELLED'">
+          <button
+            *ngIf="appt.status === 'SCHEDULED'"
+            type="button"
+            class="btn-action confirm"
+            [disabled]="isSubmitting()"
+            (click)="updateStatus(appt, 'CONFIRMED')"
+          >
+            Confirm Booking
+          </button>
+
+          <button
+            *ngIf="appt.status === 'CONFIRMED'"
+            type="button"
+            class="btn-action start"
+            [disabled]="isSubmitting()"
+            (click)="updateStatus(appt, 'IN_PROGRESS')"
+          >
+            Start Treatment &rarr;
+          </button>
+
+          <button
+            *ngIf="appt.status === 'IN_PROGRESS'"
+            type="button"
+            class="btn-action complete"
+            [disabled]="isSubmitting()"
+            (click)="openCompleteModal(appt)"
+          >
+            Complete & Settle &check;
+          </button>
+
+          <button
+            type="button"
+            class="btn-action cancel"
+            [disabled]="isSubmitting()"
+            (click)="updateStatus(appt, 'CANCELLED')"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: TREATMENTS & SERVICES -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'services'" class="tab-content">
+    <div class="catalog-grid">
+      <div *ngFor="let s of services()" class="service-card">
+        <div class="service-header">
+          <span class="service-code font-mono">{{ s.code }}</span>
+          <span class="service-price font-mono">{{ formatPrice(s.price, s.currency) }}</span>
+        </div>
+        <h3 class="service-title">{{ s.name }}</h3>
+        <p class="service-desc">{{ s.description || 'Restorative spa treatment designed for holistic relaxation.' }}</p>
+        <div class="service-footer">
+          <span class="service-duration">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mini-icon">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            {{ s.durationMinutes }} Minutes
+          </span>
+          <span class="service-status-dot">&bull; Active</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: THERAPISTS & SUITES -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'team'" class="tab-content">
+    <div class="team-layout">
+      <!-- Therapists Column -->
+      <div class="team-column">
+        <h2 class="column-title">Licensed Spa Therapists</h2>
+        <div class="roster-list">
+          <div *ngFor="let th of therapists()" class="roster-card">
+            <div class="roster-avatar">{{ th.name.slice(0, 1) }}</div>
+            <div class="roster-info">
+              <div class="roster-name">{{ th.name }}</div>
+              <div class="roster-spec">{{ th.specialty || 'General Holistic Therapist' }}</div>
+              <div class="roster-contact" *ngIf="th.phone || th.email">
+                <span>{{ th.phone }}</span> &bull; <span>{{ th.email }}</span>
+              </div>
+            </div>
+            <span class="roster-badge">&bull; Available</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suites Column -->
+      <div class="team-column">
+        <h2 class="column-title">Treatment Suites</h2>
+        <div class="roster-list">
+          <div *ngFor="let rm of rooms()" class="roster-card">
+            <div class="roster-avatar room-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mini-icon">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              </svg>
+            </div>
+            <div class="roster-info">
+              <div class="roster-name">{{ rm.name }}</div>
+              <div class="roster-spec">Room Type: <strong>{{ rm.roomType }}</strong></div>
+              <div class="roster-contact">Status: {{ rm.status }}</div>
+            </div>
+            <hms-status-pill
+              [status]="rm.status === 'AVAILABLE' ? 'success' : 'danger'"
+              [label]="rm.status"
+            ></hms-status-pill>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: BOOK APPOINTMENT -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="showBookModal()"
+    title="Book Spa Treatment Appointment"
+    (closed)="showBookModal.set(false)"
+  >
+    <div class="modal-form-body">
+      <!-- Service Selection -->
+      <div class="form-group">
+        <label class="form-label">Select Treatment / Service</label>
+        <select class="form-select" [(ngModel)]="bookServiceId">
+          <option *ngFor="let s of services()" [value]="s.id">
+            {{ s.name }} — {{ s.durationMinutes }} mins ({{ formatPrice(s.price, s.currency) }})
+          </option>
+        </select>
+      </div>
+
+      <!-- Therapist and Room Selection -->
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Assigned Therapist</label>
+          <select class="form-select" [(ngModel)]="bookTherapistId">
+            <option *ngFor="let th of therapists()" [value]="th.id">
+              {{ th.name }} ({{ th.specialty }})
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group half">
+          <label class="form-label">Treatment Suite / Room</label>
+          <select class="form-select" [(ngModel)]="bookRoomId">
+            <option *ngFor="let rm of rooms()" [value]="rm.id">
+              {{ rm.name }} ({{ rm.roomType }})
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Date & Start Time -->
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Appointment Date</label>
+          <input type="date" class="form-input" [(ngModel)]="bookDate" />
+        </div>
+
+        <div class="form-group half">
+          <label class="form-label">Start Time</label>
+          <input type="time" class="form-input" [(ngModel)]="bookTime" />
+        </div>
+      </div>
+
+      <!-- Guest Type Toggle -->
+      <div class="form-group">
+        <label class="form-label">Guest Classification</label>
+        <div class="toggle-group-small">
+          <button
+            type="button"
+            class="toggle-chip"
+            [class.active]="bookGuestType === 'in-house'"
+            (click)="bookGuestType = 'in-house'"
+          >
+            Hotel Checked-In Guest
+          </button>
+          <button
+            type="button"
+            class="toggle-chip"
+            [class.active]="bookGuestType === 'walk-in'"
+            (click)="bookGuestType = 'walk-in'"
+          >
+            Day Visitor / Walk-in
+          </button>
+        </div>
+      </div>
+
+      <!-- In-House Guest Select -->
+      <div class="form-group" *ngIf="bookGuestType === 'in-house'">
+        <label class="form-label">Select In-House Guest</label>
+        <select
+          class="form-select"
+          [(ngModel)]="bookSelectedGuestResId"
+          (ngModelChange)="onBookGuestSelect()"
+        >
+          <option value="">-- Choose Hotel Guest --</option>
+          <option
+            *ngFor="let g of inHouseGuests()"
+            [value]="g.reservationId"
+          >
+            Room {{ g.roomNumber }} — {{ g.guestName }} (Conf: {{ g.confirmationNumber }})
+          </option>
+        </select>
+      </div>
+
+      <!-- Guest Details Form if Walk-In -->
+      <div class="form-row" *ngIf="bookGuestType === 'walk-in'">
+        <div class="form-group half">
+          <label class="form-label">Guest Full Name</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="bookGuestName"
+            placeholder="e.g. Maria Sharapova"
+          />
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Contact Phone</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="bookGuestPhone"
+            placeholder="e.g. +81 90-0000-0000"
+          />
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-group">
+        <label class="form-label">Therapy Notes & Preferences</label>
+        <textarea
+          class="form-textarea"
+          [(ngModel)]="bookNotes"
+          rows="2"
+          placeholder="e.g. Focus on neck and shoulders, preferred essential oils"
+        ></textarea>
+      </div>
+    </div>
+
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="showBookModal.set(false)">Cancel</hms-button>
+      <hms-button
+        variant="gold"
+        [disabled]="isSubmitting() || !bookServiceId || !bookTherapistId || !bookRoomId"
+        (click)="confirmBooking()"
+      >
+        <span *ngIf="!isSubmitting()">Confirm Spa Booking</span>
+        <span *ngIf="isSubmitting()">Booking...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: COMPLETE APPOINTMENT & FOLIO SETTLE -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="showCompleteModal()"
+    [title]="'Complete Appointment #' + (targetAppointment()?.appointmentNumber || '')"
+    (closed)="showCompleteModal.set(false)"
+  >
+    <div class="modal-form-body">
+      <!-- Treatment Summary Box -->
+      <div class="summary-box">
+        <div class="summary-row">
+          <span>Treatment:</span>
+          <strong>{{ targetAppointment()?.serviceName }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Therapist:</span>
+          <span>{{ targetAppointment()?.therapistName }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Suite:</span>
+          <span>{{ targetAppointment()?.roomName }}</span>
+        </div>
+        <div class="summary-row total-row">
+          <span>Service Amount:</span>
+          <span class="font-mono font-bold">{{ formatPrice(targetAppointment()?.price || '0', targetAppointment()?.currency) }}</span>
+        </div>
+      </div>
+
+      <!-- Settlement Method Selector -->
+      <div class="settle-type-selector">
+        <label class="form-label">Settlement Method</label>
+        <div class="toggle-group">
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="completeSettlementType === 'ROOM_CHARGE'"
+            (click)="completeSettlementType = 'ROOM_CHARGE'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            Post to Guest Room / Folio
+          </button>
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="completeSettlementType === 'DIRECT_PAY'"
+            (click)="completeSettlementType = 'DIRECT_PAY'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+              <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            Direct Payment (Walk-in)
+          </button>
+        </div>
+      </div>
+
+      <!-- Room Charge Options -->
+      <div *ngIf="completeSettlementType === 'ROOM_CHARGE'" class="settle-subform">
+        <div class="form-group">
+          <label class="form-label">Select Hotel Guest Room</label>
+          <select
+            class="form-select"
+            [(ngModel)]="completeSelectedGuestResId"
+          >
+            <option value="">-- Choose Hotel Guest --</option>
+            <option
+              *ngFor="let g of inHouseGuests()"
+              [value]="g.reservationId"
+            >
+              Room {{ g.roomNumber }} — {{ g.guestName }} (Conf: {{ g.confirmationNumber }})
+            </option>
+          </select>
+          <small class="form-hint">
+            The full amount of {{ formatPrice(targetAppointment()?.price || '0', targetAppointment()?.currency) }} will be posted to the guest's folio under transaction code <code>SPA</code>.
+          </small>
+        </div>
+
+        <div class="form-group" *ngIf="!completeSelectedGuestResId">
+          <label class="form-label">Or Enter Room Number Manually</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="completeManualRoomNumber"
+            placeholder="e.g. 104"
+          />
+        </div>
+      </div>
+
+      <!-- Direct Pay Options -->
+      <div *ngIf="completeSettlementType === 'DIRECT_PAY'" class="settle-subform">
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <select class="form-select" [(ngModel)]="completePaymentMethod">
+            <option value="CREDIT_CARD">Credit Card / POS Terminal</option>
+            <option value="CASH">Cash</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="showCompleteModal.set(false)">Cancel</hms-button>
+      <hms-button
+        variant="gold"
+        [disabled]="isSubmitting()"
+        (click)="confirmComplete()"
+      >
+        <span *ngIf="!isSubmitting()">Confirm Completion & Charge Folio</span>
+        <span *ngIf="isSubmitting()">Processing Folio Post...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
+</div>
+

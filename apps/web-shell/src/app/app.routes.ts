@@ -60,6 +60,11 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'spa',
+    redirectTo: 'pms/spa',
+    pathMatch: 'full',
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

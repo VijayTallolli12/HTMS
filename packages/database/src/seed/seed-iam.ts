@@ -401,6 +401,55 @@ export async function seedIamBaseline() {
       description: 'Settle order bill and post room charges to guest folio',
       module: 'FNB',
     },
+    // ── Spa Operations ───────────────────────────────────────────────
+    {
+      code: 'spa.service.view',
+      name: 'View Spa Services',
+      description: 'View spa treatments, services, and pricing',
+      module: 'SPA',
+    },
+    {
+      code: 'spa.service.manage',
+      name: 'Manage Spa Services',
+      description: 'Create and update spa treatment services',
+      module: 'SPA',
+    },
+    {
+      code: 'spa.therapist.view',
+      name: 'View Spa Therapists',
+      description: 'View therapist profiles, schedules, and specialties',
+      module: 'SPA',
+    },
+    {
+      code: 'spa.room.view',
+      name: 'View Spa Treatment Rooms',
+      description: 'View spa treatment rooms and availability',
+      module: 'SPA',
+    },
+    {
+      code: 'spa.appointment.view',
+      name: 'View Spa Appointments',
+      description: 'View spa appointment bookings and schedule calendar',
+      module: 'SPA',
+    },
+    {
+      code: 'spa.appointment.create',
+      name: 'Book Spa Appointments',
+      description: 'Book treatment appointments for hotel guests and visitors',
+      module: 'SPA',
+    },
+    {
+      code: 'spa.appointment.manage',
+      name: 'Manage Spa Appointments',
+      description: 'Update appointment status and schedule details',
+      module: 'SPA',
+    },
+    {
+      code: 'spa.appointment.complete',
+      name: 'Complete Spa Appointment & Settle',
+      description: 'Mark appointment completed and post charges to guest folio',
+      module: 'SPA',
+    },
   ];
 
   const permMap = new Map<string, string>();
@@ -472,6 +521,14 @@ export async function seedIamBaseline() {
         'fnb.order.create',
         'fnb.order.manage',
         'fnb.order.close',
+        'spa.service.view',
+        'spa.service.manage',
+        'spa.therapist.view',
+        'spa.room.view',
+        'spa.appointment.view',
+        'spa.appointment.create',
+        'spa.appointment.manage',
+        'spa.appointment.complete',
       ],
     },
     {
@@ -517,6 +574,13 @@ export async function seedIamBaseline() {
         'fnb.order.create',
         'fnb.order.manage',
         'fnb.order.close',
+        'spa.service.view',
+        'spa.therapist.view',
+        'spa.room.view',
+        'spa.appointment.view',
+        'spa.appointment.create',
+        'spa.appointment.manage',
+        'spa.appointment.complete',
       ],
     },
     {

@@ -16,3 +16,4 @@ export * from './security/security.contract';
 export * from './iam/iam.contract';
 export * from './pms';
 export * from './fnb/fnb.contract';
+export * from './spa/spa.contract';
