@@ -65,6 +65,11 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'events',
+    redirectTo: 'pms/events',
+    pathMatch: 'full',
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

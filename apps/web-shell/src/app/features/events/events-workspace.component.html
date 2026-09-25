@@ -1,0 +1,904 @@
+<div class="events-workspace">
+  <!-- Top Alerts -->
+  <hms-alert *ngIf="errorMessage()" type="error" [message]="errorMessage()!" (dismiss)="errorMessage.set(null)"></hms-alert>
+  <hms-alert *ngIf="successMessage()" type="success" [message]="successMessage()!" (dismiss)="successMessage.set(null)"></hms-alert>
+
+  <!-- Workspace Header -->
+  <header class="events-header">
+    <div class="events-header__title-block">
+      <div class="events-header__badge">OPERATIONS</div>
+      <h1 class="events-header__title">Events &amp; Banquets</h1>
+      <p class="events-header__subtitle">
+        Manage banquet ballrooms, catering packages, equipment allocations, and guest folio billing.
+      </p>
+    </div>
+
+    <div class="events-header__actions">
+      <hms-button
+        *ngIf="canCreateBooking()"
+        variant="primary"
+        (clicked)="openCreateBookingModal()"
+      >
+        <span class="btn-icon">+</span> New Event Booking
+      </hms-button>
+    </div>
+  </header>
+
+  <!-- Summary KPI Ribbon -->
+  <div class="events-kpis">
+    <div class="kpi-card">
+      <div class="kpi-card__label">Total Bookings</div>
+      <div class="kpi-card__value">{{ bookings().length }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card__label">Confirmed</div>
+      <div class="kpi-card__value kpi--gold">{{ confirmedCount() }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card__label">Tentative</div>
+      <div class="kpi-card__value kpi--amber">{{ tentativeCount() }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card__label">In Progress</div>
+      <div class="kpi-card__value kpi--blue">{{ inProgressCount() }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card__label">Banquet Venues</div>
+      <div class="kpi-card__value">{{ venues().length }}</div>
+    </div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="events-tabs">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'bookings'"
+      (click)="activeTab.set('bookings')"
+    >
+      Event Bookings
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'venues'"
+      (click)="activeTab.set('venues')"
+    >
+      Banquet Venues ({{ venues().length }})
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'packages'"
+      (click)="activeTab.set('packages')"
+    >
+      Catering Packages ({{ packages().length }})
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'resources'"
+      (click)="activeTab.set('resources')"
+    >
+      Equipment &amp; Inventory ({{ resources().length }})
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <hms-loading *ngIf="isLoading()"></hms-loading>
+
+  <!-- ============================================================== -->
+  <!-- TAB 1: BOOKINGS LIST -->
+  <!-- ============================================================== -->
+  <section class="tab-content" *ngIf="activeTab() === 'bookings' && !isLoading()">
+    <!-- Filter Toolbar -->
+    <div class="filter-toolbar">
+      <div class="filter-group">
+        <label class="filter-label">Status:</label>
+        <select
+          class="form-select"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event)"
+        >
+          <option value="ALL">All Statuses</option>
+          <option value="CONFIRMED">Confirmed</option>
+          <option value="TENTATIVE">Tentative</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="DRAFT">Draft</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Venue:</label>
+        <select
+          class="form-select"
+          [ngModel]="venueFilter()"
+          (ngModelChange)="venueFilter.set($event)"
+        >
+          <option value="ALL">All Venues</option>
+          <option *ngFor="let v of venues()" [value]="v.id">{{ v.name }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <hms-empty
+      *ngIf="filteredBookings().length === 0"
+      title="No Event Bookings Found"
+      description="Create a new event reservation or adjust your status and venue filters."
+    ></hms-empty>
+
+    <!-- Bookings Table -->
+    <div class="table-container" *ngIf="filteredBookings().length > 0">
+      <table class="hms-table">
+        <thead>
+          <tr>
+            <th>Event &amp; Booking #</th>
+            <th>Venue</th>
+            <th>Schedule</th>
+            <th>Host / Room</th>
+            <th>Guests</th>
+            <th>Estimated</th>
+            <th>Status</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let b of filteredBookings()" class="booking-row">
+            <td>
+              <div class="font-medium text-primary">{{ b.eventName }}</div>
+              <div class="text-muted text-xs font-mono">{{ b.bookingNumber }} &bull; {{ b.eventType }}</div>
+            </td>
+            <td>
+              <div class="font-medium">{{ b.venueName || 'Unassigned Venue' }}</div>
+              <div class="text-muted text-xs" *ngIf="b.packageName">{{ b.packageName }}</div>
+            </td>
+            <td>
+              <div>{{ formatDate(b.startTime) }}</div>
+              <div class="text-muted text-xs">{{ formatTime(b.startTime) }} &ndash; {{ formatTime(b.endTime) }}</div>
+            </td>
+            <td>
+              <div>{{ b.hostName }}</div>
+              <div class="text-muted text-xs" *ngIf="b.roomNumber">Room {{ b.roomNumber }}</div>
+            </td>
+            <td>
+              <span class="guests-chip">{{ b.expectedGuests }} guests</span>
+            </td>
+            <td class="font-medium">
+              {{ formatPrice(b.estimatedAmount, b.currency) }}
+            </td>
+            <td>
+              <span
+                class="status-pill"
+                [class.status-confirmed]="b.status === 'CONFIRMED'"
+                [class.status-tentative]="b.status === 'TENTATIVE'"
+                [class.status-progress]="b.status === 'IN_PROGRESS'"
+                [class.status-completed]="b.status === 'COMPLETED'"
+                [class.status-cancelled]="b.status === 'CANCELLED'"
+              >
+                {{ b.status }}
+              </span>
+            </td>
+            <td class="text-right actions-cell">
+              <div class="action-buttons">
+                <button
+                  type="button"
+                  class="btn-action btn-detail"
+                  (click)="openBookingDetail(b)"
+                  title="View Details"
+                >
+                  Details
+                </button>
+
+                <button
+                  *ngIf="canManageBooking() && b.status !== 'COMPLETED' && b.status !== 'CANCELLED'"
+                  type="button"
+                  class="btn-action"
+                  (click)="openAllocateModal(b)"
+                  title="Allocate Equipment"
+                >
+                  Equipment
+                </button>
+
+                <!-- Status Transition Quick Buttons -->
+                <button
+                  *ngIf="canConfirmBooking() && (b.status === 'TENTATIVE' || b.status === 'DRAFT')"
+                  type="button"
+                  class="btn-action btn-confirm"
+                  (click)="selectedBooking.set(b); advanceStatus('CONFIRMED')"
+                >
+                  Confirm
+                </button>
+
+                <button
+                  *ngIf="canManageBooking() && b.status === 'CONFIRMED'"
+                  type="button"
+                  class="btn-action btn-start"
+                  (click)="selectedBooking.set(b); advanceStatus('IN_PROGRESS')"
+                >
+                  Start
+                </button>
+
+                <button
+                  *ngIf="canCompleteBooking() && b.status === 'IN_PROGRESS'"
+                  type="button"
+                  class="btn-action btn-complete"
+                  (click)="openCompleteModal(b)"
+                >
+                  Complete &amp; Bill
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================== -->
+  <!-- TAB 2: VENUES -->
+  <!-- ============================================================== -->
+  <section class="tab-content" *ngIf="activeTab() === 'venues' && !isLoading()">
+    <div class="tab-header">
+      <div>
+        <h2 class="section-title">Banquet &amp; Event Venues</h2>
+        <p class="section-desc">Grand ballrooms, outdoor pavilions, and executive boardrooms.</p>
+      </div>
+      <hms-button *ngIf="canManageVenues()" variant="outline" (clicked)="openVenueModal()">
+        + Add Venue
+      </hms-button>
+    </div>
+
+    <div class="cards-grid">
+      <div *ngFor="let v of venues()" class="item-card">
+        <div class="item-card__header">
+          <div>
+            <h3 class="item-card__title">{{ v.name }}</h3>
+            <span class="venue-type-tag">{{ v.venueType }}</span>
+          </div>
+          <span class="code-pill">{{ v.code }}</span>
+        </div>
+
+        <div class="item-card__body">
+          <div class="meta-row">
+            <span class="meta-label">Capacity:</span>
+            <span class="meta-value font-semibold">{{ v.capacity }} guests max</span>
+          </div>
+          <div class="meta-row" *ngIf="v.location">
+            <span class="meta-label">Location:</span>
+            <span class="meta-value">{{ v.location }}</span>
+          </div>
+        </div>
+
+        <div class="item-card__footer">
+          <span class="status-indicator" [class.is-active]="v.isActive">
+            {{ v.isActive ? 'Active & Available' : 'Out of Service' }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== -->
+  <!-- TAB 3: PACKAGES -->
+  <!-- ============================================================== -->
+  <section class="tab-content" *ngIf="activeTab() === 'packages' && !isLoading()">
+    <div class="tab-header">
+      <div>
+        <h2 class="section-title">Catering &amp; Banquet Packages</h2>
+        <p class="section-desc">Tiered per-guest packages including food &amp; beverage, setup, and audiovisual support.</p>
+      </div>
+      <hms-button *ngIf="canManagePackages()" variant="outline" (clicked)="openPackageModal()">
+        + Add Package
+      </hms-button>
+    </div>
+
+    <div class="cards-grid">
+      <div *ngFor="let p of packages()" class="item-card package-card">
+        <div class="item-card__header">
+          <div>
+            <h3 class="item-card__title">{{ p.name }}</h3>
+            <span class="code-pill">{{ p.code }}</span>
+          </div>
+          <div class="price-display">
+            <span class="price-amount">{{ formatPrice(p.pricePerGuest, p.currency) }}</span>
+            <span class="price-unit">/ guest</span>
+          </div>
+        </div>
+
+        <div class="item-card__body">
+          <p class="package-desc" *ngIf="p.description">{{ p.description }}</p>
+          <div class="meta-row">
+            <span class="meta-label">Minimum Guests:</span>
+            <span class="meta-value">{{ p.minGuests }} guests</span>
+          </div>
+        </div>
+
+        <div class="item-card__footer">
+          <span class="status-indicator" [class.is-active]="p.isActive">
+            {{ p.isActive ? 'Available' : 'Retired' }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== -->
+  <!-- TAB 4: RESOURCES -->
+  <!-- ============================================================== -->
+  <section class="tab-content" *ngIf="activeTab() === 'resources' && !isLoading()">
+    <div class="tab-header">
+      <div>
+        <h2 class="section-title">Equipment &amp; Inventory</h2>
+        <p class="section-desc">Audiovisual gear, furniture, staging, and banquet infrastructure available for allocation.</p>
+      </div>
+      <hms-button *ngIf="canManageVenues()" variant="outline" (clicked)="openResourceModal()">
+        + Add Equipment
+      </hms-button>
+    </div>
+
+    <div class="table-container">
+      <table class="hms-table">
+        <thead>
+          <tr>
+            <th>Resource Name</th>
+            <th>Type</th>
+            <th>Total Inventory</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of resources()">
+            <td class="font-medium">{{ r.name }}</td>
+            <td>
+              <span class="venue-type-tag">{{ r.resourceType }}</span>
+            </td>
+            <td>
+              <span class="guests-chip">{{ r.totalQuantity }} units</span>
+            </td>
+            <td>
+              <span class="status-indicator is-active">Active</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: CREATE EVENT BOOKING -->
+  <!-- ============================================================== -->
+  <hms-modal
+    *ngIf="showCreateBookingModal()"
+    title="Create Event Booking"
+    (close)="showCreateBookingModal.set(false)"
+  >
+    <div class="modal-form">
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label required">Event Name</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="e.g. Asia-Pacific Tech Summit"
+            [(ngModel)]="bookEventName"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label required">Event Type</label>
+          <select class="form-control" [(ngModel)]="bookEventType">
+            <option value="CONFERENCE">Conference</option>
+            <option value="WEDDING">Wedding</option>
+            <option value="BANQUET">Banquet</option>
+            <option value="MEETING">Meeting</option>
+            <option value="SOCIAL">Social</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label required">Banquet Venue</label>
+          <select class="form-control" [(ngModel)]="bookVenueId">
+            <option *ngFor="let v of venues()" [value]="v.id">
+              {{ v.name }} (Capacity: {{ v.capacity }})
+            </option>
+          </select>
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label">Catering Package (Optional)</label>
+          <select class="form-control" [(ngModel)]="bookPackageId">
+            <option value="">No Package / Room Only</option>
+            <option *ngFor="let p of packages()" [value]="p.id">
+              {{ p.name }} ({{ formatPrice(p.pricePerGuest, p.currency) }}/guest)
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label required">Expected Guests</label>
+          <input
+            type="number"
+            class="form-control"
+            min="1"
+            [(ngModel)]="bookExpectedGuests"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label required">Start Date &amp; Time</label>
+          <div class="date-time-inputs">
+            <input type="date" class="form-control" [(ngModel)]="bookStartDate" />
+            <input type="time" class="form-control" [(ngModel)]="bookStartTime" />
+          </div>
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label required">End Date &amp; Time</label>
+          <div class="date-time-inputs">
+            <input type="date" class="form-control" [(ngModel)]="bookEndDate" />
+            <input type="time" class="form-control" [(ngModel)]="bookEndTime" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Host / Client Details -->
+      <div class="host-section">
+        <label class="form-label">Host / Client Profile</label>
+        <div class="radio-pill-group">
+          <label class="radio-pill" [class.selected]="bookHostType === 'in-house'">
+            <input
+              type="radio"
+              name="hostType"
+              value="in-house"
+              [(ngModel)]="bookHostType"
+              (ngModelChange)="onHostTypeChange()"
+            />
+            Hotel In-House Guest
+          </label>
+          <label class="radio-pill" [class.selected]="bookHostType === 'walk-in'">
+            <input
+              type="radio"
+              name="hostType"
+              value="walk-in"
+              [(ngModel)]="bookHostType"
+              (ngModelChange)="onHostTypeChange()"
+            />
+            External Corporate / Client
+          </label>
+        </div>
+
+        <div *ngIf="bookHostType === 'in-house'" class="form-group mt-2">
+          <label class="form-label">Select In-House Guest &amp; Room</label>
+          <select
+            class="form-control"
+            [(ngModel)]="bookSelectedGuestResId"
+            (ngModelChange)="onInHouseGuestSelect()"
+          >
+            <option *ngFor="let g of inHouseGuests()" [value]="g.reservationId">
+              Room {{ g.roomNumber }} &ndash; {{ g.guestName }} ({{ g.confirmationNumber }})
+            </option>
+          </select>
+        </div>
+
+        <div class="form-row mt-2">
+          <div class="form-group flex-1">
+            <label class="form-label required">Host Name</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Full Name"
+              [(ngModel)]="bookHostName"
+            />
+          </div>
+          <div class="form-group flex-1">
+            <label class="form-label">Email</label>
+            <input
+              type="email"
+              class="form-control"
+              placeholder="Email address"
+              [(ngModel)]="bookHostEmail"
+            />
+          </div>
+          <div class="form-group flex-1">
+            <label class="form-label">Phone</label>
+            <input
+              type="tel"
+              class="form-control"
+              placeholder="+81-..."
+              [(ngModel)]="bookHostPhone"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes &amp; Setup Requirements</label>
+        <textarea
+          class="form-control"
+          rows="2"
+          placeholder="Catering dietary notes, seating style, stage requirements..."
+          [(ngModel)]="bookNotes"
+        ></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <hms-button variant="outline" (clicked)="showCreateBookingModal.set(false)">
+          Cancel
+        </hms-button>
+        <hms-button
+          variant="primary"
+          [disabled]="isSubmitting()"
+          (clicked)="submitCreateBooking()"
+        >
+          {{ isSubmitting() ? 'Saving...' : 'Create Booking' }}
+        </hms-button>
+      </div>
+    </div>
+  </hms-modal>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: BOOKING DETAIL -->
+  <!-- ============================================================== -->
+  <hms-modal
+    *ngIf="showDetailModal() && selectedBooking() as b"
+    [title]="'Event: ' + b.eventName"
+    (close)="showDetailModal.set(false)"
+  >
+    <div class="booking-detail">
+      <div class="detail-header-row">
+        <div>
+          <span class="text-xs text-muted font-mono">BOOKING #{{ b.bookingNumber }}</span>
+          <h2 class="detail-title">{{ b.eventName }}</h2>
+        </div>
+        <span
+          class="status-pill"
+          [class.status-confirmed]="b.status === 'CONFIRMED'"
+          [class.status-tentative]="b.status === 'TENTATIVE'"
+          [class.status-progress]="b.status === 'IN_PROGRESS'"
+          [class.status-completed]="b.status === 'COMPLETED'"
+          [class.status-cancelled]="b.status === 'CANCELLED'"
+        >
+          {{ b.status }}
+        </span>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="detail-label">Banquet Venue</span>
+          <span class="detail-value font-medium">{{ b.venueName }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Package</span>
+          <span class="detail-value">{{ b.packageName || 'None (Venue Only)' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Schedule</span>
+          <span class="detail-value">{{ formatDate(b.startTime) }}, {{ formatTime(b.startTime) }} &ndash; {{ formatTime(b.endTime) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Expected Guests</span>
+          <span class="detail-value">{{ b.expectedGuests }} people</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Host / Client</span>
+          <span class="detail-value font-medium">{{ b.hostName }}</span>
+          <span class="text-xs text-muted" *ngIf="b.roomNumber">Room {{ b.roomNumber }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Estimated Bill</span>
+          <span class="detail-value font-semibold text-primary">{{ formatPrice(b.estimatedAmount, b.currency) }}</span>
+        </div>
+      </div>
+
+      <!-- Resource Allocations List -->
+      <div class="allocations-section">
+        <div class="section-title-sm">Allocated Equipment &amp; Resources</div>
+        <div *ngIf="!b.resourceAllocations || b.resourceAllocations.length === 0" class="text-muted text-sm py-2">
+          No resources currently allocated to this event.
+        </div>
+        <div class="resource-chips" *ngIf="b.resourceAllocations && b.resourceAllocations.length > 0">
+          <span class="resource-chip" *ngFor="let ra of b.resourceAllocations">
+            {{ ra.resourceName }}: <strong>{{ ra.quantity }} units</strong>
+          </span>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="notes-box" *ngIf="b.notes">
+        <div class="text-xs text-muted uppercase font-bold">Event Notes:</div>
+        <div>{{ b.notes }}</div>
+      </div>
+
+      <!-- Billing Summary if Completed -->
+      <div class="billing-summary" *ngIf="b.status === 'COMPLETED'">
+        <div class="text-xs text-muted uppercase font-bold">Settlement Information:</div>
+        <div>Settlement: <strong>{{ b.settlementType }}</strong></div>
+        <div *ngIf="b.folioId">Charged to Guest Folio: <span class="font-mono">{{ b.folioId }}</span> (Room {{ b.roomNumber }})</div>
+      </div>
+
+      <!-- Lifecycle Action Footer -->
+      <div class="modal-actions border-t pt-3">
+        <button
+          *ngIf="canManageBooking() && (b.status === 'DRAFT' || b.status === 'TENTATIVE' || b.status === 'CONFIRMED')"
+          type="button"
+          class="btn-action text-danger"
+          (click)="advanceStatus('CANCELLED')"
+        >
+          Cancel Booking
+        </button>
+
+        <div class="flex-1"></div>
+
+        <button
+          *ngIf="canConfirmBooking() && (b.status === 'DRAFT' || b.status === 'TENTATIVE')"
+          type="button"
+          class="btn-action btn-confirm"
+          (click)="advanceStatus('CONFIRMED')"
+        >
+          Confirm Event
+        </button>
+
+        <button
+          *ngIf="canManageBooking() && b.status === 'CONFIRMED'"
+          type="button"
+          class="btn-action btn-start"
+          (click)="advanceStatus('IN_PROGRESS')"
+        >
+          Start Event
+        </button>
+
+        <button
+          *ngIf="canCompleteBooking() && b.status === 'IN_PROGRESS'"
+          type="button"
+          class="btn-action btn-complete"
+          (click)="showDetailModal.set(false); openCompleteModal(b)"
+        >
+          Complete &amp; Bill
+        </button>
+      </div>
+    </div>
+  </hms-modal>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: ALLOCATE RESOURCES -->
+  <!-- ============================================================== -->
+  <hms-modal
+    *ngIf="showAllocateModal() && selectedBooking() as b"
+    title="Allocate Resources &amp; Equipment"
+    (close)="showAllocateModal.set(false)"
+  >
+    <div class="modal-form">
+      <p class="text-sm text-muted">
+        Assign audiovisual gear, furniture, and infrastructure to <strong>{{ b.eventName }}</strong>.
+      </p>
+
+      <div class="allocations-table">
+        <div class="allocation-row" *ngFor="let row of allocationRows; let i = index">
+          <div class="form-group flex-2">
+            <label class="form-label" *ngIf="i === 0">Equipment</label>
+            <select class="form-control" [(ngModel)]="row.resourceId">
+              <option *ngFor="let r of resources()" [value]="r.id">
+                {{ r.name }} (Max: {{ r.totalQuantity }})
+              </option>
+            </select>
+          </div>
+          <div class="form-group flex-1">
+            <label class="form-label" *ngIf="i === 0">Quantity</label>
+            <input type="number" min="1" class="form-control" [(ngModel)]="row.quantity" />
+          </div>
+          <div class="form-group flex-2">
+            <label class="form-label" *ngIf="i === 0">Notes</label>
+            <input type="text" placeholder="Placement details" class="form-control" [(ngModel)]="row.notes" />
+          </div>
+          <button
+            type="button"
+            class="btn-remove"
+            (click)="removeAllocationRow(i)"
+            title="Remove item"
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-2">
+        <button type="button" class="btn-secondary-link" (click)="addAllocationRow()">
+          + Add Equipment Line
+        </button>
+      </div>
+
+      <div class="modal-actions">
+        <hms-button variant="outline" (clicked)="showAllocateModal.set(false)">Cancel</hms-button>
+        <hms-button variant="primary" [disabled]="isSubmitting()" (clicked)="submitAllocations()">
+          {{ isSubmitting() ? 'Saving...' : 'Save Allocations' }}
+        </hms-button>
+      </div>
+    </div>
+  </hms-modal>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: COMPLETE & BILL TO FOLIO -->
+  <!-- ============================================================== -->
+  <hms-modal
+    *ngIf="showCompleteModal() && selectedBooking() as b"
+    title="Complete Event &amp; Settle Charges"
+    (close)="showCompleteModal.set(false)"
+  >
+    <div class="modal-form">
+      <div class="bill-overview">
+        <div class="bill-label">Total Amount Due:</div>
+        <div class="bill-amount">{{ formatPrice(b.estimatedAmount, b.currency) }}</div>
+        <div class="text-xs text-muted">Event: {{ b.eventName }} ({{ b.venueName }})</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label required">Settlement Method</label>
+        <div class="radio-pill-group">
+          <label class="radio-pill" [class.selected]="completeSettlementType === 'ROOM_CHARGE'">
+            <input
+              type="radio"
+              name="completeMethod"
+              value="ROOM_CHARGE"
+              [(ngModel)]="completeSettlementType"
+            />
+            Post to Guest Room Folio
+          </label>
+          <label class="radio-pill" [class.selected]="completeSettlementType === 'DIRECT_PAY'">
+            <input
+              type="radio"
+              name="completeMethod"
+              value="DIRECT_PAY"
+              [(ngModel)]="completeSettlementType"
+            />
+            Direct Settle (Card / Cash / Corporate)
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="completeSettlementType === 'ROOM_CHARGE'">
+        <label class="form-label required">Room Number</label>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="e.g. 104"
+          [(ngModel)]="completeRoomNumber"
+        />
+        <span class="text-xs text-muted">Charges will post under transaction code <strong>BANQUET</strong> with deterministic idempotency.</span>
+      </div>
+
+      <div class="form-group" *ngIf="completeSettlementType === 'DIRECT_PAY'">
+        <label class="form-label required">Payment Type</label>
+        <select class="form-control" [(ngModel)]="completePaymentMethod">
+          <option value="CREDIT_CARD">Credit Card</option>
+          <option value="CASH">Cash</option>
+          <option value="BANK_TRANSFER">Bank Wire Transfer</option>
+          <option value="CORPORATE_INVOICE">Corporate Master Account</option>
+        </select>
+      </div>
+
+      <div class="modal-actions">
+        <hms-button variant="outline" (clicked)="showCompleteModal.set(false)">Cancel</hms-button>
+        <hms-button variant="primary" [disabled]="isSubmitting()" (clicked)="submitCompleteBooking()">
+          {{ isSubmitting() ? 'Processing...' : 'Complete & Post Charge' }}
+        </hms-button>
+      </div>
+    </div>
+  </hms-modal>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: CREATE VENUE -->
+  <!-- ============================================================== -->
+  <hms-modal *ngIf="showVenueModal()" title="Add Banquet Venue" (close)="showVenueModal.set(false)">
+    <div class="modal-form">
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label required">Venue Code</label>
+          <input type="text" class="form-control" placeholder="V-BALLROOM" [(ngModel)]="newVenueCode" />
+        </div>
+        <div class="form-group flex-2">
+          <label class="form-label required">Venue Name</label>
+          <input type="text" class="form-control" placeholder="Grand Ballroom" [(ngModel)]="newVenueName" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label required">Venue Type</label>
+          <select class="form-control" [(ngModel)]="newVenueType">
+            <option value="BALLROOM">Ballroom</option>
+            <option value="MEETING_ROOM">Meeting Room</option>
+            <option value="OUTDOOR">Outdoor Pavilion</option>
+            <option value="BANQUET_HALL">Banquet Hall</option>
+            <option value="BOARDROOM">Boardroom</option>
+          </select>
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label required">Capacity</label>
+          <input type="number" min="1" class="form-control" [(ngModel)]="newVenueCapacity" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Location / Wing</label>
+        <input type="text" class="form-control" placeholder="Main Tower, Level 2" [(ngModel)]="newVenueLocation" />
+      </div>
+      <div class="modal-actions">
+        <hms-button variant="outline" (clicked)="showVenueModal.set(false)">Cancel</hms-button>
+        <hms-button variant="primary" [disabled]="isSubmitting()" (clicked)="submitCreateVenue()">Save Venue</hms-button>
+      </div>
+    </div>
+  </hms-modal>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: CREATE PACKAGE -->
+  <!-- ============================================================== -->
+  <hms-modal *ngIf="showPackageModal()" title="Add Catering Package" (close)="showPackageModal.set(false)">
+    <div class="modal-form">
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label required">Package Code</label>
+          <input type="text" class="form-control" placeholder="PKG-GALA" [(ngModel)]="newPkgCode" />
+        </div>
+        <div class="form-group flex-2">
+          <label class="form-label required">Package Name</label>
+          <input type="text" class="form-control" placeholder="Gala Dinner Package" [(ngModel)]="newPkgName" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label required">Price Per Guest (JPY)</label>
+          <input type="number" class="form-control" [(ngModel)]="newPkgPrice" />
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label required">Min Guests</label>
+          <input type="number" min="1" class="form-control" [(ngModel)]="newPkgMinGuests" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" rows="2" [(ngModel)]="newPkgDescription"></textarea>
+      </div>
+      <div class="modal-actions">
+        <hms-button variant="outline" (clicked)="showPackageModal.set(false)">Cancel</hms-button>
+        <hms-button variant="primary" [disabled]="isSubmitting()" (clicked)="submitCreatePackage()">Save Package</hms-button>
+      </div>
+    </div>
+  </hms-modal>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: CREATE RESOURCE -->
+  <!-- ============================================================== -->
+  <hms-modal *ngIf="showResourceModal()" title="Add Equipment Resource" (close)="showResourceModal.set(false)">
+    <div class="modal-form">
+      <div class="form-group">
+        <label class="form-label required">Equipment Name</label>
+        <input type="text" class="form-control" placeholder="e.g. Wireless Microphones" [(ngModel)]="newResName" />
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label required">Category</label>
+          <select class="form-control" [(ngModel)]="newResType">
+            <option value="AUDIO_VISUAL">Audio / Visual</option>
+            <option value="FURNITURE">Furniture</option>
+            <option value="LIGHTING">Lighting</option>
+            <option value="CATERING_EQUIPMENT">Catering Equipment</option>
+            <option value="STAGING">Staging</option>
+          </select>
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label required">Total Inventory</label>
+          <input type="number" min="1" class="form-control" [(ngModel)]="newResQuantity" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <hms-button variant="outline" (clicked)="showResourceModal.set(false)">Cancel</hms-button>
+        <hms-button variant="primary" [disabled]="isSubmitting()" (clicked)="submitCreateResource()">Save Equipment</hms-button>
+      </div>
+    </div>
+  </hms-modal>
+</div>

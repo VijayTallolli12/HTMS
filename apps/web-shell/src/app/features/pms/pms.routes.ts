@@ -94,4 +94,10 @@ export const PMS_ROUTES: Routes = [
       import('../spa/spa-workspace.component').then((m) => m.SpaWorkspaceComponent),
     title: 'Spa & Wellness',
   },
+  {
+    path: 'events',
+    loadComponent: () =>
+      import('../events/events-workspace.component').then((m) => m.EventsWorkspaceComponent),
+    title: 'Events & Banquets',
+  },
 ];

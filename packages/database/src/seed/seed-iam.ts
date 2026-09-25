@@ -450,6 +450,61 @@ export async function seedIamBaseline() {
       description: 'Mark appointment completed and post charges to guest folio',
       module: 'SPA',
     },
+    // ── Events & Banquets ─────────────────────────────────────────────
+    {
+      code: 'events.venue.view',
+      name: 'View Event Venues',
+      description: 'View banquet halls, ballrooms, and meeting spaces',
+      module: 'EVENTS',
+    },
+    {
+      code: 'events.venue.manage',
+      name: 'Manage Event Venues',
+      description: 'Create and update banquet venues and capacity configurations',
+      module: 'EVENTS',
+    },
+    {
+      code: 'events.package.view',
+      name: 'View Event Packages',
+      description: 'View catering packages, menus, and per-guest pricing',
+      module: 'EVENTS',
+    },
+    {
+      code: 'events.package.manage',
+      name: 'Manage Event Packages',
+      description: 'Create and update catering and banquet packages',
+      module: 'EVENTS',
+    },
+    {
+      code: 'events.booking.view',
+      name: 'View Event Bookings',
+      description: 'View banquet bookings, event details, and calendar',
+      module: 'EVENTS',
+    },
+    {
+      code: 'events.booking.create',
+      name: 'Create Event Bookings',
+      description: 'Create new banquet and event reservations',
+      module: 'EVENTS',
+    },
+    {
+      code: 'events.booking.manage',
+      name: 'Manage Event Bookings',
+      description: 'Update event schedules, guest counts, and resource allocations',
+      module: 'EVENTS',
+    },
+    {
+      code: 'events.booking.confirm',
+      name: 'Confirm Event Bookings',
+      description: 'Confirm tentative bookings with collision checks',
+      module: 'EVENTS',
+    },
+    {
+      code: 'events.booking.complete',
+      name: 'Complete Event Bookings & Settle',
+      description: 'Complete event execution and post charges to guest folio',
+      module: 'EVENTS',
+    },
   ];
 
   const permMap = new Map<string, string>();
@@ -581,6 +636,13 @@ export async function seedIamBaseline() {
         'spa.appointment.create',
         'spa.appointment.manage',
         'spa.appointment.complete',
+        'events.venue.view',
+        'events.package.view',
+        'events.booking.view',
+        'events.booking.create',
+        'events.booking.manage',
+        'events.booking.confirm',
+        'events.booking.complete',
       ],
     },
     {

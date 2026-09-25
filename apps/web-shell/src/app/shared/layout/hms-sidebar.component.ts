@@ -231,6 +231,26 @@ import { AuthService } from '../../core/services/auth.service';
             </span>
             <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Spa & Wellness</span>
           </a>
+
+          <a
+            *ngIf="hasPermission('events.booking.view') || hasPermission('events.venue.view')"
+            routerLink="/pms/events"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Events & Banquets'"
+            [attr.aria-label]="'Events & Banquets'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Events &amp; Banquets</span>
+          </a>
         </div>
 
         <!-- 5. ADMINISTRATION -->
@@ -534,7 +554,9 @@ export class HmsSidebarComponent {
       this.hasPermission('fnb.outlet.view') ||
       this.hasPermission('fnb.order.view') ||
       this.hasPermission('spa.appointment.view') ||
-      this.hasPermission('spa.service.view')
+      this.hasPermission('spa.service.view') ||
+      this.hasPermission('events.booking.view') ||
+      this.hasPermission('events.venue.view')
     );
   }
 

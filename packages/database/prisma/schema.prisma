@@ -10,7 +10,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["platform_schema", "audit_schema", "pms_schema", "finance_schema", "fnb_schema", "spa_schema"]
+  schemas  = ["platform_schema", "audit_schema", "pms_schema", "finance_schema", "fnb_schema", "spa_schema", "events_schema"]
 }
 
 // ==============================================================================
@@ -136,6 +136,10 @@ model Property {
   spaTherapists             SpaTherapist[]
   spaRooms                  SpaRoom[]
   spaAppointments           SpaAppointment[]
+  eventVenues               EventVenue[]
+  eventPackages             EventPackage[]
+  eventResources            EventResource[]
+  eventBookings             EventBooking[]
 
   @@index([countryId])
   @@index([status])
@@ -1464,4 +1468,142 @@ model SpaAppointment {
   @@index([propertyId, status], name: "idx_spa_appointments_status")
   @@map("spa_appointments")
   @@schema("spa_schema")
+}
+
+// ==============================================================================
+// 34. EVENT VENUE (Banquet Halls, Ballrooms, Meeting Rooms)
+// ==============================================================================
+model EventVenue {
+  id         String   @id
+  propertyId String   @map("property_id")
+  code       String
+  name       String
+  venueType  String   @default("BALLROOM") @map("venue_type")
+  capacity   Int
+  location   String?
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  property Property       @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  bookings EventBooking[]
+
+  @@unique([propertyId, code], name: "uq_event_venue_property_code")
+  @@index([propertyId], name: "idx_event_venues_property")
+  @@map("event_venues")
+  @@schema("events_schema")
+}
+
+// ==============================================================================
+// 35. EVENT PACKAGE (Catering & Banquet Packages)
+// ==============================================================================
+model EventPackage {
+  id            String   @id
+  propertyId    String   @map("property_id")
+  code          String
+  name          String
+  description   String?
+  pricePerGuest Decimal  @map("price_per_guest") @db.Decimal(12, 2)
+  currency      String   @default("JPY")
+  minGuests     Int      @default(1) @map("min_guests")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  property Property       @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  bookings EventBooking[]
+
+  @@unique([propertyId, code], name: "uq_event_package_property_code")
+  @@index([propertyId], name: "idx_event_packages_property")
+  @@map("event_packages")
+  @@schema("events_schema")
+}
+
+// ==============================================================================
+// 36. EVENT RESOURCE (Equipment, AV, Furniture, Audio/Sound)
+// ==============================================================================
+model EventResource {
+  id            String   @id
+  propertyId    String   @map("property_id")
+  name          String
+  resourceType  String   @default("EQUIPMENT") @map("resource_type")
+  totalQuantity Int      @map("total_quantity")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  property    Property               @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  allocations EventBookingResource[]
+
+  @@unique([propertyId, name], name: "uq_event_resource_property_name")
+  @@index([propertyId], name: "idx_event_resources_property")
+  @@map("event_resources")
+  @@schema("events_schema")
+}
+
+// ==============================================================================
+// 37. EVENT BOOKING (Event Reservation & Banquet Folio Billing)
+// ==============================================================================
+model EventBooking {
+  id                 String    @id
+  propertyId         String    @map("property_id")
+  bookingNumber      String    @map("booking_number")
+  venueId            String    @map("venue_id")
+  packageId          String?   @map("package_id")
+  hostName           String    @map("host_name")
+  hostEmail          String?   @map("host_email")
+  hostPhone          String?   @map("host_phone")
+  eventName          String    @map("event_name")
+  eventType          String    @default("CONFERENCE") @map("event_type")
+  startTime          DateTime  @map("start_time") @db.Timestamptz(6)
+  endTime            DateTime  @map("end_time") @db.Timestamptz(6)
+  expectedGuests     Int       @map("expected_guests")
+  estimatedAmount    Decimal   @map("estimated_amount") @db.Decimal(12, 2)
+  currency           String    @default("JPY")
+  status             String    @default("DRAFT")
+  notes              String?
+  roomNumber         String?   @map("room_number")
+  reservationId      String?   @map("reservation_id")
+  folioId            String?   @map("folio_id")
+  folioTransactionId String?   @map("folio_transaction_id")
+  settlementType     String?   @map("settlement_type")
+  paymentMethod      String?   @map("payment_method")
+  completedAt        DateTime? @map("completed_at") @db.Timestamptz(6)
+  completedBy        String?   @map("completed_by")
+  version            Int       @default(1)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  property            Property               @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  venue               EventVenue             @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  package             EventPackage?          @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  resourceAllocations EventBookingResource[]
+
+  @@unique([propertyId, bookingNumber], name: "uq_event_booking_number")
+  @@index([propertyId, startTime], name: "idx_event_bookings_property_time")
+  @@index([propertyId, venueId, startTime, endTime], name: "idx_event_venue_schedule")
+  @@index([propertyId, status], name: "idx_event_bookings_status")
+  @@map("event_bookings")
+  @@schema("events_schema")
+}
+
+// ==============================================================================
+// 38. EVENT BOOKING RESOURCE ALLOCATION
+// ==============================================================================
+model EventBookingResource {
+  id         String   @id
+  bookingId  String   @map("booking_id")
+  resourceId String   @map("resource_id")
+  quantity   Int      @default(1)
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  booking  EventBooking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  resource EventResource @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+
+  @@unique([bookingId, resourceId], name: "uq_booking_resource")
+  @@index([bookingId], name: "idx_booking_resources_booking")
+  @@index([resourceId], name: "idx_booking_resources_resource")
+  @@map("event_booking_resources")
+  @@schema("events_schema")
 }
