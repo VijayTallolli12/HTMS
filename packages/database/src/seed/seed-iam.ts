@@ -259,9 +259,40 @@ export async function seedIamBaseline() {
       description: 'View daily inventory calendar and stay availability quotes',
       module: 'INVENTORY',
     },
+    // ── Revenue ──────────────────────────────────────────────────────
+    {
+      code: 'revenue.dashboard.view',
+      name: 'View Revenue Dashboard',
+      description: 'View global revenue KPIs and summaries',
+      module: 'REVENUE',
+    },
+    {
+      code: 'revenue.rate.view',
+      name: 'View Rates',
+      description: 'Read daily rate information',
+      module: 'REVENUE',
+    },
+    {
+      code: 'revenue.rate.manage',
+      name: 'Manage Rates',
+      description: 'Create/Update daily rates with OCC',
+      module: 'REVENUE',
+    },
+    {
+      code: 'revenue.inventory.view',
+      name: 'View Inventory',
+      description: 'Read inventory/ATS data for revenue calculations',
+      module: 'REVENUE',
+    },
+    {
+      code: 'revenue.inventory.manage',
+      name: 'Manage Inventory',
+      description: 'Update inventory (not used in this sprint, read‑only)',
+      module: 'REVENUE',
+    },
     // ── Platform ──────────────────────────────────────────────────────
     {
-      code: 'platform.audit_log.read',
+      code: 'platform.audit_log.read',,
       name: 'View Audit Log',
       description: 'Inspect immutable system security and activity audit records',
       module: 'PLATFORM',

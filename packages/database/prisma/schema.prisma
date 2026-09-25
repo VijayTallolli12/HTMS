@@ -662,7 +662,8 @@ model DailyRate {
   minStayDays         Int?     @map("min_stay_days")
   maxStayDays         Int?     @map("max_stay_days")
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version           Int       @default(0) @map("version")
+
 
   ratePlan RatePlan @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
   roomType RoomType @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
