@@ -12,6 +12,7 @@ import { seedFnb } from './seed-fnb';
 import { seedSpa } from './seed-spa';
 import { seedEvents } from './seed-events';
 import { seedCrmLoyalty } from './seed-crm-loyalty';
+import { seedProcurement } from './seed-procurement';
 
 export async function seedDemo(): Promise<void> {
   const prisma = getPrismaClient();
@@ -57,6 +58,9 @@ export async function seedDemo(): Promise<void> {
   console.log('\n--- Phase 8: CRM & Loyalty ---');
   await seedCrmLoyalty(property.id);
 
+  console.log('\n--- Phase 9: Procurement & Inventory ---');
+  await seedProcurement(property.id);
+
   console.log('\n=== HMS Demo Seed - Complete ===\n');
   const counts = {
     roomTypes: await prisma.roomType.count({ where: { propertyId: property.id, deletedAt: null } }),
@@ -67,6 +71,11 @@ export async function seedDemo(): Promise<void> {
     reservations: await prisma.reservation.count({ where: { propertyId: property.id, deletedAt: null } }),
     folios: await prisma.folio.count({ where: { propertyId: property.id } }),
     maintenanceBlocks: await prisma.roomMaintenanceBlock.count({ where: { propertyId: property.id, status: 'ACTIVE' } }),
+    suppliers: await prisma.supplier.count({ where: { propertyId: property.id, deletedAt: null } }),
+    inventoryItems: await prisma.inventoryItem.count({ where: { propertyId: property.id, deletedAt: null } }),
+    purchaseOrders: await prisma.purchaseOrder.count({ where: { propertyId: property.id, deletedAt: null } }),
+    goodsReceipts: await prisma.goodsReceipt.count({ where: { propertyId: property.id, deletedAt: null } }),
+    stockBalances: await prisma.stockBalance.count({ where: { propertyId: property.id, deletedAt: null } }),
   };
   console.log('Entity Counts:');
   console.log(`  Room Types:         ${counts.roomTypes}`);
@@ -77,6 +86,11 @@ export async function seedDemo(): Promise<void> {
   console.log(`  Reservations:       ${counts.reservations}`);
   console.log(`  Folios:             ${counts.folios}`);
   console.log(`  Maintenance Blocks: ${counts.maintenanceBlocks}`);
+  console.log(`  Suppliers:          ${counts.suppliers}`);
+  console.log(`  Inventory Items:    ${counts.inventoryItems}`);
+  console.log(`  Purchase Orders:    ${counts.purchaseOrders}`);
+  console.log(`  Goods Receipts:     ${counts.goodsReceipts}`);
+  console.log(`  Stock Balances:     ${counts.stockBalances}`);
   console.log('\nDemo Users (password: Demo1234!):');
   console.log('  admin@tokyograndeur.demo  - Corporate Platform Admin');
   console.log('  fdesk@tokyograndeur.demo  - Front Desk Agent (Yuki Tanaka)');

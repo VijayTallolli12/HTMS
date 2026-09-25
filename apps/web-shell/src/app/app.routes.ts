@@ -70,6 +70,11 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'procurement',
+    redirectTo: 'pms/procurement',
+    pathMatch: 'full',
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

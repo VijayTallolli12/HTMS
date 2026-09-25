@@ -106,4 +106,12 @@ export const PMS_ROUTES: Routes = [
       import('../events/events-workspace.component').then((m) => m.EventsWorkspaceComponent),
     title: 'Events & Banquets',
   },
+  {
+    path: 'procurement',
+    loadComponent: () =>
+      import('../procurement/procurement-workspace.component').then(
+        (m) => m.ProcurementWorkspaceComponent,
+      ),
+    title: 'Procurement & Inventory',
+  },
 ];

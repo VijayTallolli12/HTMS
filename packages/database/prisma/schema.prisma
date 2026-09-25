@@ -144,6 +144,11 @@ model Property {
   guestPreferences          GuestPreference[]
   loyaltyMemberships        LoyaltyMembership[]
   loyaltyTransactions       LoyaltyTransaction[]
+  suppliers                 Supplier[]
+  inventoryItems            InventoryItem[]
+  purchaseOrders            PurchaseOrder[]
+  goodsReceipts             GoodsReceipt[]
+  stockBalances             StockBalance[]
 
   @@index([countryId])
   @@index([status])
@@ -662,7 +667,8 @@ model DailyRate {
   minStayDays         Int?     @map("min_stay_days")
   maxStayDays         Int?     @map("max_stay_days")
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  version           Int       @default(0) @map("version")
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version             Int      @default(0) @map("version")
 
 
   ratePlan RatePlan @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
@@ -1718,3 +1724,178 @@ model EventBookingResource {
   @@map("event_booking_resources")
   @@schema("events_schema")
 }
+
+// ===============================================================================
+// 34. PROCUREMENT & INVENTORY MODELS (New Slice)
+// ===============================================================================
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+
+  @@schema("pms_schema")
+}
+
+model Supplier {
+  id         String   @id @default(uuid())
+  propertyId String   @map("property_id")
+  name       String   @db.VarChar(120)
+  code       String   @db.VarChar(30)
+  contact    String?  @db.VarChar(100)
+  email      String?  @db.VarChar(100)
+  phone      String?  @db.VarChar(30)
+  active     Boolean  @default(true) @map("active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([propertyId, code], name: "uq_supplier_property_code")
+  @@unique([propertyId, id], name: "uq_supplier_property_id")
+  @@index([propertyId, active], name: "idx_supplier_property_active")
+  @@map("suppliers")
+  @@schema("pms_schema")
+}
+
+model InventoryItem {
+  id            String   @id @default(uuid())
+  propertyId    String   @map("property_id")
+  name          String   @db.VarChar(120)
+  sku           String   @db.VarChar(30)
+  category      String   @db.VarChar(60)
+  unit          String   @db.VarChar(20)
+  reorderLevel  Int      @default(0) @map("reorder_level")
+  active        Boolean  @default(true) @map("active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  purchaseOrderItems PurchaseOrderItem[]
+  goodsReceiptItems  GoodsReceiptItem[]
+  stockBalances      StockBalance[]
+
+  @@unique([propertyId, sku], name: "uq_inventory_item_property_sku")
+  @@unique([propertyId, id], name: "uq_inventory_item_property_id")
+  @@index([propertyId, category], name: "idx_inventory_item_property_category")
+  @@map("inventory_items")
+  @@schema("pms_schema")
+}
+
+model PurchaseOrder {
+  id             String             @id @default(uuid())
+  propertyId     String             @map("property_id")
+  supplierId     String             @map("supplier_id")
+  poNumber       String             @db.VarChar(30)
+  status         PurchaseOrderStatus @default(DRAFT) @map("status")
+  orderDate      DateTime           @map("order_date") @db.Date
+  expectedDate   DateTime?          @map("expected_date") @db.Date
+  totalAmount    Decimal            @default(0) @map("total_amount") @db.Decimal(12,4)
+  notes          String?            @db.Text
+  version        Int                @default(0)
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime?          @map("deleted_at") @db.Timestamptz(6)
+
+  property      Property            @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  supplier      Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  items         PurchaseOrderItem[]
+  goodsReceipts GoodsReceipt[]
+
+  @@unique([propertyId, poNumber], name: "uq_purchase_order_property_number")
+  @@unique([propertyId, id], name: "uq_purchase_order_property_id")
+  @@index([propertyId, status], name: "idx_purchase_order_property_status")
+  @@map("purchase_orders")
+  @@schema("pms_schema")
+}
+
+model PurchaseOrderItem {
+  id               String   @id @default(uuid())
+  purchaseOrderId  String   @map("purchase_order_id")
+  inventoryItemId  String   @map("inventory_item_id")
+  quantity         Int      @map("quantity")
+  unitCost         Decimal  @map("unit_cost") @db.Decimal(12,4)
+  totalCost        Decimal  @map("total_cost") @db.Decimal(12,4)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@unique([purchaseOrderId, inventoryItemId], name: "uq_po_item_po_item")
+  @@map("purchase_order_items")
+  @@schema("pms_schema")
+}
+
+model GoodsReceipt {
+  id               String   @id @default(uuid())
+  propertyId       String   @map("property_id")
+  purchaseOrderId  String   @map("purchase_order_id")
+  receiptNumber    String   @db.VarChar(30)
+  receivedDate     DateTime @map("received_date") @db.Date
+  status           String   @default("POSTED") @map("status") @db.VarChar(20)
+  notes            String?  @db.Text
+  idempotencyKey   String   @unique @map("idempotency_key") @db.VarChar(64)
+  version          Int      @default(0)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  items GoodsReceiptItem[]
+
+  @@unique([propertyId, receiptNumber], name: "uq_goods_receipt_property_number")
+  @@unique([propertyId, id], name: "uq_goods_receipt_property_id")
+  @@map("goods_receipts")
+  @@schema("pms_schema")
+}
+
+model GoodsReceiptItem {
+  id                String   @id @default(uuid())
+  receiptId         String   @map("receipt_id")
+  inventoryItemId   String   @map("inventory_item_id")
+  orderedQuantity   Int      @map("ordered_quantity")
+  receivedQuantity  Int      @map("received_quantity")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  receipt GoodsReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@unique([receiptId, inventoryItemId], name: "uq_goods_receipt_item_receipt_item")
+  @@map("goods_receipt_items")
+  @@schema("pms_schema")
+}
+
+model StockBalance {
+  id               String   @id @default(uuid())
+  propertyId       String   @map("property_id")
+  inventoryItemId  String   @map("inventory_item_id")
+  onHand           Int      @default(0) @map("on_hand")
+  reserved         Int      @default(0) @map("reserved")
+  available        Int      @default(0) @map("available")
+  reorderLevel     Int      @default(0) @map("reorder_level")
+  version          Int      @default(0)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@unique([propertyId, inventoryItemId], name: "uq_stock_balance_property_item")
+  @@index([propertyId, inventoryItemId], name: "idx_stock_balance_property_item")
+  @@map("stock_balances")
+  @@schema("pms_schema")
+}
+
+// End of Procurement & Inventory models

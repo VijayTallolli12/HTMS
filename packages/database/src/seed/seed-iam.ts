@@ -292,7 +292,7 @@ export async function seedIamBaseline() {
     },
     // ── Platform ──────────────────────────────────────────────────────
     {
-      code: 'platform.audit_log.read',,
+      code: 'platform.audit_log.read',
       name: 'View Audit Log',
       description: 'Inspect immutable system security and activity audit records',
       module: 'PLATFORM',
@@ -585,6 +585,67 @@ export async function seedIamBaseline() {
       description: 'Award, redeem, or manually adjust loyalty points',
       module: 'LOYALTY',
     },
+    // ── Procurement & Inventory ─────────────────────────────────────────
+    {
+      code: 'procurement.supplier.view',
+      name: 'View Suppliers',
+      description: 'View suppliers and vendor profiles',
+      module: 'PROCUREMENT',
+    },
+    {
+      code: 'procurement.supplier.manage',
+      name: 'Manage Suppliers',
+      description: 'Create and update supplier profiles',
+      module: 'PROCUREMENT',
+    },
+    {
+      code: 'procurement.item.view',
+      name: 'View Inventory Items',
+      description: 'View procurement catalog items and stock definitions',
+      module: 'PROCUREMENT',
+    },
+    {
+      code: 'procurement.item.manage',
+      name: 'Manage Inventory Items',
+      description: 'Create and update inventory items and reorder thresholds',
+      module: 'PROCUREMENT',
+    },
+    {
+      code: 'procurement.po.view',
+      name: 'View Purchase Orders',
+      description: 'View purchase order details and status',
+      module: 'PROCUREMENT',
+    },
+    {
+      code: 'procurement.po.create',
+      name: 'Create Purchase Orders',
+      description: 'Create purchase orders with line items',
+      module: 'PROCUREMENT',
+    },
+    {
+      code: 'procurement.po.approve',
+      name: 'Approve Purchase Orders',
+      description: 'Approve purchase orders for vendor fulfillment',
+      module: 'PROCUREMENT',
+    },
+    {
+      code: 'procurement.receipt.view',
+      name: 'View Goods Receipts',
+      description: 'View goods receipt records and received item quantities',
+      module: 'PROCUREMENT',
+    },
+    {
+      code: 'procurement.receipt.create',
+      name: 'Receive Goods',
+      description: 'Process goods receipts against approved purchase orders',
+      module: 'PROCUREMENT',
+    },
+    {
+      code: 'procurement.stock.view',
+      name: 'View Stock Balances',
+      description: 'View current on-hand, reserved, and available stock levels',
+      module: 'PROCUREMENT',
+    },
   ];
 
   const permMap = new Map<string, string>();
@@ -672,6 +733,16 @@ export async function seedIamBaseline() {
         'loyalty.membership.manage',
         'loyalty.points.view',
         'loyalty.points.adjust',
+        'procurement.supplier.view',
+        'procurement.supplier.manage',
+        'procurement.item.view',
+        'procurement.item.manage',
+        'procurement.po.view',
+        'procurement.po.create',
+        'procurement.po.approve',
+        'procurement.receipt.view',
+        'procurement.receipt.create',
+        'procurement.stock.view',
       ],
     },
     {

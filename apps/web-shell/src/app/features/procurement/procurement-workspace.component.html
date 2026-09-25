@@ -1,0 +1,553 @@
+<div class="procurement-container">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="header-pretitle">OPERATIONS &bull; PROCUREMENT &amp; INVENTORY</div>
+      <h1 class="page-title">Procurement Operations</h1>
+      <p class="page-subtitle">
+        Manage suppliers, purchase orders, goods receipts, and inventory stock balances for property operations.
+      </p>
+    </div>
+
+    <div class="header-right">
+      <div class="property-tag" *ngIf="activeProperty()">
+        <span class="indicator-dot"></span>
+        <span>{{ activeProperty()?.name }}</span>
+      </div>
+      <hms-button
+        variant="gold"
+        *ngIf="hasPermission('procurement.po.create')"
+        (click)="openCreatePOModal()"
+      >
+        + New Purchase Order
+      </hms-button>
+    </div>
+  </header>
+
+  <!-- Global Alerts -->
+  <div class="alerts-container">
+    <hms-alert
+      *ngIf="errorMessage()"
+      type="error"
+      [message]="errorMessage()!"
+      (dismissed)="errorMessage.set(null)"
+    ></hms-alert>
+    <hms-alert
+      *ngIf="successMessage()"
+      type="success"
+      [message]="successMessage()!"
+      (dismissed)="successMessage.set(null)"
+    ></hms-alert>
+  </div>
+
+  <!-- Main Tabs Bar -->
+  <div class="tabs-nav-bar">
+    <div class="nav-tabs">
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'purchase-orders'"
+        (click)="activeTab.set('purchase-orders')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        Purchase Orders
+        <span class="tab-count-badge" *ngIf="purchaseOrders().length > 0">
+          {{ purchaseOrders().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'suppliers'"
+        (click)="activeTab.set('suppliers')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        Suppliers ({{ suppliers().length }})
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'items'"
+        (click)="activeTab.set('items')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        Inventory Items ({{ items().length }})
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'receipts'"
+        (click)="activeTab.set('receipts')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        Goods Receipts ({{ receipts().length }})
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'stock'"
+        (click)="activeTab.set('stock')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        Stock Balances ({{ stockBalances().length }})
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <hms-loading *ngIf="isLoading()" message="Loading procurement data..."></hms-loading>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 1: PURCHASE ORDERS                                                    -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'purchase-orders'" class="tab-content">
+    <!-- Sub-toolbar: Status Filter -->
+    <div class="sub-toolbar-card">
+      <div class="toolbar-left">
+        <span class="section-label">Filter by Status:</span>
+      </div>
+      <div class="toolbar-right">
+        <div class="status-chips">
+          <button type="button" class="chip-btn" [class.active]="statusFilter() === 'ALL'" (click)="statusFilter.set('ALL')">All</button>
+          <button type="button" class="chip-btn" [class.active]="statusFilter() === 'DRAFT'" (click)="statusFilter.set('DRAFT')">Draft</button>
+          <button type="button" class="chip-btn" [class.active]="statusFilter() === 'SUBMITTED'" (click)="statusFilter.set('SUBMITTED')">Submitted</button>
+          <button type="button" class="chip-btn" [class.active]="statusFilter() === 'APPROVED'" (click)="statusFilter.set('APPROVED')">Approved</button>
+          <button type="button" class="chip-btn" [class.active]="statusFilter() === 'RECEIVED'" (click)="statusFilter.set('RECEIVED')">Received</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredPOs().length === 0" class="empty-wrap">
+      <hms-empty
+        title="No Purchase Orders"
+        description="No purchase orders match the selected status filter. Create a new PO to get started."
+      ></hms-empty>
+    </div>
+
+    <!-- PO List -->
+    <div class="data-table-wrap" *ngIf="filteredPOs().length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>PO Number</th>
+            <th>Supplier</th>
+            <th>Status</th>
+            <th>Order Date</th>
+            <th>Expected</th>
+            <th class="text-right">Total Amount</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let po of filteredPOs()" class="table-row" (click)="inspectPO(po)">
+            <td class="font-mono font-bold">{{ po.poNumber }}</td>
+            <td>{{ po.supplier?.name || getSupplierName(po.supplierId) }}</td>
+            <td>
+              <hms-status-pill [status]="getStatusPillVariant(po.status)" [label]="po.status"></hms-status-pill>
+            </td>
+            <td class="font-mono">{{ po.orderDate | date:'yyyy-MM-dd' }}</td>
+            <td class="font-mono">{{ po.expectedDate ? (po.expectedDate | date:'yyyy-MM-dd') : '—' }}</td>
+            <td class="text-right font-mono font-bold">{{ formatCurrency(po.totalAmount) }}</td>
+            <td class="actions-cell" (click)="$event.stopPropagation()">
+              <button
+                *ngIf="po.status === 'DRAFT' && hasPermission('procurement.po.create')"
+                type="button"
+                class="btn-action submit"
+                [disabled]="isSubmitting()"
+                (click)="updatePOStatus(po, 'SUBMITTED')"
+              >Submit</button>
+              <button
+                *ngIf="po.status === 'SUBMITTED' && hasPermission('procurement.po.approve')"
+                type="button"
+                class="btn-action approve"
+                [disabled]="isSubmitting()"
+                (click)="updatePOStatus(po, 'APPROVED')"
+              >Approve</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: SUPPLIERS                                                          -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'suppliers'" class="tab-content">
+    <div class="tab-header-bar">
+      <h2 class="section-title">Registered Suppliers</h2>
+      <hms-button
+        variant="gold"
+        *ngIf="hasPermission('procurement.supplier.manage')"
+        (click)="openCreateSupplierModal()"
+      >+ Add Supplier</hms-button>
+    </div>
+
+    <div *ngIf="suppliers().length === 0" class="empty-wrap">
+      <hms-empty title="No Suppliers" description="No suppliers have been registered for this property yet."></hms-empty>
+    </div>
+
+    <div class="catalog-grid" *ngIf="suppliers().length > 0">
+      <div *ngFor="let s of suppliers()" class="supplier-card">
+        <div class="card-header">
+          <span class="card-code font-mono">{{ s.code }}</span>
+          <hms-status-pill [status]="s.active ? 'success' : 'danger'" [label]="s.active ? 'Active' : 'Inactive'"></hms-status-pill>
+        </div>
+        <h3 class="card-title">{{ s.name }}</h3>
+        <div class="card-details">
+          <div class="detail-row" *ngIf="s.contact">
+            <span class="detail-label">Contact:</span>
+            <span class="detail-value">{{ s.contact }}</span>
+          </div>
+          <div class="detail-row" *ngIf="s.email">
+            <span class="detail-label">Email:</span>
+            <span class="detail-value">{{ s.email }}</span>
+          </div>
+          <div class="detail-row" *ngIf="s.phone">
+            <span class="detail-label">Phone:</span>
+            <span class="detail-value">{{ s.phone }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: INVENTORY ITEMS                                                    -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'items'" class="tab-content">
+    <h2 class="section-title">Inventory Items Catalog</h2>
+
+    <div *ngIf="items().length === 0" class="empty-wrap">
+      <hms-empty title="No Inventory Items" description="No inventory items registered for this property."></hms-empty>
+    </div>
+
+    <div class="data-table-wrap" *ngIf="items().length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Unit</th>
+            <th class="text-right">Reorder Level</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of items()">
+            <td class="font-mono">{{ item.sku }}</td>
+            <td class="font-bold">{{ item.name }}</td>
+            <td>{{ item.category }}</td>
+            <td>{{ item.unit }}</td>
+            <td class="text-right font-mono">{{ item.reorderLevel }}</td>
+            <td>
+              <hms-status-pill [status]="item.active ? 'success' : 'danger'" [label]="item.active ? 'Active' : 'Inactive'"></hms-status-pill>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 4: GOODS RECEIPTS                                                     -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'receipts'" class="tab-content">
+    <h2 class="section-title">Goods Receipts</h2>
+
+    <div *ngIf="receipts().length === 0" class="empty-wrap">
+      <hms-empty title="No Goods Receipts" description="No goods receipts have been processed yet."></hms-empty>
+    </div>
+
+    <div class="data-table-wrap" *ngIf="receipts().length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Receipt #</th>
+            <th>PO Number</th>
+            <th>Status</th>
+            <th>Received Date</th>
+            <th>Items</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of receipts()">
+            <td class="font-mono font-bold">{{ r.receiptNumber }}</td>
+            <td class="font-mono">{{ r.purchaseOrder?.poNumber || r.purchaseOrderId }}</td>
+            <td>
+              <hms-status-pill [status]="r.status === 'RECEIVED' ? 'success' : 'info'" [label]="r.status"></hms-status-pill>
+            </td>
+            <td class="font-mono">{{ r.receivedDate | date:'yyyy-MM-dd' }}</td>
+            <td class="font-mono">{{ r.items?.length || 0 }}</td>
+            <td>{{ r.notes || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 5: STOCK BALANCES                                                     -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'stock'" class="tab-content">
+    <h2 class="section-title">Stock Balances</h2>
+
+    <div *ngIf="stockBalances().length === 0" class="empty-wrap">
+      <hms-empty title="No Stock Data" description="Stock balances will appear after inventory items are created."></hms-empty>
+    </div>
+
+    <div class="data-table-wrap" *ngIf="stockBalances().length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Item</th>
+            <th class="text-right">On Hand</th>
+            <th class="text-right">Reserved</th>
+            <th class="text-right">Available</th>
+            <th class="text-right">Reorder Level</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let sb of stockBalances()">
+            <td class="font-mono">{{ sb.inventoryItem?.sku || getItemSku(sb.inventoryItemId) }}</td>
+            <td class="font-bold">{{ sb.inventoryItem?.name || getItemName(sb.inventoryItemId) }}</td>
+            <td class="text-right font-mono">{{ sb.onHand }}</td>
+            <td class="text-right font-mono">{{ sb.reserved }}</td>
+            <td class="text-right font-mono font-bold">{{ sb.available }}</td>
+            <td class="text-right font-mono">{{ sb.reorderLevel }}</td>
+            <td>
+              <hms-status-pill
+                [status]="sb.available <= sb.reorderLevel ? 'danger' : 'success'"
+                [label]="sb.available <= sb.reorderLevel ? 'Low Stock' : 'OK'"
+              ></hms-status-pill>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: PO DETAIL (INSPECT)                                               -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="showPODetail()"
+    [title]="'Purchase Order ' + (selectedPO()?.poNumber || '')"
+    (closed)="closePODetail()"
+  >
+    <div class="modal-form-body" *ngIf="selectedPO() as po">
+      <div class="summary-box">
+        <div class="summary-row">
+          <span>Supplier:</span>
+          <strong>{{ po.supplier?.name || getSupplierName(po.supplierId) }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Status:</span>
+          <hms-status-pill [status]="getStatusPillVariant(po.status)" [label]="po.status"></hms-status-pill>
+        </div>
+        <div class="summary-row">
+          <span>Order Date:</span>
+          <span class="font-mono">{{ po.orderDate | date:'yyyy-MM-dd' }}</span>
+        </div>
+        <div class="summary-row" *ngIf="po.expectedDate">
+          <span>Expected:</span>
+          <span class="font-mono">{{ po.expectedDate | date:'yyyy-MM-dd' }}</span>
+        </div>
+        <div class="summary-row total-row">
+          <span>Total Amount:</span>
+          <span class="font-mono font-bold">{{ formatCurrency(po.totalAmount) }}</span>
+        </div>
+        <div class="summary-row" *ngIf="po.notes">
+          <span>Notes:</span>
+          <span>{{ po.notes }}</span>
+        </div>
+      </div>
+
+      <!-- Line Items Table -->
+      <h3 class="sub-section-title">Line Items</h3>
+      <div class="data-table-wrap" *ngIf="po.items && po.items.length > 0">
+        <table class="data-table compact">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="text-right">Qty</th>
+              <th class="text-right">Unit Cost</th>
+              <th class="text-right">Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let li of po.items">
+              <td>{{ li.inventoryItem?.name || getItemName(li.inventoryItemId) }}</td>
+              <td class="text-right font-mono">{{ li.quantity }}</td>
+              <td class="text-right font-mono">{{ formatCurrency(li.unitCost) }}</td>
+              <td class="text-right font-mono font-bold">{{ formatCurrency(li.totalCost) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="closePODetail()">Close</hms-button>
+      <hms-button
+        *ngIf="selectedPO()?.status === 'DRAFT' && hasPermission('procurement.po.create')"
+        variant="gold"
+        [disabled]="isSubmitting()"
+        (click)="updatePOStatus(selectedPO()!, 'SUBMITTED'); closePODetail()"
+      >Submit PO</hms-button>
+      <hms-button
+        *ngIf="selectedPO()?.status === 'SUBMITTED' && hasPermission('procurement.po.approve')"
+        variant="gold"
+        [disabled]="isSubmitting()"
+        (click)="updatePOStatus(selectedPO()!, 'APPROVED'); closePODetail()"
+      >Approve PO</hms-button>
+    </div>
+  </hms-modal>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CREATE SUPPLIER                                                    -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="showCreateSupplierModal()"
+    title="Add New Supplier"
+    (closed)="showCreateSupplierModal.set(false)"
+  >
+    <div class="modal-form-body">
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Supplier Name</label>
+          <input type="text" class="form-input" [(ngModel)]="newSupplierName" placeholder="e.g. Tokyo Linens Co." />
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Supplier Code</label>
+          <input type="text" class="form-input" [(ngModel)]="newSupplierCode" placeholder="e.g. SUP-LINEN" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contact Person</label>
+        <input type="text" class="form-input" [(ngModel)]="newSupplierContact" placeholder="e.g. Tanaka Yuki" />
+      </div>
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" [(ngModel)]="newSupplierEmail" placeholder="e.g. sales@linens.co.jp" />
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Phone</label>
+          <input type="text" class="form-input" [(ngModel)]="newSupplierPhone" placeholder="e.g. +81 3-1234-5678" />
+        </div>
+      </div>
+    </div>
+
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="showCreateSupplierModal.set(false)">Cancel</hms-button>
+      <hms-button
+        variant="gold"
+        [disabled]="isSubmitting() || !newSupplierName || !newSupplierCode"
+        (click)="confirmCreateSupplier()"
+      >
+        <span *ngIf="!isSubmitting()">Create Supplier</span>
+        <span *ngIf="isSubmitting()">Creating...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CREATE PURCHASE ORDER                                              -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="showCreatePOModal()"
+    title="Create Purchase Order"
+    (closed)="showCreatePOModal.set(false)"
+  >
+    <div class="modal-form-body">
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Supplier</label>
+          <select class="form-select" [(ngModel)]="newPOSupplierId">
+            <option *ngFor="let s of suppliers()" [value]="s.id">
+              {{ s.name }} ({{ s.code }})
+            </option>
+          </select>
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Expected Delivery</label>
+          <input type="date" class="form-input" [(ngModel)]="newPOExpectedDate" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" [(ngModel)]="newPONotes" rows="2" placeholder="Optional notes..."></textarea>
+      </div>
+
+      <!-- Line Items -->
+      <div class="line-items-section">
+        <div class="line-items-header">
+          <h3 class="sub-section-title">Line Items</h3>
+          <button type="button" class="btn-add-line" (click)="addPOLineItem()">+ Add Line</button>
+        </div>
+
+        <div *ngFor="let li of newPOItems; let i = index; trackBy: trackByIndex" class="line-item-row">
+          <div class="form-group line-item-select">
+            <select class="form-select" [(ngModel)]="li.inventoryItemId">
+              <option value="">-- Select Item --</option>
+              <option *ngFor="let item of items()" [value]="item.id">
+                {{ item.name }} ({{ item.sku }})
+              </option>
+            </select>
+          </div>
+          <div class="form-group line-item-qty">
+            <input type="number" class="form-input" [(ngModel)]="li.quantity" min="1" placeholder="Qty" />
+          </div>
+          <div class="form-group line-item-cost">
+            <input type="number" class="form-input" [(ngModel)]="li.unitCost" min="0" placeholder="Unit Cost" />
+          </div>
+          <button type="button" class="btn-remove-line" (click)="removePOLineItem(i)" *ngIf="newPOItems.length > 1">&times;</button>
+        </div>
+      </div>
+    </div>
+
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="showCreatePOModal.set(false)">Cancel</hms-button>
+      <hms-button
+        variant="gold"
+        [disabled]="isSubmitting() || !newPOSupplierId"
+        (click)="confirmCreatePO()"
+      >
+        <span *ngIf="!isSubmitting()">Create Purchase Order</span>
+        <span *ngIf="isSubmitting()">Creating...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
+</div>
