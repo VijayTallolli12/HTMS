@@ -17,7 +17,7 @@
       "destination": "/api"
     },
     {
-      "source": "/((?!api|\\.well-known).*)",
+      "source": "/:path*",
       "destination": "/index.html"
     }
   ]
