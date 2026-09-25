@@ -15,3 +15,4 @@ export * from './events/pms-events.contract';
 export * from './security/security.contract';
 export * from './iam/iam.contract';
 export * from './pms';
+export * from './fnb/fnb.contract';

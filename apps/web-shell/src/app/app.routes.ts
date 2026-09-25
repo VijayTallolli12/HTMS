@@ -55,6 +55,11 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'fnb',
+    redirectTo: 'pms/fnb',
+    pathMatch: 'full',
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

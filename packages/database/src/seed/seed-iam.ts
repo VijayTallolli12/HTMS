@@ -352,6 +352,55 @@ export async function seedIamBaseline() {
       description: 'Reset or recover an aborted or locked night audit process',
       module: 'NIGHT_AUDIT',
     },
+    // ── Food & Beverage (F&B / Restaurant) ───────────────────────────
+    {
+      code: 'fnb.outlet.view',
+      name: 'View F&B Outlets',
+      description: 'View restaurant outlets and tables',
+      module: 'FNB',
+    },
+    {
+      code: 'fnb.menu.view',
+      name: 'View F&B Menus',
+      description: 'View menu categories and food & beverage items',
+      module: 'FNB',
+    },
+    {
+      code: 'fnb.menu.manage',
+      name: 'Manage F&B Menus',
+      description: 'Create and update menu categories, items and pricing',
+      module: 'FNB',
+    },
+    {
+      code: 'fnb.table.view',
+      name: 'View F&B Tables',
+      description: 'View restaurant floor tables and occupancy statuses',
+      module: 'FNB',
+    },
+    {
+      code: 'fnb.order.view',
+      name: 'View F&B Orders',
+      description: 'View active and past restaurant orders',
+      module: 'FNB',
+    },
+    {
+      code: 'fnb.order.create',
+      name: 'Create F&B Orders',
+      description: 'Open table orders and add ordered items',
+      module: 'FNB',
+    },
+    {
+      code: 'fnb.order.manage',
+      name: 'Manage F&B Orders',
+      description: 'Transition order statuses (submit, kitchen, serve, cancel)',
+      module: 'FNB',
+    },
+    {
+      code: 'fnb.order.close',
+      name: 'Close F&B Orders & Settle',
+      description: 'Settle order bill and post room charges to guest folio',
+      module: 'FNB',
+    },
   ];
 
   const permMap = new Map<string, string>();
@@ -415,6 +464,14 @@ export async function seedIamBaseline() {
         'night_audit:run',
         'night_audit:approve',
         'night_audit:recover',
+        'fnb.outlet.view',
+        'fnb.menu.view',
+        'fnb.menu.manage',
+        'fnb.table.view',
+        'fnb.order.view',
+        'fnb.order.create',
+        'fnb.order.manage',
+        'fnb.order.close',
       ],
     },
     {
@@ -453,6 +510,13 @@ export async function seedIamBaseline() {
         'engineering.work_order.view',
         'engineering.work_order.create',
         'engineering.work_order.note',
+        'fnb.outlet.view',
+        'fnb.menu.view',
+        'fnb.table.view',
+        'fnb.order.view',
+        'fnb.order.create',
+        'fnb.order.manage',
+        'fnb.order.close',
       ],
     },
     {

@@ -82,4 +82,10 @@ export const PMS_ROUTES: Routes = [
       import('./night-audit/night-audit.component').then((m) => m.NightAuditComponent),
     title: 'Night Audit',
   },
+  {
+    path: 'fnb',
+    loadComponent: () =>
+      import('../fnb/fnb-workspace.component').then((m) => m.FnbWorkspaceComponent),
+    title: 'Restaurant & F&B',
+  },
 ];

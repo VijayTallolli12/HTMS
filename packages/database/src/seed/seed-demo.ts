@@ -8,6 +8,7 @@ import { seedGuests } from './seed-guests';
 import { seedDemoUsers } from './seed-demo-users';
 import { seedReservations } from './seed-reservations';
 import { seedFolios } from './seed-folios';
+import { seedFnb } from './seed-fnb';
 
 export async function seedDemo(): Promise<void> {
   const prisma = getPrismaClient();
@@ -40,6 +41,9 @@ export async function seedDemo(): Promise<void> {
   console.log('\n--- Phase 4: Reservations & Folios ---');
   await seedReservations(property.id, guestIds as unknown as Record<string, string>, roomTypeIds, roomIds as unknown as Record<string, string>);
   await seedFolios(property.id, guestIds as unknown as Record<string, string>);
+
+  console.log('\n--- Phase 5: Food & Beverage / Restaurant ---');
+  await seedFnb(property.id);
 
   console.log('\n=== HMS Demo Seed - Complete ===\n');
   const counts = {

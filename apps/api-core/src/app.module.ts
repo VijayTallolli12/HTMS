@@ -5,6 +5,7 @@ import { HealthModule } from './modules/health/health.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { PmsModule } from './modules/pms/pms.module';
+import { FnbModule } from './modules/fnb/fnb.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
@@ -23,6 +24,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
     OrganizationModule,
     IdentityModule,
     PmsModule,
+    FnbModule,
   ],
 })
 export class AppModule implements NestModule {

@@ -1,0 +1,716 @@
+<div class="fnb-container">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="header-pretitle">OPERATIONS &bull; FOOD & BEVERAGE</div>
+      <h1 class="page-title">Restaurant & Outlets</h1>
+      <p class="page-subtitle">
+        Manage dining outlets, floor plan tables, real-time kitchen orders, and automated room folio postings.
+      </p>
+    </div>
+
+    <!-- Outlet Switcher & Property Context -->
+    <div class="header-right">
+      <div class="outlet-selector-card" *ngIf="outlets().length > 0">
+        <label class="selector-label">Active Outlet</label>
+        <div class="outlet-select-wrapper">
+          <select
+            class="outlet-select"
+            [ngModel]="selectedOutletId()"
+            (ngModelChange)="onOutletChange($event)"
+          >
+            <option *ngFor="let outlet of outlets()" [value]="outlet.id">
+              {{ outlet.name }} ({{ outlet.outletType }})
+            </option>
+          </select>
+          <span class="outlet-type-badge" *ngIf="selectedOutlet()">
+            {{ selectedOutlet()?.outletType }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Global Alerts -->
+  <div class="alerts-container">
+    <hms-alert
+      *ngIf="errorMessage()"
+      type="error"
+      [message]="errorMessage()!"
+      (dismissed)="errorMessage.set(null)"
+    ></hms-alert>
+    <hms-alert
+      *ngIf="successMessage()"
+      type="success"
+      [message]="successMessage()!"
+      (dismissed)="successMessage.set(null)"
+    ></hms-alert>
+  </div>
+
+  <!-- Main Navigation Tabs -->
+  <div class="tabs-nav-bar">
+    <div class="nav-tabs">
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'tables'"
+        (click)="activeTab.set('tables')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+          <path d="M3 9h18M9 21V9"></path>
+        </svg>
+        Floor Plan & Tables
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'kitchen'"
+        (click)="activeTab.set('kitchen')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        Kitchen Line & Active Orders
+        <span class="tab-count-badge" *ngIf="kitchenOrders().length > 0">
+          {{ kitchenOrders().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'menu'"
+        (click)="activeTab.set('menu')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        Menu Catalog
+      </button>
+    </div>
+
+    <!-- Active Property Indicator -->
+    <div class="property-context-tag" *ngIf="activeProperty()">
+      <span class="indicator-dot"></span>
+      <span>{{ activeProperty()?.name }}</span>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <hms-loading *ngIf="isLoading()" message="Loading restaurant operations..."></hms-loading>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 1: FLOOR PLAN & TABLES (Main Interactive Dining Room) -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'tables'" class="tab-content">
+    <div class="floor-plan-layout" [class.has-ticket]="activeOrder() !== null">
+      <!-- Tables Grid Section -->
+      <section class="tables-section">
+        <div class="section-subbar">
+          <div>
+            <h2 class="section-title">Dining Room Tables</h2>
+            <p class="section-desc">Select a table to seat guests or manage its order ticket.</p>
+          </div>
+          <div class="tables-legend">
+            <span class="legend-item"><span class="dot available"></span> Available</span>
+            <span class="legend-item"><span class="dot occupied"></span> Occupied</span>
+            <span class="legend-item"><span class="dot reserved"></span> Reserved</span>
+          </div>
+        </div>
+
+        <div class="tables-grid">
+          <div
+            *ngFor="let table of tables()"
+            class="table-card"
+            [class.status-available]="table.status === 'AVAILABLE'"
+            [class.status-occupied]="table.status === 'OCCUPIED'"
+            [class.status-reserved]="table.status === 'RESERVED'"
+            [class.is-selected]="selectedTable()?.id === table.id"
+            (click)="onTableClick(table)"
+          >
+            <div class="table-card-header">
+              <div class="table-id-badge">{{ table.tableNumber }}</div>
+              <hms-status-pill
+                [status]="getStatusPillVariant(table.status)"
+                [label]="table.status"
+              ></hms-status-pill>
+            </div>
+
+            <div class="table-card-body">
+              <div class="table-capacity">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <span>{{ table.capacity }} Seats</span>
+              </div>
+
+              <!-- Active Order Info if Occupied -->
+              <div *ngIf="table.status === 'OCCUPIED' && table.activeOrder" class="table-active-order">
+                <div class="active-order-num">Order #{{ table.activeOrder.orderNumber }}</div>
+                <div class="active-order-stats">
+                  <span>{{ table.activeOrder.items?.length || 0 }} items</span>
+                  <span class="order-total-preview font-mono">{{ formatPrice(table.activeOrder.totalAmount, table.activeOrder.currency) }}</span>
+                </div>
+              </div>
+
+              <div *ngIf="table.status === 'AVAILABLE'" class="table-free-prompt">
+                <span class="free-text">Ready for Seating</span>
+              </div>
+            </div>
+
+            <div class="table-card-footer">
+              <button
+                *ngIf="table.status === 'AVAILABLE'"
+                type="button"
+                class="btn-open-table"
+                (click)="onTableClick(table); $event.stopPropagation()"
+              >
+                + Open Table
+              </button>
+              <button
+                *ngIf="table.status === 'OCCUPIED'"
+                type="button"
+                class="btn-view-order"
+                (click)="onTableClick(table); $event.stopPropagation()"
+              >
+                Inspect Order &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Split View: Menu Browser + Order Ticket (When Order is Active) -->
+      <section *ngIf="activeOrder()" class="order-interactive-area">
+        <!-- Close Order Ticket Button -->
+        <div class="order-area-header">
+          <div class="order-area-title">
+            <span>Table {{ activeOrder()?.tableNumber }} &bull; Order #{{ activeOrder()?.orderNumber }}</span>
+            <hms-status-pill
+              [status]="getStatusPillVariant(activeOrder()!.status)"
+              [label]="activeOrder()!.status"
+            ></hms-status-pill>
+          </div>
+          <button type="button" class="btn-close-ticket" (click)="activeOrder.set(null)">
+            &times; Close View
+          </button>
+        </div>
+
+        <div class="order-work-panels">
+          <!-- Left Panel: Menu Items Quick Browser -->
+          <div class="menu-browser-panel">
+            <div class="menu-browser-header">
+              <span class="panel-heading">Add Items to Ticket</span>
+              <!-- Category Filter Tabs -->
+              <div class="category-chips">
+                <button
+                  type="button"
+                  class="cat-chip"
+                  [class.active]="selectedCategoryId() === 'ALL'"
+                  (click)="selectedCategoryId.set('ALL')"
+                >
+                  All Items
+                </button>
+                <button
+                  *ngFor="let cat of categories()"
+                  type="button"
+                  class="cat-chip"
+                  [class.active]="selectedCategoryId() === cat.id"
+                  (click)="selectedCategoryId.set(cat.id)"
+                >
+                  {{ cat.name }}
+                </button>
+              </div>
+            </div>
+
+            <div class="menu-items-list">
+              <div *ngFor="let item of filteredMenuItems()" class="menu-item-row">
+                <div class="item-info">
+                  <div class="item-name">{{ item.name }}</div>
+                  <div class="item-desc" *ngIf="item.description">{{ item.description }}</div>
+                  <div class="item-price font-mono">{{ formatPrice(item.price, item.currency) }}</div>
+                </div>
+                <button
+                  type="button"
+                  class="btn-add-item"
+                  [disabled]="isSubmitting() || activeOrder()?.status === 'CLOSED'"
+                  (click)="addItemToOrder(item)"
+                >
+                  + Add
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Panel: Active Order Ticket & Settle Actions -->
+          <div class="order-ticket-panel">
+            <div class="ticket-header">
+              <div class="ticket-meta">
+                <div><strong>Server:</strong> {{ activeOrder()?.serverName || 'Staff' }}</div>
+                <div><strong>Guests:</strong> {{ activeOrder()?.guestCount }}</div>
+                <div *ngIf="activeOrder()?.roomNumber"><strong>Room:</strong> {{ activeOrder()?.roomNumber }}</div>
+              </div>
+
+              <!-- Ticket Workflow Transitions -->
+              <div class="ticket-actions-bar" *ngIf="activeOrder()?.status !== 'CLOSED'">
+                <!-- If OPEN -> Send to Kitchen -->
+                <button
+                  *ngIf="activeOrder()?.status === 'OPEN'"
+                  type="button"
+                  class="workflow-btn send-btn"
+                  [disabled]="isSubmitting() || (activeOrder()?.items?.length || 0) === 0"
+                  (click)="transitionOrderStatus('ORDERED')"
+                >
+                  Send to Kitchen &rarr;
+                </button>
+
+                <!-- If ORDERED -> Start Prep -->
+                <button
+                  *ngIf="activeOrder()?.status === 'ORDERED'"
+                  type="button"
+                  class="workflow-btn prep-btn"
+                  [disabled]="isSubmitting()"
+                  (click)="transitionOrderStatus('PREPARING')"
+                >
+                  Start Kitchen Prep &rarr;
+                </button>
+
+                <!-- If PREPARING -> Mark Ready -->
+                <button
+                  *ngIf="activeOrder()?.status === 'PREPARING'"
+                  type="button"
+                  class="workflow-btn ready-btn"
+                  [disabled]="isSubmitting()"
+                  (click)="transitionOrderStatus('READY')"
+                >
+                  Mark Order Ready &rarr;
+                </button>
+
+                <!-- If READY -> Serve -->
+                <button
+                  *ngIf="activeOrder()?.status === 'READY'"
+                  type="button"
+                  class="workflow-btn serve-btn"
+                  [disabled]="isSubmitting()"
+                  (click)="transitionOrderStatus('SERVED')"
+                >
+                  Serve to Table &check;
+                </button>
+              </div>
+            </div>
+
+            <!-- Ticket Items Table -->
+            <div class="ticket-items-container">
+              <div *ngIf="(activeOrder()?.items?.length || 0) === 0" class="empty-ticket-hint">
+                No items added yet. Click "+ Add" on menu items to populate this ticket.
+              </div>
+
+              <div *ngFor="let lineItem of activeOrder()?.items" class="ticket-item-row">
+                <div class="line-qty font-mono">{{ lineItem.quantity }}x</div>
+                <div class="line-name">{{ lineItem.itemName }}</div>
+                <div class="line-price font-mono">{{ formatPrice(lineItem.totalAmount, activeOrder()?.currency) }}</div>
+                <button
+                  *ngIf="activeOrder()?.status === 'OPEN'"
+                  type="button"
+                  class="btn-remove-item"
+                  title="Remove item"
+                  (click)="removeItemFromOrder(lineItem.id)"
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
+
+            <!-- Financial Totals Box -->
+            <div class="ticket-financials">
+              <div class="fin-row">
+                <span>Subtotal</span>
+                <span class="font-mono">{{ formatPrice(activeOrder()!.subtotal, activeOrder()!.currency) }}</span>
+              </div>
+              <div class="fin-row">
+                <span>Tax (10%)</span>
+                <span class="font-mono">{{ formatPrice(activeOrder()!.taxAmount, activeOrder()!.currency) }}</span>
+              </div>
+              <div class="fin-row total-row">
+                <span>Total Amount</span>
+                <span class="font-mono font-bold">{{ formatPrice(activeOrder()!.totalAmount, activeOrder()!.currency) }}</span>
+              </div>
+            </div>
+
+            <!-- Folio Posting Confirmation if Closed -->
+            <div *ngIf="activeOrder()?.status === 'CLOSED'" class="closed-notice">
+              <div class="closed-badge">&check; Order Closed & Settled</div>
+              <div class="closed-detail" *ngIf="activeOrder()?.settlementType === 'ROOM_CHARGE'">
+                Charged to Room {{ activeOrder()?.roomNumber }} (Folio: {{ activeOrder()?.folioId }})
+                <br /><small class="font-mono">Cashier Tx: {{ activeOrder()?.folioTransactionId }}</small>
+              </div>
+              <div class="closed-detail" *ngIf="activeOrder()?.settlementType === 'DIRECT_PAY'">
+                Paid via {{ activeOrder()?.paymentMethod }}
+              </div>
+            </div>
+
+            <!-- Settle & Close Order Action -->
+            <div class="ticket-settle-footer" *ngIf="activeOrder()?.status !== 'CLOSED'">
+              <hms-button
+                variant="gold"
+                [disabled]="isSubmitting() || (activeOrder()?.items?.length || 0) === 0"
+                (click)="openCloseOrderModal()"
+              >
+                Settle & Close Order &rarr;
+              </hms-button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: KITCHEN LINE & ACTIVE ORDERS -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'kitchen'" class="tab-content">
+    <div class="kitchen-header">
+      <div>
+        <h2 class="section-title">Live Kitchen Queue</h2>
+        <p class="section-desc">Active tickets undergoing prep, plating, or waiting for pickup.</p>
+      </div>
+      <button type="button" class="btn-refresh" (click)="selectedOutlet() && loadKitchenOrders(activeProperty()!.id, selectedOutlet()!.id)">
+        Refresh Queue
+      </button>
+    </div>
+
+    <div *ngIf="kitchenOrders().length === 0" class="empty-kitchen">
+      <hms-empty
+        title="Kitchen Queue Clear"
+        description="There are currently no pending kitchen orders. New orders will appear here as they are submitted from tables."
+      ></hms-empty>
+    </div>
+
+    <div class="kitchen-cards-grid" *ngIf="kitchenOrders().length > 0">
+      <div *ngFor="let order of kitchenOrders()" class="kitchen-order-card">
+        <div class="kitchen-card-header">
+          <div>
+            <span class="kitchen-table-tag">Table {{ order.tableNumber || 'To-Go' }}</span>
+            <span class="kitchen-order-id">#{{ order.orderNumber }}</span>
+          </div>
+          <hms-status-pill
+            [status]="getStatusPillVariant(order.status)"
+            [label]="order.status"
+          ></hms-status-pill>
+        </div>
+
+        <div class="kitchen-card-body">
+          <div class="kitchen-meta-line">
+            <span>Server: <strong>{{ order.serverName || 'Staff' }}</strong></span>
+            <span>Guests: <strong>{{ order.guestCount }}</strong></span>
+          </div>
+
+          <div class="kitchen-items-list">
+            <div *ngFor="let item of order.items" class="kitchen-item-row">
+              <span class="kitchen-item-qty font-mono">{{ item.quantity }}x</span>
+              <span class="kitchen-item-name">{{ item.itemName }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="kitchen-card-footer">
+          <button
+            *ngIf="order.status === 'OPEN'"
+            type="button"
+            class="k-action-btn"
+            (click)="activeOrder.set(order); transitionOrderStatus('ORDERED')"
+          >
+            Send to Kitchen
+          </button>
+          <button
+            *ngIf="order.status === 'ORDERED'"
+            type="button"
+            class="k-action-btn prep"
+            (click)="activeOrder.set(order); transitionOrderStatus('PREPARING')"
+          >
+            Start Preparing
+          </button>
+          <button
+            *ngIf="order.status === 'PREPARING'"
+            type="button"
+            class="k-action-btn ready"
+            (click)="activeOrder.set(order); transitionOrderStatus('READY')"
+          >
+            Mark Ready
+          </button>
+          <button
+            *ngIf="order.status === 'READY'"
+            type="button"
+            class="k-action-btn serve"
+            (click)="activeOrder.set(order); transitionOrderStatus('SERVED')"
+          >
+            Serve Order
+          </button>
+          <button
+            type="button"
+            class="k-inspect-btn"
+            (click)="activeOrder.set(order); activeTab.set('tables')"
+          >
+            Open in Ticket
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: MENU CATALOG -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'menu'" class="tab-content">
+    <div class="menu-catalog-header">
+      <div>
+        <h2 class="section-title">Menu Offerings & Pricing</h2>
+        <p class="section-desc">Active catalog items configured for {{ selectedOutlet()?.name }}.</p>
+      </div>
+      <div class="category-filter-bar">
+        <button
+          type="button"
+          class="cat-chip"
+          [class.active]="selectedCategoryId() === 'ALL'"
+          (click)="selectedCategoryId.set('ALL')"
+        >
+          All Items ({{ menuItems().length }})
+        </button>
+        <button
+          *ngFor="let cat of categories()"
+          type="button"
+          class="cat-chip"
+          [class.active]="selectedCategoryId() === cat.id"
+          (click)="selectedCategoryId.set(cat.id)"
+        >
+          {{ cat.name }}
+        </button>
+      </div>
+    </div>
+
+    <div class="catalog-grid">
+      <div *ngFor="let item of filteredMenuItems()" class="catalog-card">
+        <div class="catalog-header">
+          <span class="catalog-code font-mono">{{ item.code }}</span>
+          <span class="catalog-price font-mono">{{ formatPrice(item.price, item.currency) }}</span>
+        </div>
+        <h3 class="catalog-title">{{ item.name }}</h3>
+        <p class="catalog-desc">{{ item.description || 'Prepared fresh daily by our culinary team.' }}</p>
+        <div class="catalog-footer">
+          <span class="catalog-category-tag">{{ item.categoryName || 'General' }}</span>
+          <span class="catalog-active-dot">&bull; Available</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: OPEN TABLE -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="showOpenTableModal()"
+    [title]="'Seat Guests at Table ' + (openTableTarget()?.tableNumber || '')"
+    (closed)="showOpenTableModal.set(false)"
+  >
+    <div class="modal-form-body">
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Table Number</label>
+          <input
+            type="text"
+            class="form-input disabled"
+            [value]="openTableTarget()?.tableNumber"
+            disabled
+          />
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Guest Count (Pax)</label>
+          <input
+            type="number"
+            class="form-input"
+            [(ngModel)]="openTableGuestCount"
+            min="1"
+            max="12"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Server / Staff Name</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="openTableServerName"
+            placeholder="e.g. Kenji"
+          />
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Room Number (Optional)</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="openTableRoomNumber"
+            placeholder="e.g. 104"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Guest Name (Optional)</label>
+        <input
+          type="text"
+          class="form-input"
+          [(ngModel)]="openTableGuestName"
+          placeholder="e.g. Mr. Daniel Craig"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Table Notes / Dietary Requests</label>
+        <textarea
+          class="form-textarea"
+          [(ngModel)]="openTableNotes"
+          rows="2"
+          placeholder="e.g. Window preference, sparkling water requested"
+        ></textarea>
+      </div>
+    </div>
+
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="showOpenTableModal.set(false)">Cancel</hms-button>
+      <hms-button
+        variant="gold"
+        [disabled]="isSubmitting() || openTableGuestCount < 1"
+        (click)="confirmOpenTable()"
+      >
+        <span *ngIf="!isSubmitting()">Confirm Seating & Open Ticket</span>
+        <span *ngIf="isSubmitting()">Opening...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SETTLE & CLOSE ORDER (Folio Posting / Direct Payment) -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="showCloseOrderModal()"
+    [title]="'Settle Order #' + (activeOrder()?.orderNumber || '') + ' — Table ' + (activeOrder()?.tableNumber || '')"
+    (closed)="showCloseOrderModal.set(false)"
+  >
+    <div class="modal-form-body">
+      <!-- Order Summary Card -->
+      <div class="settle-summary-box">
+        <div class="settle-summary-line">
+          <span>Order Subtotal:</span>
+          <span class="font-mono">{{ formatPrice(activeOrder()?.subtotal || '0', activeOrder()?.currency) }}</span>
+        </div>
+        <div class="settle-summary-line">
+          <span>Taxes (10%):</span>
+          <span class="font-mono">{{ formatPrice(activeOrder()?.taxAmount || '0', activeOrder()?.currency) }}</span>
+        </div>
+        <div class="settle-summary-line settle-total">
+          <span>Total Settle Amount:</span>
+          <span class="font-mono font-bold">{{ formatPrice(activeOrder()?.totalAmount || '0', activeOrder()?.currency) }}</span>
+        </div>
+      </div>
+
+      <!-- Settlement Type Selector -->
+      <div class="settle-type-selector">
+        <label class="selector-label">Choose Settlement Method</label>
+        <div class="toggle-group">
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="closeSettlementType === 'ROOM_CHARGE'"
+            (click)="closeSettlementType = 'ROOM_CHARGE'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            Post to Guest Room / Folio
+          </button>
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="closeSettlementType === 'DIRECT_PAY'"
+            (click)="closeSettlementType = 'DIRECT_PAY'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+              <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            Direct Payment (Walk-in)
+          </button>
+        </div>
+      </div>
+
+      <!-- ROOM CHARGE FORM -->
+      <div *ngIf="closeSettlementType === 'ROOM_CHARGE'" class="settle-subform">
+        <div class="form-group">
+          <label class="form-label">In-House Checked-In Guest</label>
+          <select
+            class="form-select"
+            [(ngModel)]="closeSelectedGuestReservationId"
+          >
+            <option value="">-- Select Checked-In Hotel Guest --</option>
+            <option
+              *ngFor="let g of inHouseGuests()"
+              [value]="g.reservationId"
+            >
+              Room {{ g.roomNumber }} — {{ g.guestName }} (Conf: {{ g.confirmationNumber }})
+            </option>
+          </select>
+          <small class="form-hint">
+            The full amount of {{ formatPrice(activeOrder()?.totalAmount || '0', activeOrder()?.currency) }} will be posted directly to the guest's open hotel folio under transaction code <code>RESTAURANT</code>.
+          </small>
+        </div>
+
+        <div class="form-group" *ngIf="!closeSelectedGuestReservationId">
+          <label class="form-label">Or Enter Room Number Manually</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="closeManualRoomNumber"
+            placeholder="e.g. 104"
+          />
+        </div>
+      </div>
+
+      <!-- DIRECT PAYMENT FORM -->
+      <div *ngIf="closeSettlementType === 'DIRECT_PAY'" class="settle-subform">
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <select
+            class="form-select"
+            [(ngModel)]="closePaymentMethod"
+          >
+            <option value="CREDIT_CARD">Credit Card / POS Terminal</option>
+            <option value="CASH">Cash Payment</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="showCloseOrderModal.set(false)">Cancel</hms-button>
+      <hms-button
+        variant="gold"
+        [disabled]="isSubmitting()"
+        (click)="confirmCloseOrder()"
+      >
+        <span *ngIf="!isSubmitting()">Confirm Settlement & Release Table</span>
+        <span *ngIf="isSubmitting()">Processing Folio Post...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
+</div>
