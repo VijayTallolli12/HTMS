@@ -140,6 +140,10 @@ model Property {
   eventPackages             EventPackage[]
   eventResources            EventResource[]
   eventBookings             EventBooking[]
+  crmProfiles               GuestCrmProfile[]
+  guestPreferences          GuestPreference[]
+  loyaltyMemberships        LoyaltyMembership[]
+  loyaltyTransactions       LoyaltyTransaction[]
 
   @@index([countryId])
   @@index([status])
@@ -715,12 +719,118 @@ model Guest {
 
   property     Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
   reservations Reservation[]
+  crmProfile   GuestCrmProfile?
+  preferences  GuestPreference[]
+  loyalty      LoyaltyMembership?
 
   @@unique([propertyId, id], name: "uq_guests_property_id")
   @@index([propertyId, lastName], name: "idx_guests_property_name")
   @@index([propertyId, email], name: "idx_guests_property_email")
   @@index([propertyId, phone], name: "idx_guests_property_phone")
   @@map("guests")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 26. CRM GUEST PROFILE (CRM Extension)
+// ==============================================================================
+model GuestCrmProfile {
+  id                      String    @id
+  propertyId              String    @map("property_id")
+  guestId                 String    @unique @map("guest_id")
+  vipFlag                 Boolean   @default(false) @map("vip_flag")
+  notes                   String?   @db.Text
+  communicationPreferences Json?    @map("communication_preferences")
+  marketingConsent        Boolean   @default(false) @map("marketing_consent")
+  tags                    String[]  @default([])
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt               DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  guest     Guest   @relation(fields: [propertyId, guestId], references: [propertyId, id], onDelete: Cascade)
+  property  Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+
+  @@unique([propertyId, id], name: "uq_crm_profile_property_id")
+  @@unique([propertyId, guestId], name: "uq_crm_profile_guest")
+  @@index([propertyId, vipFlag], name: "idx_crm_profile_vip")
+  @@map("guest_crm_profiles")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 27. CRM GUEST PREFERENCES
+// ==============================================================================
+model GuestPreference {
+  id          String    @id
+  propertyId  String    @map("property_id")
+  guestId     String    @map("guest_id")
+  category    String    @db.VarChar(50) // ROOM, DINING, SERVICE, AMENITY, COMMUNICATION, OTHER
+  preference  String    @db.VarChar(100)
+  value       String    @db.VarChar(500)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  guest   Guest   @relation(fields: [propertyId, guestId], references: [propertyId, id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+
+  @@unique([propertyId, guestId, category, preference], name: "uq_guest_preference_unique")
+  @@index([propertyId, guestId], name: "idx_guest_preferences_guest")
+  @@map("guest_preferences")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 28. LOYALTY MEMBERSHIP
+// ==============================================================================
+model LoyaltyMembership {
+  id               String    @id
+  propertyId       String    @map("property_id")
+  guestId          String    @unique @map("guest_id")
+  membershipNumber String    @unique @map("membership_number") @db.VarChar(30)
+  tier             String    @default("STANDARD") // STANDARD, SILVER, GOLD, PLATINUM
+  pointsBalance    Int       @default(0) @map("points_balance")
+  lifetimePoints   Int       @default(0) @map("lifetime_points")
+  joinedDate       DateTime  @map("joined_date") @db.Date
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  guest       Guest                @relation(fields: [propertyId, guestId], references: [propertyId, id], onDelete: Cascade)
+  property    Property             @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  transactions LoyaltyTransaction[]
+
+  @@unique([propertyId, id], name: "uq_loyalty_membership_property_id")
+  @@unique([propertyId, guestId], name: "uq_loyalty_membership_guest")
+  @@index([propertyId, tier], name: "idx_loyalty_membership_tier")
+  @@index([propertyId, active], name: "idx_loyalty_membership_active")
+  @@map("loyalty_memberships")
+  @@schema("pms_schema")
+}
+
+// ==============================================================================
+// 29. LOYALTY TRANSACTION
+// ==============================================================================
+model LoyaltyTransaction {
+  id                String    @id
+  propertyId        String    @map("property_id")
+  membershipId      String    @map("membership_id")
+  type              String    // EARN, REDEEM, ADJUST, EXPIRE
+  points            Int
+  reference         String?   @db.VarChar(64) // reservationId, folioId, or manual reference
+  referenceType     String?   @map("reference_type") @db.VarChar(30) // RESERVATION, FOLIO, MANUAL, NIGHT_AUDIT
+  description       String?   @db.VarChar(500)
+  idempotencyKey    String?   @unique @map("idempotency_key") @db.VarChar(64)
+  createdBy         String    @map("created_by")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  membership LoyaltyMembership @relation(fields: [propertyId, membershipId], references: [propertyId, id], onDelete: Cascade)
+  property   Property           @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+
+  @@unique([propertyId, id], name: "uq_loyalty_tx_property_id")
+  @@index([propertyId, membershipId, createdAt(sort: Desc)], name: "idx_loyalty_tx_membership_date")
+  @@index([propertyId, idempotencyKey], name: "idx_loyalty_tx_idempotency")
+  @@map("loyalty_transactions")
   @@schema("pms_schema")
 }
 

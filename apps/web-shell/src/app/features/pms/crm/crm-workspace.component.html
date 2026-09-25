@@ -1,0 +1,446 @@
+<div class="crm-workspace">
+  <div class="workspace-header">
+    <h1>CRM & Loyalty</h1>
+    <p class="subtitle">Guest relationships, preferences, and loyalty management</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+
+  <div class="workspace-grid">
+    <aside class="search-panel">
+      <div class="panel-header">
+        <h2>Guest Search</h2>
+      </div>
+
+      <div class="search-form">
+        <div class="form-group">
+          <label for="searchQuery">Search</label>
+          <input
+            id="searchQuery"
+            type="text"
+            [(ngModel)]="searchState.query"
+            (ngModelChange)="onSearchChange()"
+            placeholder="Name, email, phone..."
+            class="form-input"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="searchState.vipOnly" (ngModelChange)="onSearchChange()" />
+            <span>VIP only</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="tierFilter">Loyalty Tier</label>
+          <select
+            id="tierFilter"
+            [(ngModel)]="searchState.tier"
+            (ngModelChange)="onSearchChange()"
+            class="form-select"
+          >
+            <option value="">All Tiers</option>
+            <option *ngFor="let tier of loyaltyTiers" [value]="tier">{{ tier }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="results-summary" *ngIf="!isSearching">
+        {{ totalResults }} guest{{ totalResults !== 1 ? 's' : '' }} found
+      </div>
+
+      <div class="guest-list" *ngIf="!isSearching">
+        <div *ngFor="let guest of searchResults; trackBy: trackByGuestId; let i = index" class="guest-item"
+          [class.selected]="selectedGuest?.guest?.id === guest.id"
+          (click)="selectGuest(guest)">
+          <div class="guest-avatar">
+            {{ guest.firstName.charAt(0) }}{{ guest.lastName.charAt(0) }}
+          </div>
+          <div class="guest-info">
+            <div class="guest-name">
+              {{ guest.firstName }} {{ guest.lastName }}
+              <span *ngIf="guest.vipFlag" class="vip-badge">VIP</span>
+            </div>
+            <div class="guest-details">
+              <span *ngIf="guest.email">{{ guest.email }}</span>
+              <span *ngIf="guest.phone">{{ guest.phone }}</span>
+            </div>
+            <div class="guest-loyalty" *ngIf="guest.loyaltyTier">
+              <span class="tier-badge" [class]="getTierClass(guest.loyaltyTier!)">
+                {{ getTierIcon(guest.loyaltyTier!) }} {{ guest.loyaltyTier }}
+              </span>
+              <span class="points" *ngIf="guest.pointsBalance !== null">
+                {{ guest.pointsBalance }} pts
+              </span>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="!searchResults.length" class="empty-state">No guests found</div>
+      </div>
+
+      <div class="pagination" *ngIf="totalResults > searchState.limit">
+        <button class="btn btn-secondary" (click)="onPageChange(searchState.page - 1)" [disabled]="searchState.page === 1">
+          Previous
+        </button>
+        <span class="page-info">Page {{ searchState.page }} of {{ Math.ceil(totalResults / searchState.limit) }}</span>
+        <button class="btn btn-secondary" (click)="onPageChange(searchState.page + 1)" [disabled]="searchState.page >= Math.ceil(totalResults / searchState.limit)">
+          Next
+        </button>
+      </div>
+    </aside>
+
+    <main class="detail-panel" *ngIf="selectedGuest">
+      <div class="detail-header">
+        <div class="guest-header">
+          <div class="guest-avatar-large">
+            {{ selectedGuest.guest.firstName.charAt(0) }}{{ selectedGuest.guest.lastName.charAt(0) }}
+          </div>
+          <div class="guest-header-info">
+            <h2>{{ selectedGuest.guest.firstName }} {{ selectedGuest.guest.lastName }}</h2>
+            <div class="guest-meta">
+              <span *ngIf="selectedGuest.guest.email">{{ selectedGuest.guest.email }}</span>
+              <span *ngIf="selectedGuest.guest.phone">{{ selectedGuest.guest.phone }}</span>
+              <span class="status-badge" [class.vip]="selectedGuest.crmProfile?.vipFlag">
+                {{ selectedGuest.crmProfile?.vipFlag ? 'VIP Guest' : 'Regular Guest' }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-close" (click)="closeDetailDrawer()">✕</button>
+      </div>
+
+      <div class="tab-navigation">
+        <button
+          *ngFor="let tab of detailTabs"
+          class="tab-btn"
+          [class.active]="activeTab === tab"
+          (click)="onTabChange(tab)"
+        >
+          {{ tab }}
+        </button>
+      </div>
+
+      <div class="tab-content">
+        <div *ngIf="activeTab === 'Profile'" class="tab-pane">
+          <h3>CRM Profile</h3>
+          <div class="profile-fields">
+            <div class="field-row">
+              <label>VIP Status</label>
+              <div class="toggle-wrapper">
+                <label class="toggle">
+                  <input
+                    type="checkbox"
+                    [checked]="selectedGuest.crmProfile?.vipFlag"
+                    (change)="updateVipFlag($event.target.checked)"
+                  />
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">{{ selectedGuest.crmProfile?.vipFlag ? 'VIP' : 'Regular' }}</span>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <label>Marketing Consent</label>
+              <label class="toggle">
+                <input
+                  type="checkbox"
+                  [checked]="selectedGuest.crmProfile?.marketingConsent"
+                  (change)="updateMarketingConsent($event.target.checked)"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="field-row full-width" *ngIf="selectedGuest.crmProfile?.notes">
+              <label>Notes</label>
+              <p class="notes">{{ selectedGuest.crmProfile.notes }}</p>
+            </div>
+
+            <div class="field-row full-width" *ngIf="selectedGuest.crmProfile?.tags?.length">
+              <label>Tags</label>
+              <div class="tags">
+                <span class="tag" *ngFor="let tag of selectedGuest.crmProfile!.tags">{{ tag }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="activeTab === 'Preferences'" class="tab-pane">
+          <div class="pane-header">
+            <h3>Preferences</h3>
+            <button class="btn btn-primary" (click)="editingPreference = null; newPreference = {category: 'ROOM', preference: '', value: ''}" *ngIf="!editingPreference">
+              Add Preference
+            </button>
+          </div>
+
+          <div *ngIf="editingPreference || (newPreference.preference || newPreference.value)" class="preference-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Category</label>
+                <select [(ngModel)]="newPreference.category" class="form-select">
+                  <option value="ROOM">Room</option>
+                  <option value="DINING">Dining</option>
+                  <option value="SERVICE">Service</option>
+                  <option value="AMENITY">Amenity</option>
+                  <option value="COMMUNICATION">Communication</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Preference</label>
+                <input type="text" [(ngModel)]="newPreference.preference" class="form-input" placeholder="e.g., floor, pillow type" />
+              </div>
+              <div class="form-group">
+                <label>Value</label>
+                <input type="text" [(ngModel)]="newPreference.value" class="form-input" placeholder="e.g., high floor, hypoallergenic" />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" (click)="editingPreference ? savePreference() : createPreference()" [disabled]="!newPreference.preference || !newPreference.value">
+                {{ editingPreference ? 'Save' : 'Create' }}
+              </button>
+              <button class="btn btn-secondary" (click)="cancelEditPreference()">Cancel</button>
+            </div>
+          </div>
+
+          <div class="preferences-list" *ngIf="selectedGuest?.preferences?.length">
+            <div class="preference-card" *ngFor="let pref of selectedGuest.preferences">
+              <div class="preference-header">
+                <span class="preference-category">{{ pref.category }}</span>
+                <span class="preference-key">{{ pref.preference }}</span>
+              </div>
+              <div class="preference-value">{{ pref.value }}</div>
+              <div class="preference-actions">
+                <button class="btn btn-icon" (click)="startEditPreference(pref)" title="Edit">✎</button>
+                <button class="btn btn-icon btn-danger" (click)="deletePreference(pref)" title="Delete">🗑</button>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!selectedGuest?.preferences?.length" class="empty-state">No preferences recorded</div>
+        </div>
+
+        <div *ngIf="activeTab === 'Loyalty'" class="tab-pane">
+          <div *ngIf="!selectedGuest?.loyaltyMembership" class="loyalty-empty">
+            <h3>No Loyalty Membership</h3>
+            <p>Create a loyalty membership for this guest to start earning and redeeming points.</p>
+            <button class="btn btn-primary" (click)="showCreateMembership = true">Create Membership</button>
+          </div>
+
+          <div *ngIf="showCreateMembership" class="form-panel">
+            <h4>Create Loyalty Membership</h4>
+            <div class="form-group">
+              <label>Initial Tier</label>
+              <select [(ngModel)]="createMembershipDto.tier" class="form-select">
+                <option *ngFor="let tier of loyaltyTiers" [value]="tier">{{ tier }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Initial Points</label>
+              <input type="number" [(ngModel)]="createMembershipDto.pointsBalance" class="form-input" min="0" />
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" (click)="createMembership()">Create</button>
+              <button class="btn btn-secondary" (click)="showCreateMembership = false">Cancel</button>
+            </div>
+          </div>
+
+          <div *ngIf="selectedGuest?.loyaltyMembership" class="loyalty-overview">
+            <div class="tier-display" [class]="getTierClass(selectedGuest.loyaltyMembership.tier)">
+              <span class="tier-icon">{{ getTierIcon(selectedGuest.loyaltyMembership.tier) }}</span>
+              <div class="tier-info">
+                <span class="tier-name">{{ selectedGuest.loyaltyMembership.tier }}</span>
+                <span class="tier-membersince">Member since {{ formatDate(selectedGuest.loyaltyMembership.joinedDate) }}</span>
+              </div>
+              <div class="tier-number">#{{ selectedGuest.loyaltyMembership.membershipNumber }}</div>
+            </div>
+
+            <div class="points-display">
+              <div class="points-card">
+                <span class="points-label">Current Balance</span>
+                <span class="points-value">{{ selectedGuest.loyaltyMembership.pointsBalance }}</span>
+                <span class="points-unit">points</span>
+              </div>
+              <div class="points-card">
+                <span class="points-label">Lifetime Points</span>
+                <span class="points-value">{{ selectedGuest.loyaltyMembership.lifetimePoints }}</span>
+                <span class="points-unit">points</span>
+              </div>
+            </div>
+
+            <div class="loyalty-actions">
+              <button class="btn btn-primary" (click)="showAwardPoints = true">Award Points</button>
+              <button class="btn btn-secondary" (click)="showRedeemPoints = true" [disabled]="selectedGuest.loyaltyMembership.pointsBalance === 0">Redeem Points</button>
+              <button class="btn btn-secondary" (click)="showAdjustPoints = true">Adjust Points</button>
+            </div>
+
+            <div *ngIf="showAwardPoints" class="form-panel">
+              <h4>Award Points</h4>
+              <div class="form-group">
+                <label>Points</label>
+                <input type="number" [(ngModel)]="awardPointsDto.points" class="form-input" min="1" />
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <input type="text" [(ngModel)]="awardPointsDto.description" class="form-input" placeholder="Reason for awarding points" />
+              </div>
+              <div class="form-group">
+                <label>Reference (optional)</label>
+                <input type="text" [(ngModel)]="awardPointsDto.reference" class="form-input" placeholder="Reservation ID, Folio ID, etc." />
+              </div>
+              <div class="form-group">
+                <label>Reference Type</label>
+                <select [(ngModel)]="awardPointsDto.referenceType" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="RESERVATION">Reservation</option>
+                  <option value="FOLIO">Folio</option>
+                  <option value="MANUAL">Manual</option>
+                  <option value="NIGHT_AUDIT">Night Audit</option>
+                </select>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" (click)="awardPoints()" [disabled]="!awardPointsDto.points">Award</button>
+                <button class="btn btn-secondary" (click)="showAwardPoints = false">Cancel</button>
+              </div>
+            </div>
+
+            <div *ngIf="showRedeemPoints" class="form-panel">
+              <h4>Redeem Points</h4>
+              <div class="form-group">
+                <label>Points (Available: {{ selectedGuest?.loyaltyMembership?.pointsBalance }})</label>
+                <input type="number" [(ngModel)]="redeemPointsDto.points" class="form-input" min="1" [max]="selectedGuest?.loyaltyMembership?.pointsBalance || 0" />
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <input type="text" [(ngModel)]="redeemPointsDto.description" class="form-input" placeholder="Reason for redeeming points" />
+              </div>
+              <div class="form-group">
+                <label>Reference (optional)</label>
+                <input type="text" [(ngModel)]="redeemPointsDto.reference" class="form-input" placeholder="Reservation ID, Folio ID, etc." />
+              </div>
+              <div class="form-group">
+                <label>Reference Type</label>
+                <select [(ngModel)]="redeemPointsDto.referenceType" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="RESERVATION">Reservation</option>
+                  <option value="FOLIO">Folio</option>
+                  <option value="MANUAL">Manual</option>
+                </select>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" (click)="redeemPoints()" [disabled]="!redeemPointsDto.points">Redeem</button>
+                <button class="btn btn-secondary" (click)="showRedeemPoints = false">Cancel</button>
+              </div>
+            </div>
+
+            <div *ngIf="showAdjustPoints" class="form-panel">
+              <h4>Adjust Points</h4>
+              <div class="form-group">
+                <label>Points Adjustment (positive or negative)</label>
+                <input type="number" [(ngModel)]="adjustPointsDto.points" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Description (required)</label>
+                <input type="text" [(ngModel)]="adjustPointsDto.description" class="form-input" placeholder="Reason for adjustment" required />
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" (click)="adjustPoints()" [disabled]="adjustPointsDto.points === 0 || !adjustPointsDto.description">Adjust</button>
+                <button class="btn btn-secondary" (click)="showAdjustPoints = false">Cancel</button>
+              </div>
+            </div>
+
+            <div class="tier-thresholds" *ngIf="tierThresholds">
+              <h4>Tier Thresholds</h4>
+              <table class="threshold-table">
+                <thead>
+                  <tr>
+                    <th>Tier</th>
+                    <th>Min Lifetime Points</th>
+                    <th>Max Lifetime Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let tier of loyaltyTiers" [class.current]="selectedGuest.loyaltyMembership?.tier === tier">
+                    <td><span class="tier-badge" [class]="getTierClass(tier)">{{ getTierIcon(tier) }} {{ tier }}</span></td>
+                    <td>{{ tierThresholds[tier].min }}</td>
+                    <td>{{ tierThresholds[tier].max || '∞' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="activeTab === 'History'" class="tab-pane">
+          <h3>Loyalty Transaction History</h3>
+          <div class="transaction-table-container" *ngIf="selectedGuest?.loyaltyTransactions?.length">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Points</th>
+                  <th>Description</th>
+                  <th>Reference</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let tx of selectedGuest.loyaltyTransactions; trackBy: trackByTransactionId">
+                  <td>{{ formatDateTime(tx.createdAt) }}</td>
+                  <td><span class="tx-type" [class]="tx.type.toLowerCase()">{{ tx.type }}</span></td>
+                  <td [class.positive]="tx.points > 0" [class.negative]="tx.points < 0">
+                    {{ tx.points > 0 ? '+' : '' }}{{ tx.points }}
+                  </td>
+                  <td>{{ tx.description }}</td>
+                  <td>{{ tx.reference || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div *ngIf="!selectedGuest?.loyaltyTransactions?.length" class="empty-state">No loyalty transactions</div>
+        </div>
+
+        <div *ngIf="activeTab === 'Reservations'" class="tab-pane">
+          <h3>Stay History</h3>
+          <div class="reservation-list" *ngIf="selectedGuest?.reservations?.length">
+            <div class="reservation-card" *ngFor="let res of selectedGuest.reservations">
+              <div class="res-header">
+                <span class="confirmation">{{ res.confirmationNumber }}</span>
+                <span class="status-badge" [class]="'status-' + res.status.toLowerCase()">{{ res.status }}</span>
+              </div>
+              <div class="res-dates">
+                <span>{{ formatDate(res.arrivalDate) }} – {{ formatDate(res.departureDate) }}</span>
+                <span class="amount">{{ res.totalAmount | number:'1.2-2' }} {{ res.currency }}</span>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!selectedGuest?.reservations?.length" class="empty-state">No reservation history</div>
+        </div>
+
+        <div *ngIf="activeTab === 'Folios'" class="tab-pane">
+          <h3>Folio Activity</h3>
+          <div class="folio-list" *ngIf="selectedGuest?.folios?.length">
+            <div class="folio-card" *ngFor="let folio of selectedGuest.folios">
+              <div class="folio-header">
+                <span class="folio-number">{{ folio.folioNumber }}</span>
+                <span class="status-badge" [class]="'status-' + folio.status.toLowerCase()">{{ folio.status }}</span>
+              </div>
+              <div class="folio-balance">
+                <span class="balance" [class.negative]="folio.balance > 0">{{ folio.balance | number:'1.2-2' }} {{ folio.currency }}</span>
+                <span class="folio-date">{{ formatDate(folio.createdAt) }}</span>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!selectedGuest?.folios?.length" class="empty-state">No folio activity</div>
+        </div>
+      </div>
+    </main>
+
+    <div class="empty-state-panel" *ngIf="!selectedGuest">
+      <div class="empty-icon">👤</div>
+      <h3>Select a Guest</h3>
+      <p>Search and select a guest from the list to view their CRM profile, preferences, and loyalty information.</p>
+    </div>
+  </div>
+</div>

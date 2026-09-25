@@ -11,6 +11,7 @@ import { seedFolios } from './seed-folios';
 import { seedFnb } from './seed-fnb';
 import { seedSpa } from './seed-spa';
 import { seedEvents } from './seed-events';
+import { seedCrmLoyalty } from './seed-crm-loyalty';
 
 export async function seedDemo(): Promise<void> {
   const prisma = getPrismaClient();
@@ -52,6 +53,9 @@ export async function seedDemo(): Promise<void> {
 
   console.log('\n--- Phase 7: Events & Banquets ---');
   await seedEvents(property.id);
+
+  console.log('\n--- Phase 8: CRM & Loyalty ---');
+  await seedCrmLoyalty(property.id);
 
   console.log('\n=== HMS Demo Seed - Complete ===\n');
   const counts = {

@@ -505,6 +505,55 @@ export async function seedIamBaseline() {
       description: 'Complete event execution and post charges to guest folio',
       module: 'EVENTS',
     },
+    // ── CRM & Loyalty ─────────────────────────────────────────────────
+    {
+      code: 'crm.guest.view',
+      name: 'View Guest CRM Profile',
+      description: 'View guest CRM profile, VIP status, notes, and communication preferences',
+      module: 'CRM',
+    },
+    {
+      code: 'crm.guest.manage',
+      name: 'Manage Guest CRM Profile',
+      description: 'Create and update guest CRM profiles, VIP flags, and tags',
+      module: 'CRM',
+    },
+    {
+      code: 'crm.preference.view',
+      name: 'View Guest Preferences',
+      description: 'View guest preferences across categories',
+      module: 'CRM',
+    },
+    {
+      code: 'crm.preference.manage',
+      name: 'Manage Guest Preferences',
+      description: 'Create, update, and delete guest preferences',
+      module: 'CRM',
+    },
+    {
+      code: 'loyalty.membership.view',
+      name: 'View Loyalty Membership',
+      description: 'View loyalty membership, tier, and points balance',
+      module: 'LOYALTY',
+    },
+    {
+      code: 'loyalty.membership.manage',
+      name: 'Manage Loyalty Membership',
+      description: 'Create and update loyalty memberships and tiers',
+      module: 'LOYALTY',
+    },
+    {
+      code: 'loyalty.points.view',
+      name: 'View Loyalty Points',
+      description: 'View loyalty points balance and transaction history',
+      module: 'LOYALTY',
+    },
+    {
+      code: 'loyalty.points.adjust',
+      name: 'Adjust Loyalty Points',
+      description: 'Award, redeem, or manually adjust loyalty points',
+      module: 'LOYALTY',
+    },
   ];
 
   const permMap = new Map<string, string>();
@@ -584,6 +633,14 @@ export async function seedIamBaseline() {
         'spa.appointment.create',
         'spa.appointment.manage',
         'spa.appointment.complete',
+        'crm.guest.view',
+        'crm.guest.manage',
+        'crm.preference.view',
+        'crm.preference.manage',
+        'loyalty.membership.view',
+        'loyalty.membership.manage',
+        'loyalty.points.view',
+        'loyalty.points.adjust',
       ],
     },
     {
@@ -643,6 +700,14 @@ export async function seedIamBaseline() {
         'events.booking.manage',
         'events.booking.confirm',
         'events.booking.complete',
+        'crm.guest.view',
+        'crm.guest.manage',
+        'crm.preference.view',
+        'crm.preference.manage',
+        'loyalty.membership.view',
+        'loyalty.membership.manage',
+        'loyalty.points.view',
+        'loyalty.points.adjust',
       ],
     },
     {

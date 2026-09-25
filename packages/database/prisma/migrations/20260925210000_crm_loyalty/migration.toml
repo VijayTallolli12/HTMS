@@ -1,0 +1,4 @@
+migration_id = "20260925210000_crm_loyalty"
+started_at = "2026-09-25T21:00:00.000Z"
+finished_at = "2026-09-25T21:00:00.000Z"
+datamodel_steps = 4

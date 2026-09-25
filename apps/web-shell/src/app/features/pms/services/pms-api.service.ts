@@ -66,6 +66,24 @@ import {
   RunNightAuditRequest,
   NightAuditRecoveryRequest,
   PropertyBusinessDateDto,
+  // CRM & Loyalty
+  GuestCrmProfileDto,
+  CreateGuestCrmProfileDto,
+  UpdateGuestCrmProfileDto,
+  GuestPreferenceDto,
+  CreateGuestPreferenceDto,
+  UpdateGuestPreferenceDto,
+  GuestSearchDto,
+  GuestSearchResultDto,
+  GuestRelationshipViewDto,
+  LoyaltyMembershipDto,
+  CreateLoyaltyMembershipDto,
+  LoyaltyTransactionDto,
+  AwardPointsDto,
+  RedeemPointsDto,
+  AdjustPointsDto,
+  QueryLoyaltyTransactionsDto,
+  LoyaltyTierThresholds,
 } from '@hms/api-contracts';
 import { environment } from '../../../../environments/environment';
 
@@ -603,6 +621,121 @@ export class PmsApiService {
   getNightAuditRunById(propertyId: string, runId: string) {
     return this.http.get<ApiSuccessResponse<NightAuditRunDto>>(
       `${this.pmsUrl(propertyId)}/night-audit/runs/${runId}`,
+    );
+  }
+
+  // ==========================================
+  // CRM & LOYALTY
+  // ==========================================
+  searchGuests(propertyId: string, query?: GuestSearchDto) {
+    const params: string[] = [];
+    if (query?.query) params.push(`query=${encodeURIComponent(query.query)}`);
+    if (query?.vipOnly) params.push(`vipOnly=true`);
+    if (query?.tier) params.push(`tier=${query.tier}`);
+    if (query?.page) params.push(`page=${query.page}`);
+    if (query?.limit) params.push(`limit=${query.limit}`);
+
+    const q = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<
+      ApiSuccessResponse<{ items: GuestSearchResultDto[]; total: number; page: number; limit: number }>
+    >(`${this.pmsUrl(propertyId)}/crm/guests/search${q}`);
+  }
+
+  getGuestProfile(propertyId: string, guestId: string) {
+    return this.http.get<ApiSuccessResponse<GuestCrmProfileDto>>(
+      `${this.pmsUrl(propertyId)}/crm/guests/${guestId}/profile`,
+    );
+  }
+
+  updateGuestProfile(propertyId: string, guestId: string, dto: UpdateGuestCrmProfileDto) {
+    return this.http.put<ApiSuccessResponse<GuestCrmProfileDto>>(
+      `${this.pmsUrl(propertyId)}/crm/guests/${guestId}/profile`,
+      dto,
+    );
+  }
+
+  listPreferences(propertyId: string, guestId: string) {
+    return this.http.get<ApiSuccessResponse<GuestPreferenceDto[]>>(
+      `${this.pmsUrl(propertyId)}/crm/guests/${guestId}/preferences`,
+    );
+  }
+
+  createPreference(propertyId: string, guestId: string, dto: CreateGuestPreferenceDto) {
+    return this.http.post<ApiSuccessResponse<GuestPreferenceDto>>(
+      `${this.pmsUrl(propertyId)}/crm/guests/${guestId}/preferences`,
+      dto,
+    );
+  }
+
+  updatePreference(propertyId: string, guestId: string, category: string, preference: string, dto: UpdateGuestPreferenceDto) {
+    return this.http.put<ApiSuccessResponse<GuestPreferenceDto>>(
+      `${this.pmsUrl(propertyId)}/crm/guests/${guestId}/preferences/${category}/${preference}`,
+      dto,
+    );
+  }
+
+  deletePreference(propertyId: string, guestId: string, category: string, preference: string) {
+    return this.http.delete(
+      `${this.pmsUrl(propertyId)}/crm/guests/${guestId}/preferences/${category}/${preference}`,
+    );
+  }
+
+  getGuestRelationshipView(propertyId: string, guestId: string) {
+    return this.http.get<ApiSuccessResponse<GuestRelationshipViewDto>>(
+      `${this.pmsUrl(propertyId)}/crm/guests/${guestId}/relationship`,
+    );
+  }
+
+  getLoyaltyMembership(propertyId: string, guestId: string) {
+    return this.http.get<ApiSuccessResponse<LoyaltyMembershipDto | null>>(
+      `${this.pmsUrl(propertyId)}/crm/loyalty/memberships/${guestId}`,
+    );
+  }
+
+  createLoyaltyMembership(propertyId: string, dto: CreateLoyaltyMembershipDto) {
+    return this.http.post<ApiSuccessResponse<LoyaltyMembershipDto>>(
+      `${this.pmsUrl(propertyId)}/crm/loyalty/memberships`,
+      dto,
+    );
+  }
+
+  awardPoints(propertyId: string, dto: AwardPointsDto) {
+    return this.http.post<ApiSuccessResponse<LoyaltyTransactionDto>>(
+      `${this.pmsUrl(propertyId)}/crm/loyalty/points/award`,
+      dto,
+    );
+  }
+
+  redeemPoints(propertyId: string, dto: RedeemPointsDto) {
+    return this.http.post<ApiSuccessResponse<LoyaltyTransactionDto>>(
+      `${this.pmsUrl(propertyId)}/crm/loyalty/points/redeem`,
+      dto,
+    );
+  }
+
+  adjustPoints(propertyId: string, dto: AdjustPointsDto) {
+    return this.http.post<ApiSuccessResponse<LoyaltyTransactionDto>>(
+      `${this.pmsUrl(propertyId)}/crm/loyalty/points/adjust`,
+      dto,
+    );
+  }
+
+  getLoyaltyTransactions(propertyId: string, query?: QueryLoyaltyTransactionsDto) {
+    const params: string[] = [];
+    if (query?.membershipId) params.push(`membershipId=${query.membershipId}`);
+    if (query?.type) params.push(`type=${query.type}`);
+    if (query?.page) params.push(`page=${query.page}`);
+    if (query?.limit) params.push(`limit=${query.limit}`);
+
+    const q = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<
+      ApiSuccessResponse<{ items: LoyaltyTransactionDto[]; total: number; page: number; limit: number }>
+    >(`${this.pmsUrl(propertyId)}/crm/loyalty/transactions${q}`);
+  }
+
+  getLoyaltyTiers(propertyId: string) {
+    return this.http.get<ApiSuccessResponse<LoyaltyTierThresholds>>(
+      `${this.pmsUrl(propertyId)}/crm/loyalty/tiers`,
     );
   }
 }

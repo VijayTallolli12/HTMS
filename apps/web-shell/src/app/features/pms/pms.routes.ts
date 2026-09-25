@@ -95,6 +95,12 @@ export const PMS_ROUTES: Routes = [
     title: 'Spa & Wellness',
   },
   {
+    path: 'crm',
+    loadComponent: () =>
+      import('./crm/crm-workspace.component').then((m) => m.CrmWorkspaceComponent),
+    title: 'CRM & Loyalty',
+  },
+  {
     path: 'events',
     loadComponent: () =>
       import('../events/events-workspace.component').then((m) => m.EventsWorkspaceComponent),

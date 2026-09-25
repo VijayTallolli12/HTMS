@@ -53,6 +53,9 @@ import { EngineeringModule } from './engineering/engineering.module';
 // Night Audit
 import { NightAuditModule } from './night-audit/night-audit.module';
 
+// CRM & Loyalty
+import { CrmModule } from './crm/crm.module';
+
 @Module({
   imports: [
     ReservationsModule,
@@ -62,6 +65,7 @@ import { NightAuditModule } from './night-audit/night-audit.module';
     HousekeepingModule,
     EngineeringModule,
     NightAuditModule,
+    CrmModule,
   ],
   controllers: [
     RoomTypeController,
@@ -122,6 +126,7 @@ import { NightAuditModule } from './night-audit/night-audit.module';
     HousekeepingModule,
     EngineeringModule,
     NightAuditModule,
+    CrmModule,
   ],
 })
 export class PmsModule {}
