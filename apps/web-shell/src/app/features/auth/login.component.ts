@@ -136,11 +136,11 @@ interface SlideItem {
 
         <!-- Visual Content Top: Luxury Brand Header -->
         <div class="visual-header">
-          <div class="visual-brand-pill">
+          <!--<div class="visual-brand-pill">
             <span class="pill-dot"></span>
             <span>ENTERPRISE HOSPITALITY ARCHITECTURE</span>
           </div>
-          <div class="property-tag">Tokyo Grandeur Palace · Flagship Property</div>
+          <div class="property-tag">Tokyo Grandeur Palace · Flagship Property</div>-->
         </div>
 
         <!-- Visual Content Center: Rotating Storytelling Slides (No Arrows) -->
@@ -159,7 +159,7 @@ interface SlideItem {
           </div>
 
           <!-- Live Operational Card Overlay -->
-          <div class="operational-live-badge">
+          <!--<div class="operational-live-badge">
             <div class="live-indicator">
               <span class="pulse-ring"></span>
               <span class="pulse-dot"></span>
@@ -181,7 +181,7 @@ interface SlideItem {
                 <span class="metric-val">99.1%</span>
               </div>
             </div>
-          </div>
+          </div>-->
         </div>
 
         <!-- Visual Content Bottom: Pagination Dots with subtle progress -->
@@ -211,11 +211,11 @@ interface SlideItem {
         <div class="auth-panel-scroll">
           <div class="auth-panel-content">
             <!-- Brand Mark Header -->
-            <header class="auth-brand-header">
+            <!--<header class="auth-brand-header">
               <div class="enterprise-brand-lockup">
                 <hms-brand-logo variant="full" size="lg"></hms-brand-logo>
               </div>
-            </header>
+            </header>-->
 
             <!-- Welcome Intro -->
             <div class="welcome-section">
@@ -374,8 +374,8 @@ interface SlideItem {
                 <span>{{ branding.applicationName() }} v1.0</span>
                 <span class="sep">·</span>
                 <span>Multi-Tenant Sovereignty</span>
-                <span class="sep">·</span>
-                <span>Audit Trail Active</span>
+                <!--<span class="sep">·</span>
+                <span>Audit Trail Active</span>-->
               </div>
             </footer>
           </div>
