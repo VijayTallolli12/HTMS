@@ -17,12 +17,34 @@ import {
 } from './services/spa-api.service';
 import {
   SpaServiceDto,
+  SpaServiceDetailDto,
+  SpaServicePriceDto,
   SpaTherapistDto,
   SpaRoomDto,
   SpaAppointmentDto,
   SpaAppointmentStatus,
   SpaSettlementType,
   SpaPaymentMethod,
+  SpaServiceCategoryDto,
+  SpaServiceAddonDto,
+  SpaServiceAvailability,
+  CreateSpaServiceDto,
+  UpdateSpaServiceDto,
+  CreateSpaTherapistDto,
+  UpdateSpaTherapistDto,
+  CreateSpaRoomDto,
+  UpdateSpaRoomDto,
+  CreateSpaAppointmentDto,
+  UpdateSpaAppointmentStatusDto,
+  CompleteSpaAppointmentDto,
+  QuerySpaAppointmentsDto,
+  CreateSpaServiceCategoryDto,
+  UpdateSpaServiceCategoryDto,
+  CreateSpaServiceAddonDto,
+  UpdateSpaServiceAddonDto,
+  UpdateSpaServicePriceDto,
+  UpdateSpaServiceAvailabilityDto,
+  QuerySpaServicesDto,
 } from '@hms/api-contracts';
 import {
   HmsButtonComponent,
@@ -33,7 +55,7 @@ import {
   HmsEmptyComponent,
 } from '../../shared/index';
 
-type ActiveSpaTab = 'appointments' | 'services' | 'team';
+type ActiveSpaTab = 'appointments' | 'services' | 'pricing' | 'team';
 
 @Component({
   selector: 'app-spa-workspace',
@@ -70,10 +92,38 @@ export class SpaWorkspaceComponent implements OnInit {
 
   // Spa Data
   services = signal<SpaServiceDto[]>([]);
+  categories = signal<SpaServiceCategoryDto[]>([]);
   therapists = signal<SpaTherapistDto[]>([]);
   rooms = signal<SpaRoomDto[]>([]);
   appointments = signal<SpaAppointmentDto[]>([]);
   inHouseGuests = signal<InHouseGuestOption[]>([]);
+
+  // Service Filters
+  serviceCategoryFilter = signal<string>('');
+  serviceAvailabilityFilter = signal<string>('');
+  serviceActiveFilter = signal<string>('');
+  serviceSearch = signal<string>('');
+
+  // Filtered Services
+  filteredServices = computed(() => {
+    let list = this.services();
+    const cat = this.serviceCategoryFilter();
+    const avail = this.serviceAvailabilityFilter();
+    const active = this.serviceActiveFilter();
+    const search = this.serviceSearch().toLowerCase();
+
+    if (cat) list = list.filter((s) => s.categoryId === cat);
+    if (avail) list = list.filter((s) => s.availability === avail);
+    if (active) list = list.filter((s) => s.isActive === (active === 'true'));
+    if (search) {
+      list = list.filter(
+        (s) =>
+          s.name.toLowerCase().includes(search) ||
+          s.code.toLowerCase().includes(search),
+      );
+    }
+    return list;
+  });
 
   // Filtered Appointments
   filteredAppointments = computed(() => {
@@ -89,6 +139,23 @@ export class SpaWorkspaceComponent implements OnInit {
   // Modals state
   showBookModal = signal<boolean>(false);
   showCompleteModal = signal<boolean>(false);
+  showServiceModal = signal<boolean>(false);
+  showCategoryModal = signal<boolean>(false);
+
+  // Service Modal State
+  editingService: SpaServiceDto | null = null;
+  serviceForm: Partial<CreateSpaServiceDto> = {};
+  serviceFormErrors: Record<string, string> = {};
+
+  // Category Modal State
+  editingCategory: SpaServiceCategoryDto | null = null;
+  categoryForm: Partial<CreateSpaServiceCategoryDto> = {};
+  categoryFormErrors: Record<string, string> = {};
+
+  // Price Edit Modal State
+  editingPriceService: SpaServiceDto | null = null;
+  priceEditValue: string | number = '';
+  priceEditError: string = '';
 
   // Booking Form State
   bookServiceId = '';
@@ -110,8 +177,8 @@ export class SpaWorkspaceComponent implements OnInit {
 
   // Complete & Settle Form State
   targetAppointment = signal<SpaAppointmentDto | null>(null);
-  completeSettlementType: SpaSettlementType = 'ROOM_CHARGE';
-  completePaymentMethod: SpaPaymentMethod = 'ROOM_CHARGE';
+  completeSettlementType = SpaSettlementType.ROOM_CHARGE;
+  completePaymentMethod = SpaPaymentMethod.ROOM_CHARGE;
   completeSelectedGuestResId = '';
   completeManualRoomNumber = '';
 
@@ -145,6 +212,10 @@ export class SpaWorkspaceComponent implements OnInit {
   loadAllSpaData(propertyId: string): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
+
+    this.spaApi.getCategories(propertyId).subscribe({
+      next: (res) => this.categories.set(res.data || []),
+    });
 
     this.spaApi.getServices(propertyId).subscribe({
       next: (res) => this.services.set(res.data || []),
@@ -191,12 +262,290 @@ export class SpaWorkspaceComponent implements OnInit {
   }
 
   // -------------------------------------------------------------
+  // Service Filters
+  // -------------------------------------------------------------
+  onServiceFilterChange(): void {
+    // Filters are reactive via computed
+  }
+
+  clearServiceFilters(): void {
+    this.serviceCategoryFilter.set('');
+    this.serviceAvailabilityFilter.set('');
+    this.serviceActiveFilter.set('');
+    this.serviceSearch.set('');
+  }
+
+  // -------------------------------------------------------------
+  // Category Management
+  // -------------------------------------------------------------
+  openCategoryModal(category?: SpaServiceCategoryDto): void {
+    if (category) {
+      this.editingCategory = category;
+      this.categoryForm = {
+        code: category.code,
+        name: category.name,
+        description: category.description || '',
+        displayOrder: category.displayOrder,
+        isActive: category.isActive,
+      };
+    } else {
+      this.editingCategory = null;
+      this.categoryForm = {
+        code: '',
+        name: '',
+        description: '',
+        displayOrder: 0,
+        isActive: true,
+      };
+    }
+    this.categoryFormErrors = {};
+    this.showCategoryModal.set(true);
+  }
+
+  closeCategoryModal(): void {
+    this.showCategoryModal.set(false);
+    this.editingCategory = null;
+    this.categoryForm = {};
+  }
+
+  validateCategoryForm(): boolean {
+    const errors: Record<string, string> = {};
+    if (!this.categoryForm.code?.trim()) errors.code = 'Code is required';
+    if (!this.categoryForm.name?.trim()) errors.name = 'Name is required';
+    this.categoryFormErrors = errors;
+    return Object.keys(errors).length === 0;
+  }
+
+  confirmCategory(): void {
+    if (!this.validateCategoryForm()) return;
+
+    const prop = this.activeProperty();
+    if (!prop?.id) return;
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+
+    const dto: CreateSpaServiceCategoryDto = {
+      code: this.categoryForm.code!.trim().toUpperCase(),
+      name: this.categoryForm.name!.trim(),
+      description: this.categoryForm.description?.trim(),
+      displayOrder: this.categoryForm.displayOrder || 0,
+      isActive: this.categoryForm.isActive !== undefined ? this.categoryForm.isActive : true,
+    };
+
+    const request = this.editingCategory
+      ? this.spaApi.updateCategory(prop.id, this.editingCategory.id, dto)
+      : this.spaApi.createCategory(prop.id, dto);
+
+    request.subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.showCategoryModal.set(false);
+        this.successMessage.set(
+          this.editingCategory
+            ? `Category "${this.editingCategory.name}" updated successfully.`
+            : `Category "${dto.name}" created successfully.`,
+        );
+        this.loadAllSpaData(prop.id);
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.errorMessage.set(err?.error?.message || 'Failed to save category');
+      },
+    });
+  }
+
+  // -------------------------------------------------------------
+  // Service Management
+  // -------------------------------------------------------------
+  openServiceModal(service?: SpaServiceDto): void {
+    if (service) {
+      this.editingService = service;
+      this.serviceForm = {
+        categoryId: service.categoryId ?? undefined,
+        code: service.code,
+        name: service.name,
+        description: service.description ?? undefined,
+        durationMinutes: service.durationMinutes,
+        price: service.price,
+        currency: service.currency,
+        isActive: service.isActive,
+        availability: service.availability,
+        eligibleTherapistIds: service.eligibleTherapistIds ?? undefined,
+        eligibleRoomTypes: service.eligibleRoomTypes ?? undefined,
+      };
+    } else {
+      this.editingService = null;
+      this.serviceForm = {
+        categoryId: undefined,
+        code: '',
+        name: '',
+        description: undefined,
+        durationMinutes: 60,
+        price: '0',
+        currency: 'JPY',
+        isActive: true,
+        availability: SpaServiceAvailability.AVAILABLE,
+        eligibleTherapistIds: undefined,
+        eligibleRoomTypes: undefined,
+      };
+    }
+    this.serviceFormErrors = {};
+    this.showServiceModal.set(true);
+  }
+
+  closeServiceModal(): void {
+    this.showServiceModal.set(false);
+    this.editingService = null;
+    this.serviceForm = {};
+  }
+
+  validateServiceForm(): boolean {
+    const errors: Record<string, string> = {};
+    if (!this.serviceForm.code?.trim()) errors.code = 'Code is required';
+    if (!this.serviceForm.name?.trim()) errors.name = 'Name is required';
+    if (!this.serviceForm.durationMinutes || this.serviceForm.durationMinutes < 15) {
+      errors.durationMinutes = 'Duration must be at least 15 minutes';
+    }
+    if (!this.serviceForm.price || Number(this.serviceForm.price) <= 0) {
+      errors.price = 'Price must be positive';
+    }
+    this.serviceFormErrors = errors;
+    return Object.keys(errors).length === 0;
+  }
+
+  confirmService(): void {
+    if (!this.validateServiceForm()) return;
+
+    const prop = this.activeProperty();
+    if (!prop?.id) return;
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+
+    const dto: CreateSpaServiceDto = {
+      categoryId: this.serviceForm.categoryId || undefined,
+      code: this.serviceForm.code!.trim().toUpperCase(),
+      name: this.serviceForm.name!.trim(),
+      description: this.serviceForm.description?.trim(),
+      durationMinutes: this.serviceForm.durationMinutes || 60,
+      price: this.serviceForm.price!.toString(),
+      currency: this.serviceForm.currency || 'JPY',
+      isActive: this.serviceForm.isActive !== undefined ? this.serviceForm.isActive : true,
+      availability: this.serviceForm.availability as SpaServiceAvailability || 'AVAILABLE',
+      eligibleTherapistIds: this.serviceForm.eligibleTherapistIds,
+      eligibleRoomTypes: this.serviceForm.eligibleRoomTypes,
+    };
+
+    const request = this.editingService
+      ? this.spaApi.updateService(prop.id, this.editingService.id, dto)
+      : this.spaApi.createService(prop.id, dto);
+
+    request.subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.showServiceModal.set(false);
+        this.successMessage.set(
+          this.editingService
+            ? `Service "${this.editingService.name}" updated successfully.`
+            : `Service "${dto.name}" created successfully.`,
+        );
+        this.loadAllSpaData(prop.id);
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.errorMessage.set(err?.error?.message || 'Failed to save service');
+      },
+    });
+  }
+
+  toggleServiceAvailability(service: SpaServiceDto): void {
+    const prop = this.activeProperty();
+    if (!prop?.id) return;
+
+    const newAvailability: SpaServiceAvailability =
+      service.availability === SpaServiceAvailability.AVAILABLE
+        ? SpaServiceAvailability.UNAVAILABLE
+        : SpaServiceAvailability.AVAILABLE;
+
+    this.isSubmitting.set(true);
+    this.spaApi
+      .updateServiceAvailability(prop.id, service.id, { availability: newAvailability })
+      .subscribe({
+        next: () => {
+          this.isSubmitting.set(false);
+          this.successMessage.set(
+            `Service "${service.name}" is now ${newAvailability.toLowerCase()}.`,
+          );
+          this.loadAllSpaData(prop.id);
+        },
+        error: (err) => {
+          this.isSubmitting.set(false);
+          this.errorMessage.set(err?.error?.message || 'Failed to update availability');
+        },
+      });
+  }
+
+  // -------------------------------------------------------------
+  // Price Edit Modal
+  // -------------------------------------------------------------
+  openPriceModal(service: SpaServiceDto): void {
+    this.editingPriceService = service;
+    this.priceEditValue = service.price;
+    this.priceEditError = '';
+  }
+
+  closePriceModal(): void {
+    this.editingPriceService = null;
+    this.priceEditValue = '';
+    this.priceEditError = '';
+  }
+
+  validatePriceEdit(): boolean {
+    const value = Number(this.priceEditValue);
+    if (!this.priceEditValue || value <= 0) {
+      this.priceEditError = 'Price must be a positive number';
+      return false;
+    }
+    this.priceEditError = '';
+    return true;
+  }
+
+  confirmPriceEdit(): void {
+    if (!this.validatePriceEdit()) return;
+
+    const prop = this.activeProperty();
+    const service = this.editingPriceService;
+    if (!prop?.id || !service) return;
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+
+    this.spaApi
+      .updateServicePrice(prop.id, service.id, { price: this.priceEditValue })
+      .subscribe({
+        next: () => {
+          this.isSubmitting.set(false);
+          this.closePriceModal();
+          this.successMessage.set(
+            `Price for "${service.name}" updated to ${this.formatPrice(this.priceEditValue, service.currency)}.`,
+          );
+          this.loadAllSpaData(prop.id);
+        },
+        error: (err) => {
+          this.isSubmitting.set(false);
+          this.errorMessage.set(err?.error?.message || 'Failed to update price');
+        },
+      });
+  }
+
+  // -------------------------------------------------------------
   // Booking Appointment
   // -------------------------------------------------------------
   openBookModal(): void {
-    const sList = this.services();
-    const tList = this.therapists();
-    const rList = this.rooms();
+    const sList = this.services().filter((s) => s.isActive && s.availability === SpaServiceAvailability.AVAILABLE);
+    const tList = this.therapists().filter((t) => t.isActive);
+    const rList = this.rooms().filter((r) => r.status === 'AVAILABLE');
 
     this.bookServiceId = sList.length > 0 ? sList[0].id : '';
     this.bookTherapistId = tList.length > 0 ? tList[0].id : '';
@@ -312,12 +661,11 @@ export class SpaWorkspaceComponent implements OnInit {
   // -------------------------------------------------------------
   openCompleteModal(appt: SpaAppointmentDto): void {
     this.targetAppointment.set(appt);
-    this.completeSettlementType = appt.roomNumber ? 'ROOM_CHARGE' : 'DIRECT_PAY';
-    this.completePaymentMethod = appt.roomNumber ? 'ROOM_CHARGE' : 'CREDIT_CARD';
+    this.completeSettlementType = appt.roomNumber ? SpaSettlementType.ROOM_CHARGE : SpaSettlementType.DIRECT_PAY;
+    this.completePaymentMethod = appt.roomNumber ? SpaPaymentMethod.ROOM_CHARGE : SpaPaymentMethod.CREDIT_CARD;
     this.completeManualRoomNumber = appt.roomNumber || '';
     this.completeSelectedGuestResId = appt.reservationId || '';
 
-    // If reservation not already set but room number exists, find in inHouseGuests
     if (!this.completeSelectedGuestResId && appt.roomNumber) {
       const match = this.inHouseGuests().find(
         (g) => g.roomNumber.toLowerCase() === appt.roomNumber?.toLowerCase(),
@@ -342,7 +690,7 @@ export class SpaWorkspaceComponent implements OnInit {
     let reservationId: string | undefined = undefined;
     let folioId: string | undefined = undefined;
 
-    if (this.completeSettlementType === 'ROOM_CHARGE') {
+    if (this.completeSettlementType === SpaSettlementType.ROOM_CHARGE) {
       if (this.completeSelectedGuestResId) {
         const guest = this.inHouseGuests().find(
           (g) => g.reservationId === this.completeSelectedGuestResId,
@@ -367,8 +715,8 @@ export class SpaWorkspaceComponent implements OnInit {
       .completeAppointment(prop.id, appt.id, {
         settlementType: this.completeSettlementType,
         paymentMethod:
-          this.completeSettlementType === 'ROOM_CHARGE'
-            ? 'ROOM_CHARGE'
+          this.completeSettlementType === SpaSettlementType.ROOM_CHARGE
+            ? SpaPaymentMethod.ROOM_CHARGE
             : this.completePaymentMethod,
         roomNumber,
         reservationId,
@@ -379,7 +727,7 @@ export class SpaWorkspaceComponent implements OnInit {
           this.isSubmitting.set(false);
           this.showCompleteModal.set(false);
 
-          if (res.data.settlementType === 'ROOM_CHARGE') {
+          if (res.data.settlementType === SpaSettlementType.ROOM_CHARGE) {
             this.successMessage.set(
               `Appointment #${res.data.appointmentNumber} completed and posted to Room ${res.data.roomNumber} folio. Cashier Tx #${res.data.folioTransactionId}.`,
             );
@@ -421,6 +769,19 @@ export class SpaWorkspaceComponent implements OnInit {
     }
   }
 
+  getAvailabilityPillVariant(
+    availability: SpaServiceAvailability,
+  ): 'success' | 'danger' | 'default' {
+    switch (availability) {
+      case 'AVAILABLE':
+        return 'success';
+      case 'UNAVAILABLE':
+        return 'danger';
+      default:
+        return 'default';
+    }
+  }
+
   formatPrice(price: string | number, currency = 'JPY'): string {
     const num = Number(price) || 0;
     if (currency === 'JPY') {
@@ -442,5 +803,10 @@ export class SpaWorkspaceComponent implements OnInit {
       return `${start} - ${end}`;
     }
   }
-}
 
+  getCategoryName(categoryId?: string | null): string {
+    if (!categoryId) return 'Uncategorized';
+    const cat = this.categories().find((c) => c.id === categoryId);
+    return cat?.name || 'Unknown';
+  }
+}

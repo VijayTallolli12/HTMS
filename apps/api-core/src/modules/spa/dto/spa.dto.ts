@@ -18,6 +18,13 @@ import {
   SpaAppointmentStatus,
   SpaSettlementType,
   SpaPaymentMethod,
+  SpaServiceAvailability,
+  SpaRoomType as SpaRoomTypeEnum,
+  SpaRoomStatus as SpaRoomStatusEnum,
+  SpaAppointmentStatus as SpaAppointmentStatusEnum,
+  SpaSettlementType as SpaSettlementTypeEnum,
+  SpaPaymentMethod as SpaPaymentMethodEnum,
+  SpaServiceAvailability as SpaServiceAvailabilityEnum,
 } from '@hms/api-contracts';
 
 // ==========================================
@@ -39,7 +46,13 @@ export class CreateSpaServiceDto {
   @ApiPropertyOptional({ example: 'Intensive muscle therapy' })
   @IsString()
   @IsOptional()
+  @MaxLength(500)
   description?: string;
+
+  @ApiPropertyOptional({ description: 'Category UUID' })
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
 
   @ApiPropertyOptional({ example: 60, default: 60 })
   @IsInt()
@@ -61,40 +74,21 @@ export class CreateSpaServiceDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
-}
 
-export class UpdateSpaServiceDto {
-  @ApiPropertyOptional({ example: 'Deep Tissue Massage Deluxe' })
+  @ApiPropertyOptional({ enum: ['AVAILABLE', 'UNAVAILABLE'], default: 'AVAILABLE' })
+  @IsOptional()
+  @IsEnum(SpaServiceAvailability)
+  availability?: SpaServiceAvailability;
+
+  @ApiPropertyOptional({ description: 'JSON array of therapist IDs eligible for this service' })
+  @IsOptional()
   @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  name?: string;
+  eligibleTherapistIds?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'JSON array of room types eligible for this service' })
+  @IsOptional()
   @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiPropertyOptional({ example: 75 })
-  @IsInt()
-  @Min(15)
-  @IsOptional()
-  durationMinutes?: number;
-
-  @ApiPropertyOptional({ example: 17000 })
-  @IsOptional()
-  price?: string | number;
-
-  @ApiPropertyOptional({ example: 'JPY' })
-  @IsString()
-  @IsOptional()
-  @MaxLength(3)
-  currency?: string;
-
-  @ApiPropertyOptional()
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
+  eligibleRoomTypes?: string;
 }
 
 // ==========================================
@@ -282,6 +276,7 @@ export class CompleteSpaAppointmentDto {
   @ApiPropertyOptional({ example: '104' })
   @IsString()
   @IsOptional()
+  @MaxLength(20)
   roomNumber?: string;
 
   @ApiPropertyOptional({ example: 'uuid-res-1' })
@@ -327,3 +322,233 @@ export class QuerySpaAppointmentsDto {
   roomId?: string;
 }
 
+// ==========================================
+// SPA SERVICE CATEGORY DTO
+// ==========================================
+export class CreateSpaServiceCategoryDto {
+  @ApiProperty({ example: 'MASSAGE', description: 'Category code' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(30)
+  code!: string;
+
+  @ApiProperty({ example: 'Massages', description: 'Category name' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  name!: string;
+
+  @ApiPropertyOptional({ example: 'Massage treatments and therapies' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @ApiPropertyOptional({ example: 1, default: 0 })
+  @IsOptional()
+  @IsInt()
+  displayOrder?: number;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdateSpaServiceCategoryDto {
+  @ApiPropertyOptional({ example: 'Massages & Therapies' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'All massage treatments and therapies' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @ApiPropertyOptional({ example: 2 })
+  @IsOptional()
+  @IsInt()
+  displayOrder?: number;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+// ==========================================
+// SPA SERVICE ADDON DTO
+// ==========================================
+export class CreateSpaServiceAddonDto {
+  @ApiProperty({ description: 'Service UUID' })
+  @IsString()
+  @IsNotEmpty()
+  serviceId!: string;
+
+  @ApiProperty({ example: 'ADDON-HOTSTONE', description: 'Addon unique code' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(30)
+  code!: string;
+
+  @ApiProperty({ example: 'Hot Stone Enhancement', description: 'Addon name' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  name!: string;
+
+  @ApiPropertyOptional({ example: 'Premium heated basalt stones' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @ApiPropertyOptional({ example: '3000', description: 'Price adjustment' })
+  @IsOptional()
+  priceAdjustment?: string | number;
+
+  @ApiPropertyOptional({ example: 'JPY', default: 'JPY' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3)
+  currency?: string;
+
+  @ApiPropertyOptional({ default: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
+export class UpdateSpaServiceAddonDto {
+  @ApiPropertyOptional({ example: 'Hot Stone Enhancement Deluxe' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @ApiPropertyOptional({ example: '4000' })
+  @IsOptional()
+  priceAdjustment?: string | number;
+
+  @ApiPropertyOptional({ example: 'JPY' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3)
+  currency?: string;
+
+  @ApiPropertyOptional({ default: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
+// ==========================================
+// SPA SERVICE UPDATES
+// ==========================================
+export class UpdateSpaServiceDto {
+  @ApiPropertyOptional({ example: 'Deep Tissue Massage Deluxe' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({ example: 75 })
+  @IsInt()
+  @Min(15)
+  @IsOptional()
+  durationMinutes?: number;
+
+  @ApiPropertyOptional({ example: 17000 })
+  @IsOptional()
+  price?: string | number;
+
+  @ApiPropertyOptional({ example: 'JPY' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(3)
+  currency?: string;
+
+  @ApiPropertyOptional({ enum: ['AVAILABLE', 'UNAVAILABLE'], default: 'AVAILABLE' })
+  @IsOptional()
+  @IsEnum(SpaServiceAvailability)
+  availability?: SpaServiceAvailability;
+
+  @ApiPropertyOptional({ description: 'JSON array of therapist IDs eligible for this service' })
+  @IsOptional()
+  @IsString()
+  eligibleTherapistIds?: string;
+
+  @ApiPropertyOptional({ description: 'JSON array of room types eligible for this service' })
+  @IsOptional()
+  @IsString()
+  eligibleRoomTypes?: string;
+
+  @ApiPropertyOptional({ description: 'Category UUID' })
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ default: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
+export class UpdateSpaServiceAvailabilityDto {
+  @ApiProperty({ enum: ['AVAILABLE', 'UNAVAILABLE'], description: 'Availability status' })
+  @IsEnum(SpaServiceAvailability)
+  availability!: SpaServiceAvailability;
+}
+
+export class UpdateSpaServicePriceDto {
+  @ApiProperty({ description: 'New base price' })
+  price!: string | number;
+}
+
+export class QuerySpaServicesDto {
+  @ApiPropertyOptional({ description: 'Filter by category UUID' })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ enum: ['AVAILABLE', 'UNAVAILABLE'], description: 'Filter by availability' })
+  @IsOptional()
+  @IsEnum(SpaServiceAvailability)
+  availability?: SpaServiceAvailability;
+
+  @ApiPropertyOptional({ description: 'Filter by active status' })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'Search by name or code' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ description: 'Page number (default 1)' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ description: 'Items per page (default 20)' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  limit?: number = 20;
+}

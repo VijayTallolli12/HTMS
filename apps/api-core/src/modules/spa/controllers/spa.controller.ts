@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -16,10 +17,15 @@ import { createApiResponse } from '../../../common/utils/api-response.util';
 import {
   ApiSuccessResponse,
   SpaServiceDto,
+  SpaServiceDetailDto,
+  SpaServicePriceDto,
   SpaTherapistDto,
   SpaRoomDto,
   SpaAppointmentDto,
   SecurityContext,
+  SpaServiceCategoryDto,
+  SpaServiceAddonDto,
+  SpaServiceAvailability,
 } from '@hms/api-contracts';
 import {
   CurrentSecurityContext,
@@ -37,6 +43,13 @@ import {
   UpdateSpaAppointmentStatusDto,
   CompleteSpaAppointmentDto,
   QuerySpaAppointmentsDto,
+  CreateSpaServiceCategoryDto,
+  UpdateSpaServiceCategoryDto,
+  CreateSpaServiceAddonDto,
+  UpdateSpaServiceAddonDto,
+  UpdateSpaServicePriceDto,
+  UpdateSpaServiceAvailabilityDto,
+  QuerySpaServicesDto,
 } from '../dto/spa.dto';
 
 @ApiTags('Spa Operations')
@@ -49,20 +62,65 @@ export class SpaController {
   ) {}
 
   // ----------------------------------------------------------------------
+  // Service Categories
+  // ----------------------------------------------------------------------
+  @Get('categories')
+  @RequirePermissions('spa.catalog.view')
+  @ApiOperation({ summary: 'List spa service categories for property' })
+  async getCategories(
+    @Param('propertyId') propertyId: string,
+    @Query('includeInactive') includeInactive?: boolean,
+  ): Promise<ApiSuccessResponse<SpaServiceCategoryDto[]>> {
+    const categories = await this.catalogService.getCategories(propertyId, includeInactive);
+    return createApiResponse(categories);
+  }
+
+  @Get('categories/:id')
+  @RequirePermissions('spa.catalog.view')
+  @ApiOperation({ summary: 'Get spa service category by id' })
+  async getCategory(
+    @Param('propertyId') propertyId: string,
+    @Param('id') id: string,
+  ): Promise<ApiSuccessResponse<SpaServiceCategoryDto>> {
+    const category = await this.catalogService.getCategory(propertyId, id);
+    return createApiResponse(category);
+  }
+
+  @Post('categories')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermissions('spa.catalog.manage')
+  @ApiOperation({ summary: 'Create new spa service category' })
+  async createCategory(
+    @Param('propertyId') propertyId: string,
+    @Body() dto: CreateSpaServiceCategoryDto,
+  ): Promise<ApiSuccessResponse<SpaServiceCategoryDto>> {
+    const created = await this.catalogService.createCategory(propertyId, dto);
+    return createApiResponse(created);
+  }
+
+  @Patch('categories/:id')
+  @RequirePermissions('spa.catalog.manage')
+  @ApiOperation({ summary: 'Update spa service category' })
+  async updateCategory(
+    @Param('propertyId') propertyId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateSpaServiceCategoryDto,
+  ): Promise<ApiSuccessResponse<SpaServiceCategoryDto>> {
+    const updated = await this.catalogService.updateCategory(propertyId, id, dto);
+    return createApiResponse(updated);
+  }
+
+  // ----------------------------------------------------------------------
   // Services
   // ----------------------------------------------------------------------
   @Get('services')
   @RequirePermissions('spa.service.view')
   @ApiOperation({ summary: 'List spa services for property' })
-  @ApiResponse({ status: 200, description: 'List of spa treatments' })
   async getServices(
     @Param('propertyId') propertyId: string,
-    @Query('includeInactive') includeInactive?: boolean,
+    @Query() query: QuerySpaServicesDto,
   ): Promise<ApiSuccessResponse<SpaServiceDto[]>> {
-    const services = await this.catalogService.getServices(
-      propertyId,
-      includeInactive,
-    );
+    const services = await this.catalogService.getServices(propertyId, query);
     return createApiResponse(services);
   }
 
@@ -74,6 +132,17 @@ export class SpaController {
     @Param('id') id: string,
   ): Promise<ApiSuccessResponse<SpaServiceDto>> {
     const service = await this.catalogService.getService(propertyId, id);
+    return createApiResponse(service);
+  }
+
+  @Get('services/:id/detail')
+  @RequirePermissions('spa.service.view')
+  @ApiOperation({ summary: 'Get spa service detail with addons' })
+  async getServiceDetail(
+    @Param('propertyId') propertyId: string,
+    @Param('id') id: string,
+  ): Promise<ApiSuccessResponse<SpaServiceDetailDto>> {
+    const service = await this.catalogService.getServiceDetail(propertyId, id);
     return createApiResponse(service);
   }
 
@@ -101,6 +170,94 @@ export class SpaController {
     return createApiResponse(updated);
   }
 
+  @Patch('services/:id/price')
+  @RequirePermissions('spa.pricing.manage')
+  @ApiOperation({ summary: 'Update spa service base price' })
+  async updateServicePrice(
+    @Param('propertyId') propertyId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateSpaServicePriceDto,
+  ): Promise<ApiSuccessResponse<SpaServicePriceDto>> {
+    const updated = await this.catalogService.updateServicePrice(propertyId, id, dto);
+    return createApiResponse(updated);
+  }
+
+  @Patch('services/:id/availability')
+  @RequirePermissions('spa.availability.manage')
+  @ApiOperation({ summary: 'Update spa service availability' })
+  async updateServiceAvailability(
+    @Param('propertyId') propertyId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateSpaServiceAvailabilityDto,
+  ): Promise<ApiSuccessResponse<SpaServiceDto>> {
+    const updated = await this.catalogService.updateServiceAvailability(propertyId, id, dto);
+    return createApiResponse(updated);
+  }
+
+  // ----------------------------------------------------------------------
+  // Service Addons
+  // ----------------------------------------------------------------------
+  @Get('services/:serviceId/addons')
+  @RequirePermissions('spa.catalog.view')
+  @ApiOperation({ summary: 'List addons for a spa service' })
+  async getAddons(
+    @Param('propertyId') propertyId: string,
+    @Param('serviceId') serviceId: string,
+  ): Promise<ApiSuccessResponse<SpaServiceAddonDto[]>> {
+    const addons = await this.catalogService.getAddons(propertyId, serviceId);
+    return createApiResponse(addons);
+  }
+
+  @Get('services/:serviceId/addons/:id')
+  @RequirePermissions('spa.catalog.view')
+  @ApiOperation({ summary: 'Get spa service addon by id' })
+  async getAddon(
+    @Param('propertyId') propertyId: string,
+    @Param('serviceId') serviceId: string,
+    @Param('id') id: string,
+  ): Promise<ApiSuccessResponse<SpaServiceAddonDto>> {
+    const addon = await this.catalogService.getAddon(propertyId, id);
+    return createApiResponse(addon);
+  }
+
+  @Post('services/:serviceId/addons')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermissions('spa.catalog.manage')
+  @ApiOperation({ summary: 'Create new spa service addon' })
+  async createAddon(
+    @Param('propertyId') propertyId: string,
+    @Param('serviceId') serviceId: string,
+    @Body() dto: CreateSpaServiceAddonDto,
+  ): Promise<ApiSuccessResponse<SpaServiceAddonDto>> {
+    const created = await this.catalogService.createAddon(propertyId, { ...dto, serviceId });
+    return createApiResponse(created);
+  }
+
+  @Patch('services/:serviceId/addons/:id')
+  @RequirePermissions('spa.catalog.manage')
+  @ApiOperation({ summary: 'Update spa service addon' })
+  async updateAddon(
+    @Param('propertyId') propertyId: string,
+    @Param('serviceId') serviceId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateSpaServiceAddonDto,
+  ): Promise<ApiSuccessResponse<SpaServiceAddonDto>> {
+    const updated = await this.catalogService.updateAddon(propertyId, id, dto);
+    return createApiResponse(updated);
+  }
+
+  @Delete('services/:serviceId/addons/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermissions('spa.catalog.manage')
+  @ApiOperation({ summary: 'Delete spa service addon' })
+  async deleteAddon(
+    @Param('propertyId') propertyId: string,
+    @Param('serviceId') serviceId: string,
+    @Param('id') id: string,
+  ): Promise<void> {
+    await this.catalogService.deleteAddon(propertyId, id);
+  }
+
   // ----------------------------------------------------------------------
   // Therapists
   // ----------------------------------------------------------------------
@@ -111,10 +268,7 @@ export class SpaController {
     @Param('propertyId') propertyId: string,
     @Query('includeInactive') includeInactive?: boolean,
   ): Promise<ApiSuccessResponse<SpaTherapistDto[]>> {
-    const therapists = await this.catalogService.getTherapists(
-      propertyId,
-      includeInactive,
-    );
+    const therapists = await this.catalogService.getTherapists(propertyId, includeInactive);
     return createApiResponse(therapists);
   }
 
@@ -235,10 +389,7 @@ export class SpaController {
     @Param('propertyId') propertyId: string,
     @Query() query: QuerySpaAppointmentsDto,
   ): Promise<ApiSuccessResponse<SpaAppointmentDto[]>> {
-    const appointments = await this.appointmentService.getAppointments(
-      propertyId,
-      query,
-    );
+    const appointments = await this.appointmentService.getAppointments(propertyId, query);
     return createApiResponse(appointments);
   }
 
@@ -249,10 +400,7 @@ export class SpaController {
     @Param('propertyId') propertyId: string,
     @Param('id') id: string,
   ): Promise<ApiSuccessResponse<SpaAppointmentDto>> {
-    const appointment = await this.appointmentService.getAppointment(
-      propertyId,
-      id,
-    );
+    const appointment = await this.appointmentService.getAppointment(propertyId, id);
     return createApiResponse(appointment);
   }
 
@@ -265,11 +413,7 @@ export class SpaController {
     @Body() dto: CreateSpaAppointmentDto,
     @CurrentSecurityContext() actor: SecurityContext,
   ): Promise<ApiSuccessResponse<SpaAppointmentDto>> {
-    const created = await this.appointmentService.createAppointment(
-      propertyId,
-      dto,
-      actor.userId,
-    );
+    const created = await this.appointmentService.createAppointment(propertyId, dto, actor.userId);
     return createApiResponse(created);
   }
 
@@ -282,12 +426,7 @@ export class SpaController {
     @Body() dto: UpdateSpaAppointmentStatusDto,
     @CurrentSecurityContext() actor: SecurityContext,
   ): Promise<ApiSuccessResponse<SpaAppointmentDto>> {
-    const updated = await this.appointmentService.updateAppointmentStatus(
-      propertyId,
-      id,
-      dto,
-      actor.userId,
-    );
+    const updated = await this.appointmentService.updateAppointmentStatus(propertyId, id, dto, actor.userId);
     return createApiResponse(updated);
   }
 
@@ -300,13 +439,7 @@ export class SpaController {
     @Body() dto: CompleteSpaAppointmentDto,
     @CurrentSecurityContext() actor: SecurityContext,
   ): Promise<ApiSuccessResponse<SpaAppointmentDto>> {
-    const completed = await this.appointmentService.completeAppointment(
-      propertyId,
-      id,
-      dto,
-      actor,
-    );
+    const completed = await this.appointmentService.completeAppointment(propertyId, id, dto, actor);
     return createApiResponse(completed);
   }
 }
-

@@ -76,6 +76,20 @@
       <button
         type="button"
         class="nav-tab-btn"
+        [class.active]="activeTab() === 'pricing'"
+        (click)="activeTab.set('pricing')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="6" x2="12" y2="18"></line>
+          <line x1="6" y1="12" x2="18" y2="12"></line>
+        </svg>
+        Pricing
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
         [class.active]="activeTab() === 'team'"
         (click)="activeTab.set('team')"
       >
@@ -275,30 +289,188 @@
   <!-- TAB 2: TREATMENTS & SERVICES -->
   <!-- ========================================================================= -->
   <div *ngIf="!isLoading() && activeTab() === 'services'" class="tab-content">
-    <div class="catalog-grid">
-      <div *ngFor="let s of services()" class="service-card">
+    <!-- Toolbar -->
+    <div class="sub-toolbar-card">
+      <div class="toolbar-left">
+        <hms-button
+          variant="gold"
+          *ngIf="hasPermission('spa.service.manage')"
+          (click)="openServiceModal()"
+        >
+          + Add Service
+        </hms-button>
+        <hms-button
+          variant="outline"
+          *ngIf="hasPermission('spa.catalog.manage')"
+          (click)="openCategoryModal()"
+        >
+          Manage Categories
+        </hms-button>
+      </div>
+
+      <div class="toolbar-right">
+        <div class="filter-group">
+          <select class="form-select filter-select" [(ngModel)]="serviceCategoryFilter" (change)="onServiceFilterChange()">
+            <option value="">All Categories</option>
+            <option *ngFor="let c of categories()" [value]="c.id">{{ c.name }}</option>
+          </select>
+          <select class="form-select filter-select" [(ngModel)]="serviceAvailabilityFilter" (change)="onServiceFilterChange()">
+            <option value="">All Availability</option>
+            <option value="AVAILABLE">Available</option>
+            <option value="UNAVAILABLE">Unavailable</option>
+          </select>
+          <select class="form-select filter-select" [(ngModel)]="serviceActiveFilter" (change)="onServiceFilterChange()">
+            <option value="">All Status</option>
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </select>
+          <input type="text" class="form-input filter-input" placeholder="Search services..." [(ngModel)]="serviceSearch" (input)="onServiceFilterChange()" />
+          <button class="btn-icon" (click)="clearServiceFilters()" title="Clear filters">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredServices().length === 0" class="empty-wrap">
+      <hms-empty
+        title="No Services Found"
+        description="No spa services match the current filters. Add a new service to get started."
+      ></hms-empty>
+    </div>
+
+    <!-- Services Grid -->
+    <div class="services-grid" *ngIf="filteredServices().length > 0">
+      <div class="service-card" *ngFor="let s of filteredServices()">
         <div class="service-header">
           <span class="service-code font-mono">{{ s.code }}</span>
           <span class="service-price font-mono">{{ formatPrice(s.price, s.currency) }}</span>
         </div>
         <h3 class="service-title">{{ s.name }}</h3>
         <p class="service-desc">{{ s.description || 'Restorative spa treatment designed for holistic relaxation.' }}</p>
-        <div class="service-footer">
+        <div class="service-meta">
+          <span class="service-category" *ngIf="s.categoryName">{{ getCategoryName(s.categoryId) }}</span>
           <span class="service-duration">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mini-icon">
               <circle cx="12" cy="12" r="10"></circle>
               <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
-            {{ s.durationMinutes }} Minutes
+            {{ s.durationMinutes }} min
           </span>
-          <span class="service-status-dot">&bull; Active</span>
+        </div>
+        <div class="service-footer">
+          <hms-status-pill
+            [status]="getAvailabilityPillVariant(s.availability)"
+            [label]="s.availability"
+            size="sm"
+          ></hms-status-pill>
+          <span class="service-status-dot" [class.inactive]="!s.isActive">&bull; {{ s.isActive ? 'Active' : 'Inactive' }}</span>
+        </div>
+        <div class="service-actions" *ngIf="hasPermission('spa.service.manage') || hasPermission('spa.availability.manage')">
+          <button
+            type="button"
+            class="btn-icon-action"
+            (click)="toggleServiceAvailability(s)"
+            [title]="s.availability === 'AVAILABLE' ? 'Mark Unavailable' : 'Mark Available'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" *ngIf="s.availability === 'AVAILABLE'">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" *ngIf="s.availability === 'UNAVAILABLE'">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="16"></line>
+              <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="btn-icon-action"
+            (click)="openServiceModal(s)"
+            title="Edit Service"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- TAB 3: THERAPISTS & SUITES -->
+  <!-- TAB 3: PRICING -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'pricing'" class="tab-content">
+    <div class="pricing-toolbar">
+      <div class="toolbar-left">
+        <h2 class="section-title">Service Pricing</h2>
+      </div>
+      <div class="toolbar-right">
+        <span class="currency-note">All prices in {{ activeProperty()?.currency || 'JPY' }}</span>
+      </div>
+    </div>
+
+    <div class="pricing-table-container">
+      <table class="pricing-table">
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Category</th>
+            <th>Duration</th>
+            <th>Base Price</th>
+            <th>Availability</th>
+            <th>Status</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of services()">
+            <td>
+              <div class="service-info">
+                <span class="service-code font-mono">{{ s.code }}</span>
+                <span class="service-name">{{ s.name }}</span>
+              </div>
+            </td>
+            <td>{{ getCategoryName(s.categoryId) }}</td>
+            <td class="font-mono">{{ s.durationMinutes }} min</td>
+            <td class="font-mono price-cell">{{ formatPrice(s.price, s.currency) }}</td>
+            <td>
+              <hms-status-pill
+                [status]="getAvailabilityPillVariant(s.availability)"
+                [label]="s.availability"
+                size="sm"
+              ></hms-status-pill>
+            </td>
+            <td>
+              <span class="status-badge" [class.inactive]="!s.isActive">{{ s.isActive ? 'Active' : 'Inactive' }}</span>
+            </td>
+            <td class="actions-col">
+              <button
+                type="button"
+                class="btn-icon-action"
+                *ngIf="hasPermission('spa.pricing.manage')"
+                (click)="openPriceModal(s)"
+                title="Edit Price"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 4: THERAPISTS & SUITES -->
   <!-- ========================================================================= -->
   <div *ngIf="!isLoading() && activeTab() === 'team'" class="tab-content">
     <div class="team-layout">
@@ -315,7 +487,7 @@
                 <span>{{ th.phone }}</span> &bull; <span>{{ th.email }}</span>
               </div>
             </div>
-            <span class="roster-badge">&bull; Available</span>
+            <span class="roster-badge" [class.inactive]="!th.isActive">&bull; {{ th.isActive ? 'Available' : 'Inactive' }}</span>
           </div>
         </div>
       </div>
@@ -602,5 +774,280 @@
       </hms-button>
     </div>
   </hms-modal>
-</div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL: CREATE/EDIT SERVICE -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="showServiceModal()"
+    [title]="editingService ? 'Edit Spa Service' : 'Create Spa Service'"
+    (closed)="closeServiceModal()"
+  >
+    <div class="modal-form-body">
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-select" [(ngModel)]="serviceForm.categoryId">
+          <option value="">-- Select Category (Optional) --</option>
+          <option *ngFor="let c of categories()" [value]="c.id">{{ c.name }}</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Service Code <span class="required">*</span></label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="serviceForm.code"
+            placeholder="e.g. SPA-SIG"
+            maxlength="30"
+          />
+          <span class="error-text" *ngIf="serviceFormErrors['code']">{{ serviceFormErrors['code'] }}</span>
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Currency</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="serviceForm.currency"
+            placeholder="JPY"
+            maxlength="3"
+            readonly
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Service Name <span class="required">*</span></label>
+        <input
+          type="text"
+          class="form-input"
+          [(ngModel)]="serviceForm.name"
+          placeholder="e.g. Signature Hot Stone Massage"
+          maxlength="100"
+        />
+        <span class="error-text" *ngIf="serviceFormErrors['name']">{{ serviceFormErrors['name'] }}</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea
+          class="form-textarea"
+          [(ngModel)]="serviceForm.description"
+          rows="3"
+          placeholder="Describe the treatment, techniques, and benefits..."
+        ></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Duration (minutes) <span class="required">*</span></label>
+          <select class="form-select" [(ngModel)]="serviceForm.durationMinutes">
+            <option value="30">30</option>
+            <option value="45">45</option>
+            <option value="60">60</option>
+            <option value="75">75</option>
+            <option value="90">90</option>
+            <option value="120">120</option>
+          </select>
+          <span class="error-text" *ngIf="serviceFormErrors['durationMinutes']">{{ serviceFormErrors['durationMinutes'] }}</span>
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Base Price <span class="required">*</span></label>
+          <input
+            type="number"
+            class="form-input"
+            [(ngModel)]="serviceForm.price"
+            placeholder="e.g. 18000"
+            min="0.01"
+            step="100"
+          />
+          <span class="error-text" *ngIf="serviceFormErrors['price']">{{ serviceFormErrors['price'] }}</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Availability</label>
+          <select class="form-select" [(ngModel)]="serviceForm.availability">
+            <option value="AVAILABLE">Available</option>
+            <option value="UNAVAILABLE">Unavailable</option>
+          </select>
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Status</label>
+          <select class="form-select" [(ngModel)]="serviceForm.isActive">
+            <option [value]="true">Active</option>
+            <option [value]="false">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Eligible Therapist IDs (JSON array)</label>
+        <input
+          type="text"
+          class="form-input"
+          [(ngModel)]="serviceForm.eligibleTherapistIds"
+          placeholder='["therapist-id-1", "therapist-id-2"]'
+        />
+        <small class="form-hint">Optional: Restrict this service to specific therapists</small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Eligible Room Types (JSON array)</label>
+        <input
+          type="text"
+          class="form-input"
+          [(ngModel)]="serviceForm.eligibleRoomTypes"
+          placeholder='["SINGLE", "COUPLES"]'
+        />
+        <small class="form-hint">Optional: Restrict this service to specific room types</small>
+      </div>
+    </div>
+
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="closeServiceModal()">Cancel</hms-button>
+      <hms-button
+        variant="gold"
+        [disabled]="isSubmitting()"
+        (click)="confirmService()"
+      >
+        <span *ngIf="!isSubmitting()">{{ editingService ? 'Save Changes' : 'Create Service' }}</span>
+        <span *ngIf="isSubmitting()">Saving...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CREATE/EDIT CATEGORY -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="showCategoryModal()"
+    [title]="editingCategory ? 'Edit Service Category' : 'Create Service Category'"
+    (closed)="closeCategoryModal()"
+  >
+    <div class="modal-form-body">
+      <div class="form-group">
+        <label class="form-label">Category Code <span class="required">*</span></label>
+        <input
+          type="text"
+          class="form-input"
+          [(ngModel)]="categoryForm.code"
+          placeholder="e.g. MASSAGE"
+          maxlength="30"
+        />
+        <span class="error-text" *ngIf="categoryFormErrors['code']">{{ categoryFormErrors['code'] }}</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Category Name <span class="required">*</span></label>
+        <input
+          type="text"
+          class="form-input"
+          [(ngModel)]="categoryForm.name"
+          placeholder="e.g. Massages & Therapies"
+          maxlength="100"
+        />
+        <span class="error-text" *ngIf="categoryFormErrors['name']">{{ categoryFormErrors['name'] }}</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea
+          class="form-textarea"
+          [(ngModel)]="categoryForm.description"
+          rows="2"
+          placeholder="Category description..."
+        ></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Display Order</label>
+          <input
+            type="number"
+            class="form-input"
+            [(ngModel)]="categoryForm.displayOrder"
+            placeholder="0"
+            min="0"
+          />
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Status</label>
+          <select class="form-select" [(ngModel)]="categoryForm.isActive">
+            <option [value]="true">Active</option>
+            <option [value]="false">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="closeCategoryModal()">Cancel</hms-button>
+      <hms-button
+        variant="gold"
+        [disabled]="isSubmitting()"
+        (click)="confirmCategory()"
+      >
+        <span *ngIf="!isSubmitting()">{{ editingCategory ? 'Save Changes' : 'Create Category' }}</span>
+        <span *ngIf="isSubmitting()">Saving...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: EDIT PRICE (Quick Price Edit) -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="editingPriceService"
+    [title]="'Edit Price: ' + editingPriceService.name"
+    (closed)="closePriceModal()"
+  >
+    <div class="modal-form-body">
+      <div class="price-edit-summary">
+        <div class="summary-row">
+          <span>Service:</span>
+          <strong>{{ editingPriceService.name }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Code:</span>
+          <span class="font-mono">{{ editingPriceService.code }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Duration:</span>
+          <span>{{ editingPriceService.durationMinutes }} minutes</span>
+        </div>
+        <div class="summary-row">
+          <span>Current Price:</span>
+          <span class="font-mono font-bold current-price">{{ formatPrice(editingPriceService.price, editingPriceService.currency) }}</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">New Base Price <span class="required">*</span></label>
+        <input
+          type="number"
+          class="form-input"
+          [(ngModel)]="priceEditValue"
+          placeholder="Enter new price"
+          min="0.01"
+          step="100"
+        />
+        <span class="error-text" *ngIf="priceEditError">{{ priceEditError }}</span>
+      </div>
+    </div>
+
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="closePriceModal()">Cancel</hms-button>
+      <hms-button
+        variant="gold"
+        [disabled]="isSubmitting() || priceEditError"
+        (click)="confirmPriceEdit()"
+      >
+        <span *ngIf="!isSubmitting()">Update Price</span>
+        <span *ngIf="isSubmitting()">Updating...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
+</div>

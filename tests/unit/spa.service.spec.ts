@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { Prisma } from '@prisma/client';
 import { SpaAppointmentService } from '../../apps/api-core/src/modules/spa/services/spa-appointment.service';
 import { SpaCatalogService } from '../../apps/api-core/src/modules/spa/services/spa-catalog.service';
-import { SecurityContext } from '@hms/api-contracts';
+import { SecurityContext, SpaAppointmentStatus, SpaSettlementType, SpaPaymentMethod } from '@hms/api-contracts';
 
 describe('Spa Operations Service Suite', () => {
   const propertyId = '01a00000-0000-7000-0000-000000000001';
@@ -330,40 +330,40 @@ describe('Spa Operations Service Suite', () => {
       mockPrisma.spaAppointment.findFirst.mockResolvedValue(scheduledAppt);
       mockPrisma.spaAppointment.update.mockResolvedValue({
         ...scheduledAppt,
-        status: 'CONFIRMED',
+        status: SpaAppointmentStatus.CONFIRMED,
       });
 
       const confirmed = await appointmentService.updateAppointmentStatus(
         propertyId,
         appointmentId,
-        { status: 'CONFIRMED' },
+        { status: SpaAppointmentStatus.CONFIRMED },
         actorId,
       );
-      expect(confirmed.status).toBe('CONFIRMED');
+      expect(confirmed.status).toBe(SpaAppointmentStatus.CONFIRMED);
 
       mockPrisma.spaAppointment.findFirst.mockResolvedValue({
         ...scheduledAppt,
-        status: 'CONFIRMED',
+        status: SpaAppointmentStatus.CONFIRMED,
       });
       mockPrisma.spaAppointment.update.mockResolvedValue({
         ...scheduledAppt,
-        status: 'IN_PROGRESS',
+        status: SpaAppointmentStatus.IN_PROGRESS,
       });
 
       const inProgress = await appointmentService.updateAppointmentStatus(
         propertyId,
         appointmentId,
-        { status: 'IN_PROGRESS' },
+        { status: SpaAppointmentStatus.IN_PROGRESS },
         actorId,
       );
-      expect(inProgress.status).toBe('IN_PROGRESS');
+      expect(inProgress.status).toBe(SpaAppointmentStatus.IN_PROGRESS);
     });
 
     it('should reject invalid transition (e.g. SCHEDULED directly to COMPLETED)', async () => {
       const scheduledAppt = {
         id: appointmentId,
         propertyId,
-        status: 'SCHEDULED',
+        status: SpaAppointmentStatus.SCHEDULED,
         service: { name: 'Deep Tissue Recovery' },
         therapist: { name: 'Aoi Tanaka' },
         room: { name: 'Zen Suite' },
@@ -374,7 +374,7 @@ describe('Spa Operations Service Suite', () => {
         appointmentService.updateAppointmentStatus(
           propertyId,
           appointmentId,
-          { status: 'COMPLETED' },
+          { status: SpaAppointmentStatus.COMPLETED },
           actorId,
         ),
       ).rejects.toThrow(BadRequestException);
@@ -384,7 +384,7 @@ describe('Spa Operations Service Suite', () => {
       const appt = {
         id: appointmentId,
         propertyId,
-        status: 'SCHEDULED',
+        status: SpaAppointmentStatus.SCHEDULED,
         price: new Prisma.Decimal(18000),
         service: { name: 'Deep Tissue Recovery' },
         therapist: { name: 'Aoi Tanaka' },
@@ -394,17 +394,17 @@ describe('Spa Operations Service Suite', () => {
       mockPrisma.spaAppointment.findFirst.mockResolvedValue(appt);
       mockPrisma.spaAppointment.update.mockResolvedValue({
         ...appt,
-        status: 'CANCELLED',
+        status: SpaAppointmentStatus.CANCELLED,
       });
 
       const cancelled = await appointmentService.updateAppointmentStatus(
         propertyId,
         appointmentId,
-        { status: 'CANCELLED', reason: 'Guest flight delayed' },
+        { status: SpaAppointmentStatus.CANCELLED, reason: 'Guest flight delayed' },
         actorId,
       );
 
-      expect(cancelled.status).toBe('CANCELLED');
+      expect(cancelled.status).toBe(SpaAppointmentStatus.CANCELLED);
     });
   });
 
@@ -417,7 +417,7 @@ describe('Spa Operations Service Suite', () => {
         id: appointmentId,
         propertyId,
         appointmentNumber: 'SPA-20260926-0001',
-        status: 'IN_PROGRESS',
+        status: SpaAppointmentStatus.IN_PROGRESS,
         roomNumber: '104',
         guestName: 'Daniel Craig',
         price: new Prisma.Decimal(18000),
@@ -434,9 +434,9 @@ describe('Spa Operations Service Suite', () => {
       mockPrisma.spaAppointment.findFirst.mockResolvedValue(inProgressAppt);
       mockPrisma.spaAppointment.update.mockResolvedValue({
         ...inProgressAppt,
-        status: 'COMPLETED',
-        settlementType: 'ROOM_CHARGE',
-        paymentMethod: 'ROOM_CHARGE',
+        status: SpaAppointmentStatus.COMPLETED,
+        settlementType: SpaSettlementType.ROOM_CHARGE,
+        paymentMethod: SpaPaymentMethod.ROOM_CHARGE,
         folioId,
         folioTransactionId: 'tx-spa-999',
         reservationId,
@@ -446,14 +446,14 @@ describe('Spa Operations Service Suite', () => {
         propertyId,
         appointmentId,
         {
-          settlementType: 'ROOM_CHARGE',
+          settlementType: SpaSettlementType.ROOM_CHARGE,
           roomNumber: '104',
         },
         mockActor,
       );
 
-      expect(completed.status).toBe('COMPLETED');
-      expect(completed.settlementType).toBe('ROOM_CHARGE');
+      expect(completed.status).toBe(SpaAppointmentStatus.COMPLETED);
+      expect(completed.settlementType).toBe(SpaSettlementType.ROOM_CHARGE);
       expect(mockFolioService.postCharge).toHaveBeenCalledWith(
         propertyId,
         folioId,
@@ -471,7 +471,7 @@ describe('Spa Operations Service Suite', () => {
         id: appointmentId,
         propertyId,
         appointmentNumber: 'SPA-20260926-0002',
-        status: 'IN_PROGRESS',
+        status: SpaAppointmentStatus.IN_PROGRESS,
         price: new Prisma.Decimal(12000),
         currency: 'JPY',
         service: { name: 'Aromatherapy Relaxation' },
@@ -482,23 +482,23 @@ describe('Spa Operations Service Suite', () => {
       mockPrisma.spaAppointment.findFirst.mockResolvedValue(inProgressAppt);
       mockPrisma.spaAppointment.update.mockResolvedValue({
         ...inProgressAppt,
-        status: 'COMPLETED',
-        settlementType: 'DIRECT_PAY',
-        paymentMethod: 'CREDIT_CARD',
+        status: SpaAppointmentStatus.COMPLETED,
+        settlementType: SpaSettlementType.DIRECT_PAY,
+        paymentMethod: SpaPaymentMethod.CREDIT_CARD,
       });
 
       const completed = await appointmentService.completeAppointment(
         propertyId,
         appointmentId,
         {
-          settlementType: 'DIRECT_PAY',
-          paymentMethod: 'CREDIT_CARD',
+          settlementType: SpaSettlementType.DIRECT_PAY,
+          paymentMethod: SpaPaymentMethod.CREDIT_CARD,
         },
         mockActor,
       );
 
-      expect(completed.status).toBe('COMPLETED');
-      expect(completed.settlementType).toBe('DIRECT_PAY');
+      expect(completed.status).toBe(SpaAppointmentStatus.COMPLETED);
+      expect(completed.settlementType).toBe(SpaSettlementType.DIRECT_PAY);
       expect(mockFolioService.postCharge).not.toHaveBeenCalled();
     });
 
@@ -509,14 +509,14 @@ describe('Spa Operations Service Suite', () => {
       mockPrisma.spaAppointment.findFirst.mockResolvedValue({
         id: appointmentId,
         propertyId,
-        status: 'CANCELLED',
+        status: SpaAppointmentStatus.CANCELLED,
       });
 
       await expect(
         appointmentService.completeAppointment(
           propertyId,
           appointmentId,
-          { settlementType: 'DIRECT_PAY' },
+          { settlementType: SpaSettlementType.DIRECT_PAY },
           mockActor,
         ),
       ).rejects.toThrow(BadRequestException);

@@ -191,6 +191,59 @@
   border-color: var(--gold-accent, #cba135);
 }
 
+/* Filter Group */
+.filter-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  min-width: 140px;
+  background: var(--navy-primary, #0c1427);
+  border: 1px solid var(--surface-border);
+  color: var(--text-primary);
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.filter-input {
+  min-width: 200px;
+  background: var(--navy-primary, #0c1427);
+  border: 1px solid var(--surface-border);
+  color: var(--text-primary);
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  padding: 0.35rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-icon:hover {
+  color: var(--text-primary);
+  border-color: var(--gold-accent, #cba135);
+}
+
+.btn-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Appointments Grid */
 .appointments-grid {
   display: grid;
@@ -374,10 +427,10 @@
   cursor: not-allowed;
 }
 
-/* Tab 2: Catalog */
-.catalog-grid {
+/* Services Grid (Tab 2) */
+.services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.25rem;
 }
 
@@ -388,8 +441,8 @@
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   gap: 0.75rem;
+  position: relative;
 }
 
 .service-header {
@@ -423,14 +476,20 @@
   flex: 1;
 }
 
-.service-footer {
+.service-meta {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--surface-border);
+  gap: 1rem;
+  flex-wrap: wrap;
   font-size: 0.75rem;
   color: var(--text-secondary);
+}
+
+.service-category {
+  background: rgba(203, 161, 53, 0.1);
+  color: var(--gold-accent, #cba135);
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 600;
 }
 
 .service-duration {
@@ -439,17 +498,154 @@
   gap: 0.35rem;
 }
 
-.mini-icon {
-  width: 14px;
-  height: 14px;
+.service-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--surface-border);
 }
 
 .service-status-dot {
-  color: #10b981;
   font-weight: 600;
+  color: #10b981;
 }
 
-/* Tab 3: Team */
+.service-status-dot.inactive {
+  color: var(--text-secondary);
+}
+
+.service-actions {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.btn-icon-action {
+  background: transparent;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  padding: 0.35rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-icon-action:hover {
+  color: var(--text-primary);
+  border-color: var(--gold-accent, #cba135);
+  background: var(--surface-card);
+}
+
+.btn-icon-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Pricing Tab */
+.pricing-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.currency-note {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+}
+
+.pricing-table-container {
+  overflow-x: auto;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+}
+
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.pricing-table th,
+.pricing-table td {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.pricing-table th {
+  background: var(--navy-primary, #0c1427);
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pricing-table tbody tr:hover {
+  background: rgba(203, 161, 53, 0.03);
+}
+
+.pricing-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.service-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.service-info .service-code {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.service-info .service-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.price-cell {
+  font-weight: 700;
+  color: var(--gold-accent, #cba135);
+}
+
+.status-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.status-badge.inactive {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-secondary);
+}
+
+.actions-col {
+  width: 60px;
+}
+
+/* Team Layout */
 .team-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -532,6 +728,17 @@
   font-weight: 600;
 }
 
+.roster-badge.inactive {
+  color: var(--text-secondary);
+}
+
+/* Empty State */
+.empty-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 2rem;
+}
+
 /* Modals */
 .modal-form-body {
   display: flex;
@@ -559,6 +766,13 @@
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.required {
+  color: #ef4444;
 }
 
 .form-input, .form-select, .form-textarea {
@@ -573,6 +787,22 @@
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   border-color: var(--gold-accent, #cba135);
+}
+
+.form-input.error, .form-select.error {
+  border-color: #ef4444;
+}
+
+.error-text {
+  font-size: 0.7rem;
+  color: #ef4444;
+  margin-top: 0.2rem;
+}
+
+.form-hint {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
 }
 
 .toggle-group-small {
@@ -621,6 +851,10 @@
   color: var(--text-primary);
 }
 
+.current-price {
+  color: var(--gold-accent, #cba135);
+}
+
 .settle-type-selector {
   display: flex;
   flex-direction: column;
@@ -655,19 +889,77 @@
   background: rgba(203, 161, 53, 0.08);
 }
 
-.btn-icon {
-  width: 20px;
-  height: 20px;
-}
-
 .settle-subform {
   padding-top: 0.5rem;
   border-top: 1px solid var(--surface-border);
 }
 
-.form-hint {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-top: 0.25rem;
+/* Price Edit Modal */
+.price-edit-summary {
+  background: var(--navy-primary, #0c1427);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
+.price-edit-summary .summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Availability Pills */
+.availability-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.availability-pill.available {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.availability-pill.unavailable {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .spa-container {
+    padding: 1rem;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .nav-tabs {
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+
+  .nav-tab-btn {
+    white-space: nowrap;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-select, .filter-input {
+    min-width: 100%;
+  }
+}

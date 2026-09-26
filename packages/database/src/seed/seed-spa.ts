@@ -6,12 +6,69 @@ export async function seedSpa(propertyId: string): Promise<void> {
   const prisma = getPrismaClient();
   console.log('Seeding Spa Operations baseline...');
 
-  // 1. Services
+  // 1. Service Categories
+  const categories = [
+    {
+      code: 'MASSAGE',
+      name: 'Massages',
+      description: 'Therapeutic massage treatments for relaxation and recovery',
+      displayOrder: 1,
+    },
+    {
+      code: 'FACIAL',
+      name: 'Facials',
+      description: 'Rejuvenating facial treatments and skin therapies',
+      displayOrder: 2,
+    },
+    {
+      code: 'BODY',
+      name: 'Body Treatments',
+      description: 'Exfoliating, wrapping, and detoxifying body treatments',
+      displayOrder: 3,
+    },
+    {
+      code: 'BEAUTY',
+      name: 'Beauty',
+      description: 'Nail care, waxing, and beauty enhancement services',
+      displayOrder: 4,
+    },
+    {
+      code: 'WELLNESS',
+      name: 'Wellness',
+      description: 'Holistic wellness and specialty therapies',
+      displayOrder: 5,
+    },
+  ];
+
+  const categoryMap = new Map<string, string>();
+  for (const c of categories) {
+    let category = await prisma.spaServiceCategory.findFirst({
+      where: { propertyId, code: c.code },
+    });
+    if (!category) {
+      category = await prisma.spaServiceCategory.create({
+        data: {
+          id: generateUuidV7(),
+          propertyId,
+          code: c.code,
+          name: c.name,
+          description: c.description,
+          displayOrder: c.displayOrder,
+          isActive: true,
+        },
+      });
+      console.log(`  Created Spa Category: ${category.name} (${category.code})`);
+    }
+    categoryMap.set(c.code, category.id);
+  }
+
+  // 2. Services
   const services = [
     {
       code: 'SPA-SIG',
       name: 'Signature Massage',
       description: 'Our bespoke full-body therapy integrating Swedish techniques and warm volcanic stones.',
+      categoryCode: 'MASSAGE',
       durationMinutes: 90,
       price: new Prisma.Decimal(18000),
       currency: 'JPY',
@@ -20,14 +77,34 @@ export async function seedSpa(propertyId: string): Promise<void> {
       code: 'SPA-DEEP',
       name: 'Deep Tissue Massage',
       description: 'Intensive muscle recovery focusing on pressure points to alleviate chronic tension.',
+      categoryCode: 'MASSAGE',
       durationMinutes: 60,
       price: new Prisma.Decimal(15000),
+      currency: 'JPY',
+    },
+    {
+      code: 'SPA-SWEDISH',
+      name: 'Swedish Massage',
+      description: 'Classic relaxation massage with long, flowing strokes to improve circulation.',
+      categoryCode: 'MASSAGE',
+      durationMinutes: 60,
+      price: new Prisma.Decimal(14000),
+      currency: 'JPY',
+    },
+    {
+      code: 'SPA-HOTSTONE',
+      name: 'Hot Stone Massage',
+      description: 'Heated basalt stones placed on key points to melt away deep tension.',
+      categoryCode: 'MASSAGE',
+      durationMinutes: 75,
+      price: new Prisma.Decimal(17000),
       currency: 'JPY',
     },
     {
       code: 'SPA-AROMA',
       name: 'Aromatherapy',
       description: 'Gentle restorative massage infused with custom organic botanical Japanese essential oils.',
+      categoryCode: 'MASSAGE',
       durationMinutes: 60,
       price: new Prisma.Decimal(14000),
       currency: 'JPY',
@@ -36,14 +113,61 @@ export async function seedSpa(propertyId: string): Promise<void> {
       code: 'SPA-FACIAL',
       name: 'Facial Treatment',
       description: 'Rejuvenating antioxidant facial utilizing marine collagen and active botanical serums.',
+      categoryCode: 'FACIAL',
       durationMinutes: 45,
       price: new Prisma.Decimal(12000),
+      currency: 'JPY',
+    },
+    {
+      code: 'SPA-FACIAL-DLX',
+      name: 'Deluxe Anti-Aging Facial',
+      description: 'Advanced peptide and retinol therapy with LED light treatment for visible lifting.',
+      categoryCode: 'FACIAL',
+      durationMinutes: 60,
+      price: new Prisma.Decimal(18000),
+      currency: 'JPY',
+    },
+    {
+      code: 'SPA-SCRUB',
+      name: 'Body Scrub',
+      description: 'Exfoliating sea salt and rice bran scrub followed by hydrating body butter application.',
+      categoryCode: 'BODY',
+      durationMinutes: 45,
+      price: new Prisma.Decimal(13000),
+      currency: 'JPY',
+    },
+    {
+      code: 'SPA-WRAP',
+      name: 'Detox Body Wrap',
+      description: 'Marine algae wrap with infrared therapy to eliminate toxins and tone skin.',
+      categoryCode: 'BODY',
+      durationMinutes: 60,
+      price: new Prisma.Decimal(16000),
+      currency: 'JPY',
+    },
+    {
+      code: 'SPA-MANI',
+      name: 'Luxury Manicure',
+      description: 'Cuticle care, exfoliation, massage, and premium polish application.',
+      categoryCode: 'BEAUTY',
+      durationMinutes: 45,
+      price: new Prisma.Decimal(8000),
+      currency: 'JPY',
+    },
+    {
+      code: 'SPA-PEDI',
+      name: 'Luxury Pedicure',
+      description: 'Foot soak, callus removal, massage, and premium polish application.',
+      categoryCode: 'BEAUTY',
+      durationMinutes: 60,
+      price: new Prisma.Decimal(10000),
       currency: 'JPY',
     },
     {
       code: 'SPA-COUPLE',
       name: 'Couples Wellness',
       description: 'Harmonious side-by-side retreat including dual private aromatic bath and head-to-toe massage.',
+      categoryCode: 'WELLNESS',
       durationMinutes: 120,
       price: new Prisma.Decimal(32000),
       currency: 'JPY',
@@ -60,6 +184,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
         data: {
           id: generateUuidV7(),
           propertyId,
+          categoryId: categoryMap.get(s.categoryCode),
           code: s.code,
           name: s.name,
           description: s.description,
@@ -67,6 +192,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
           price: s.price,
           currency: s.currency,
           isActive: true,
+          availability: 'AVAILABLE',
         },
       });
       console.log(`  Created Spa Service: ${service.name} (${service.code})`);
@@ -74,7 +200,60 @@ export async function seedSpa(propertyId: string): Promise<void> {
     serviceMap.set(s.code, service.id);
   }
 
-  // 2. Therapists
+  // 3. Service Addons (for a few services)
+  const addons = [
+    {
+      serviceCode: 'SPA-SIG',
+      code: 'ADDON-HOTSTONE',
+      name: 'Hot Stone Enhancement',
+      description: 'Add heated basalt stones to any massage',
+      priceAdjustment: new Prisma.Decimal(3000),
+      currency: 'JPY',
+    },
+    {
+      serviceCode: 'SPA-FACIAL',
+      code: 'ADDON-LED',
+      name: 'LED Light Therapy',
+      description: 'Red/blue LED therapy for collagen stimulation',
+      priceAdjustment: new Prisma.Decimal(4000),
+      currency: 'JPY',
+    },
+    {
+      serviceCode: 'SPA-SCRUB',
+      code: 'ADDON-AROMA',
+      name: 'Aromatherapy Upgrade',
+      description: 'Custom essential oil blend for scrub',
+      priceAdjustment: new Prisma.Decimal(2000),
+      currency: 'JPY',
+    },
+  ];
+
+  for (const a of addons) {
+    const serviceId = serviceMap.get(a.serviceCode);
+    if (serviceId) {
+      let addon = await prisma.spaServiceAddon.findFirst({
+        where: { serviceId, code: a.code },
+      });
+      if (!addon) {
+        addon = await prisma.spaServiceAddon.create({
+          data: {
+            id: generateUuidV7(),
+            propertyId,
+            serviceId,
+            code: a.code,
+            name: a.name,
+            description: a.description,
+            priceAdjustment: a.priceAdjustment,
+            currency: a.currency,
+            isActive: true,
+          },
+        });
+        console.log(`  Created Spa Addon: ${addon.name} (${addon.code}) for service ${a.serviceCode}`);
+      }
+    }
+  }
+
+  // 4. Therapists
   const therapists = [
     {
       name: 'Aoi Takahashi',
@@ -93,6 +272,18 @@ export async function seedSpa(propertyId: string): Promise<void> {
       specialty: 'Holistic Wellness & Facials',
       phone: '+81 3-5555-0303',
       email: 'sakura.ito@tokyograndeur.com',
+    },
+    {
+      name: 'Yuki Nakamura',
+      specialty: 'Beauty & Nail Care',
+      phone: '+81 3-5555-0304',
+      email: 'yuki.nakamura@tokyograndeur.com',
+    },
+    {
+      name: 'Hiroshi Yamamoto',
+      specialty: 'Traditional Japanese Therapies',
+      phone: '+81 3-5555-0305',
+      email: 'hiroshi.yamamoto@tokyograndeur.com',
     },
   ];
 
@@ -118,11 +309,12 @@ export async function seedSpa(propertyId: string): Promise<void> {
     therapistMap.set(th.name, therapist.id);
   }
 
-  // 3. Treatment Rooms
+  // 5. Treatment Rooms
   const rooms = [
     { name: 'Lotus Suite', roomType: 'SINGLE' },
     { name: 'Zen Sanctuary', roomType: 'COUPLES' },
     { name: 'Bamboo Pavilion', roomType: 'HYDROTHERAPY' },
+    { name: 'Sakura Room', roomType: 'FACIAL' },
   ];
 
   const roomMap = new Map<string, string>();
@@ -145,7 +337,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
     roomMap.set(r.name, spaRoom.id);
   }
 
-  // 4. Initial Appointments
+  // 6. Initial Appointments
   const existingAppt = await prisma.spaAppointment.findFirst({
     where: { propertyId },
   });
@@ -245,4 +437,3 @@ export async function seedSpa(propertyId: string): Promise<void> {
 
   console.log('Spa baseline seeding completed.');
 }
-

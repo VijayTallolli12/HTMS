@@ -3,10 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import {
   ApiSuccessResponse,
   SpaServiceDto,
+  SpaServiceDetailDto,
+  SpaServicePriceDto,
   SpaTherapistDto,
   SpaRoomDto,
   SpaAppointmentDto,
   CreateSpaServiceDto,
+  UpdateSpaServiceDto,
   CreateSpaTherapistDto,
   CreateSpaRoomDto,
   CreateSpaAppointmentDto,
@@ -14,6 +17,16 @@ import {
   CompleteSpaAppointmentDto,
   QuerySpaAppointmentsDto,
   SpaRoomStatus,
+  SpaServiceCategoryDto,
+  CreateSpaServiceCategoryDto,
+  UpdateSpaServiceCategoryDto,
+  SpaServiceAddonDto,
+  CreateSpaServiceAddonDto,
+  UpdateSpaServiceAddonDto,
+  UpdateSpaServicePriceDto,
+  UpdateSpaServiceAvailabilityDto,
+  QuerySpaServicesDto,
+  SpaServiceAvailability,
 } from '@hms/api-contracts';
 import { environment } from '../../../../environments/environment';
 
@@ -37,11 +50,61 @@ export class SpaApiService {
   }
 
   // -------------------------------------------------------------
+  // Service Categories
+  // -------------------------------------------------------------
+  getCategories(propertyId: string, includeInactive = false) {
+    return this.http.get<ApiSuccessResponse<SpaServiceCategoryDto[]>>(
+      `${this.spaUrl(propertyId)}/categories?includeInactive=${includeInactive}`,
+    );
+  }
+
+  getCategory(propertyId: string, id: string) {
+    return this.http.get<ApiSuccessResponse<SpaServiceCategoryDto>>(
+      `${this.spaUrl(propertyId)}/categories/${id}`,
+    );
+  }
+
+  createCategory(propertyId: string, dto: CreateSpaServiceCategoryDto) {
+    return this.http.post<ApiSuccessResponse<SpaServiceCategoryDto>>(
+      `${this.spaUrl(propertyId)}/categories`,
+      dto,
+    );
+  }
+
+  updateCategory(propertyId: string, id: string, dto: UpdateSpaServiceCategoryDto) {
+    return this.http.patch<ApiSuccessResponse<SpaServiceCategoryDto>>(
+      `${this.spaUrl(propertyId)}/categories/${id}`,
+      dto,
+    );
+  }
+
+  // -------------------------------------------------------------
   // Services
   // -------------------------------------------------------------
-  getServices(propertyId: string, includeInactive = false) {
+  getServices(propertyId: string, query?: QuerySpaServicesDto) {
+    const params = new URLSearchParams();
+    if (query?.categoryId) params.set('categoryId', query.categoryId);
+    if (query?.availability) params.set('availability', query.availability);
+    if (query?.isActive !== undefined) params.set('isActive', String(query.isActive));
+    if (query?.search) params.set('search', query.search);
+    if (query?.page) params.set('page', String(query.page));
+    if (query?.limit) params.set('limit', String(query.limit));
+
+    const qs = params.toString() ? `?${params.toString()}` : '';
     return this.http.get<ApiSuccessResponse<SpaServiceDto[]>>(
-      `${this.spaUrl(propertyId)}/services?includeInactive=${includeInactive}`,
+      `${this.spaUrl(propertyId)}/services${qs}`,
+    );
+  }
+
+  getService(propertyId: string, id: string) {
+    return this.http.get<ApiSuccessResponse<SpaServiceDto>>(
+      `${this.spaUrl(propertyId)}/services/${id}`,
+    );
+  }
+
+  getServiceDetail(propertyId: string, id: string) {
+    return this.http.get<ApiSuccessResponse<SpaServiceDetailDto>>(
+      `${this.spaUrl(propertyId)}/services/${id}/detail`,
     );
   }
 
@@ -49,6 +112,62 @@ export class SpaApiService {
     return this.http.post<ApiSuccessResponse<SpaServiceDto>>(
       `${this.spaUrl(propertyId)}/services`,
       dto,
+    );
+  }
+
+  updateService(propertyId: string, id: string, dto: UpdateSpaServiceDto) {
+    return this.http.patch<ApiSuccessResponse<SpaServiceDto>>(
+      `${this.spaUrl(propertyId)}/services/${id}`,
+      dto,
+    );
+  }
+
+  updateServicePrice(propertyId: string, id: string, dto: UpdateSpaServicePriceDto) {
+    return this.http.patch<ApiSuccessResponse<SpaServicePriceDto>>(
+      `${this.spaUrl(propertyId)}/services/${id}/price`,
+      dto,
+    );
+  }
+
+  updateServiceAvailability(propertyId: string, id: string, dto: UpdateSpaServiceAvailabilityDto) {
+    return this.http.patch<ApiSuccessResponse<SpaServiceDto>>(
+      `${this.spaUrl(propertyId)}/services/${id}/availability`,
+      dto,
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Service Addons
+  // -------------------------------------------------------------
+  getAddons(propertyId: string, serviceId: string) {
+    return this.http.get<ApiSuccessResponse<SpaServiceAddonDto[]>>(
+      `${this.spaUrl(propertyId)}/services/${serviceId}/addons`,
+    );
+  }
+
+  getAddon(propertyId: string, serviceId: string, id: string) {
+    return this.http.get<ApiSuccessResponse<SpaServiceAddonDto>>(
+      `${this.spaUrl(propertyId)}/services/${serviceId}/addons/${id}`,
+    );
+  }
+
+  createAddon(propertyId: string, serviceId: string, dto: CreateSpaServiceAddonDto) {
+    return this.http.post<ApiSuccessResponse<SpaServiceAddonDto>>(
+      `${this.spaUrl(propertyId)}/services/${serviceId}/addons`,
+      dto,
+    );
+  }
+
+  updateAddon(propertyId: string, serviceId: string, id: string, dto: UpdateSpaServiceAddonDto) {
+    return this.http.patch<ApiSuccessResponse<SpaServiceAddonDto>>(
+      `${this.spaUrl(propertyId)}/services/${serviceId}/addons/${id}`,
+      dto,
+    );
+  }
+
+  deleteAddon(propertyId: string, serviceId: string, id: string) {
+    return this.http.delete(
+      `${this.spaUrl(propertyId)}/services/${serviceId}/addons/${id}`,
     );
   }
 
@@ -147,4 +266,3 @@ export class SpaApiService {
     );
   }
 }
-
