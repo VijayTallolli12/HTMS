@@ -122,4 +122,10 @@ export const PMS_ROUTES: Routes = [
       ),
     title: 'HR & Payroll',
   },
+  {
+    path: 'revenue',
+    loadComponent: () =>
+      import('./revenue/revenue-dashboard.component').then((m) => m.RevenueDashboardComponent),
+    title: 'Revenue Management',
+  },
 ];

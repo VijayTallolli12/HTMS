@@ -100,6 +100,26 @@ import {
   QueryPayrollRunsDto,
   PayrollLineDto,
   PayrollSummaryDto,
+  // Revenue Management
+  RevenueKpiRangeResponse,
+  OccupancyTrendResponse,
+  AdrTrendResponse,
+  RevenueTrendResponse,
+  PickupAnalysisResponse,
+  RoomTypePerformanceResponse,
+  RevenueByDepartmentResponse,
+  ForecastResponse,
+  MarketRateProviderConfigDto,
+  MarketRateResponse,
+  PricingRecommendationResponse,
+  CompetitorSetResponse,
+  CreateMarketRateProviderRequest,
+  UpdateMarketRateProviderRequest,
+  CreateCompetitorSetRequest,
+  UpdateCompetitorSetRequest,
+  RevenueKpiRangeQuery,
+  MarketRateQuery,
+  PricingRecommendationQuery,
 } from '@hms/api-contracts';
 import { environment } from '../../../../environments/environment';
 
@@ -894,6 +914,123 @@ export class PmsApiService {
   getPayrollSummary(propertyId: string) {
     return this.http.get<ApiSuccessResponse<PayrollSummaryDto>>(
       `${this.pmsUrl(propertyId)}/hr-payroll/payroll/summary`,
+    );
+  }
+
+  // ==========================================
+  // REVENUE MANAGEMENT
+  // ==========================================
+  getRevenueKpiRange(propertyId: string, startDate: string, endDate: string) {
+    return this.http.get<ApiSuccessResponse<RevenueKpiRangeResponse>>(
+      `${this.pmsUrl(propertyId)}/revenue/kpi?startDate=${startDate}&endDate=${endDate}`,
+    );
+  }
+
+  getOccupancyTrend(propertyId: string, startDate: string, endDate: string) {
+    return this.http.get<ApiSuccessResponse<OccupancyTrendResponse>>(
+      `${this.pmsUrl(propertyId)}/revenue/trends/occupancy?startDate=${startDate}&endDate=${endDate}`,
+    );
+  }
+
+  getAdrTrend(propertyId: string, startDate: string, endDate: string) {
+    return this.http.get<ApiSuccessResponse<AdrTrendResponse>>(
+      `${this.pmsUrl(propertyId)}/revenue/trends/adr?startDate=${startDate}&endDate=${endDate}`,
+    );
+  }
+
+  getRevenueTrend(propertyId: string, startDate: string, endDate: string) {
+    return this.http.get<ApiSuccessResponse<RevenueTrendResponse>>(
+      `${this.pmsUrl(propertyId)}/revenue/trends/revenue?startDate=${startDate}&endDate=${endDate}`,
+    );
+  }
+
+  getPickupAnalysis(propertyId: string, startDate: string, endDate: string) {
+    return this.http.get<ApiSuccessResponse<PickupAnalysisResponse>>(
+      `${this.pmsUrl(propertyId)}/revenue/pickup?startDate=${startDate}&endDate=${endDate}`,
+    );
+  }
+
+  getRoomTypePerformance(propertyId: string, startDate: string, endDate: string) {
+    return this.http.get<ApiSuccessResponse<RoomTypePerformanceResponse>>(
+      `${this.pmsUrl(propertyId)}/revenue/performance/room-types?startDate=${startDate}&endDate=${endDate}`,
+    );
+  }
+
+  getRevenueByDepartment(propertyId: string, businessDate: string) {
+    return this.http.get<ApiSuccessResponse<RevenueByDepartmentResponse>>(
+      `${this.pmsUrl(propertyId)}/revenue/department?businessDate=${businessDate}`,
+    );
+  }
+
+  getForecast(propertyId: string, startDate: string, endDate: string) {
+    return this.http.get<ApiSuccessResponse<ForecastResponse>>(
+      `${this.pmsUrl(propertyId)}/revenue/forecast?startDate=${startDate}&endDate=${endDate}`,
+    );
+  }
+
+  // Market Rate Providers
+  getMarketRateProviders(propertyId: string) {
+    return this.http.get<ApiSuccessResponse<MarketRateProviderConfigDto[]>>(
+      `${this.pmsUrl(propertyId)}/revenue/market-rate/providers`,
+    );
+  }
+
+  createMarketRateProvider(propertyId: string, dto: CreateMarketRateProviderRequest) {
+    return this.http.post<ApiSuccessResponse<MarketRateProviderConfigDto>>(
+      `${this.pmsUrl(propertyId)}/revenue/market-rate/providers`,
+      dto,
+    );
+  }
+
+  updateMarketRateProvider(propertyId: string, id: string, dto: UpdateMarketRateProviderRequest) {
+    return this.http.patch<ApiSuccessResponse<MarketRateProviderConfigDto>>(
+      `${this.pmsUrl(propertyId)}/revenue/market-rate/providers/${id}`,
+      dto,
+    );
+  }
+
+  getMarketRates(propertyId: string, query: MarketRateQuery) {
+    const params: string[] = [];
+    params.push(`startDate=${query.startDate}`);
+    params.push(`endDate=${query.endDate}`);
+    if (query.roomTypeId) params.push(`roomTypeId=${query.roomTypeId}`);
+    if (query.competitorCode) params.push(`competitorCode=${query.competitorCode}`);
+    const q = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<ApiSuccessResponse<MarketRateResponse>>(
+      `${this.pmsUrl(propertyId)}/revenue/market-rate/rates${q}`,
+    );
+  }
+
+  // Pricing Recommendations
+  getPricingRecommendations(propertyId: string, query: PricingRecommendationQuery) {
+    const params: string[] = [];
+    params.push(`startDate=${query.startDate}`);
+    params.push(`endDate=${query.endDate}`);
+    if (query.roomTypeId) params.push(`roomTypeId=${query.roomTypeId}`);
+    const q = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<ApiSuccessResponse<PricingRecommendationResponse>>(
+      `${this.pmsUrl(propertyId)}/revenue/pricing/recommendations${q}`,
+    );
+  }
+
+  // Competitor Set
+  getCompetitorSet(propertyId: string) {
+    return this.http.get<ApiSuccessResponse<CompetitorSetResponse>>(
+      `${this.pmsUrl(propertyId)}/revenue/competitors`,
+    );
+  }
+
+  createCompetitorSet(propertyId: string, dto: CreateCompetitorSetRequest) {
+    return this.http.post<ApiSuccessResponse<any>>(
+      `${this.pmsUrl(propertyId)}/revenue/competitors`,
+      dto,
+    );
+  }
+
+  updateCompetitorSet(propertyId: string, id: string, dto: UpdateCompetitorSetRequest) {
+    return this.http.patch<ApiSuccessResponse<any>>(
+      `${this.pmsUrl(propertyId)}/revenue/competitors/${id}`,
+      dto,
     );
   }
 }

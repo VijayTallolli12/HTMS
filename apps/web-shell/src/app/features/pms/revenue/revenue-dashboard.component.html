@@ -1,0 +1,600 @@
+<div class="revenue-container">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="header-pretitle">REVENUE MANAGEMENT &bull; ANALYTICS</div>
+      <h1 class="page-title">Revenue Management</h1>
+      <p class="page-subtitle">
+        Monitor KPIs, track trends, analyze pickup, forecast demand, and optimize pricing with market intelligence.
+      </p>
+    </div>
+
+    <div class="header-right">
+      <div class="property-tag" *ngIf="activeProperty()">
+        <span class="indicator-dot"></span>
+        <span>{{ activeProperty()?.name }}</span>
+      </div>
+      <div class="date-range-picker">
+        <label>From:</label>
+        <input type="date" class="form-input" [(ngModel)]="startDate" (change)="onDateRangeChange()" />
+        <label>To:</label>
+        <input type="date" class="form-input" [(ngModel)]="endDate" (change)="onDateRangeChange()" />
+      </div>
+    </div>
+  </header>
+
+  <!-- Global Alerts -->
+  <div class="alerts-container">
+    <hms-alert
+      *ngIf="errorMessage()"
+      type="error"
+      [message]="errorMessage()!"
+      (dismissed)="errorMessage.set(null)"
+    ></hms-alert>
+    <hms-alert
+      *ngIf="successMessage()"
+      type="success"
+      [message]="successMessage()!"
+      (dismissed)="successMessage.set(null)"
+    ></hms-alert>
+  </div>
+
+  <!-- Loading State -->
+  <hms-loading *ngIf="isLoading()" message="Loading revenue data..."></hms-loading>
+
+  <!-- Main Tabs -->
+  <div class="tabs-nav-bar" *ngIf="!isLoading()">
+    <div class="nav-tabs">
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'kpi'"
+        (click)="activeTab.set('kpi')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+          <rect x="3" y="15" width="7" height="6" rx="1"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+        KPIs & Summary
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'trends'"
+        (click)="activeTab.set('trends')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        Trends
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'pickup'"
+        (click)="activeTab.set('pickup')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M21 15V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v10"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+        </svg>
+        Pickup Analysis
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'forecast'"
+        (click)="activeTab.set('forecast')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M13 2L3 14h9l-1 8 10-12h9l-1 8 10-12h9l-1 8"></path>
+        </svg>
+        Forecast
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'market-rate'"
+        (click)="activeTab.set('market-rate')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        Market Rates
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'pricing'"
+        (click)="activeTab.set('pricing')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <line x1="12" y1="1" x2="12" y2="23"></line>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        Pricing Recommendations
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'competitors'"
+        (click)="activeTab.set('competitors')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        Compset
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: KPIs & SUMMARY -->
+  <div *ngIf="!isLoading() && activeTab() === 'kpi'" class="tab-content">
+    <!-- KPI Cards Row -->
+    <div class="kpi-grid">
+      <div class="kpi-card" *ngFor="let kpi of getKpiCards()">
+        <div class="kpi-icon" [class]="kpi.iconClass">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <ng-container [ngSwitch]="kpi.icon">
+              <path *ngSwitchCase="'occupancy'" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline *ngSwitchCase="'occupancy'" points="9 22 9 12 15 12 15 22"></polyline>
+              <line *ngSwitchCase="'adr'" x1="12" y1="1" x2="12" y2="23"></line>
+              <path *ngSwitchCase="'adr'" d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              <line *ngSwitchCase="'revpar'" x1="12" y1="1" x2="12" y2="23"></line>
+              <path *ngSwitchCase="'revpar'" d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              <path *ngSwitchCase="'revenue'" d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              <polyline *ngSwitchCase="'pickup'" points="23 4 8 16 8 4"></polyline>
+            </ng-container>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">{{ kpi.label }}</div>
+          <div class="kpi-value">{{ kpi.value }}</div>
+          <div class="kpi-desc">{{ kpi.desc }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail Tables -->
+    <div class="detail-section">
+      <h3 class="section-title">Daily KPIs</h3>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Occupancy %</th>
+              <th>ADR</th>
+              <th>RevPAR</th>
+              <th>Room Revenue</th>
+              <th>Available</th>
+              <th>Booked</th>
+              <th>OOO</th>
+              <th>OOS</th>
+              <th>Pickup</th>
+              <th>Forecast Occ%</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let kpi of kpiRange()?.dataPoints">
+              <td class="font-mono">{{ kpi.businessDate }}</td>
+              <td><span class="badge" [class]="getOccupancyBadgeClass(kpi.occupancyPercent)">{{ kpi.occupancyPercent.toFixed(2) }}%</span></td>
+              <td class="font-mono">{{ formatPrice(kpi.adr) }}</td>
+              <td class="font-mono">{{ formatPrice(kpi.revpar) }}</td>
+              <td class="font-mono font-bold">{{ formatPrice(kpi.roomRevenue) }}</td>
+              <td class="font-mono">{{ kpi.totalAvailableRooms }}</td>
+              <td class="font-mono">{{ kpi.totalBookedRooms }}</td>
+              <td class="font-mono">{{ kpi.totalOutOfOrderRooms }}</td>
+              <td class="font-mono">{{ kpi.totalOutOfServiceRooms }}</td>
+              <td class="font-mono" [class.positive]="Number(kpi.pickup) > 0" [class.negative]="Number(kpi.pickup) < 0">{{ formatPrice(kpi.pickup) }}</td>
+              <td class="font-mono">{{ kpi.forecastOccupancyPercent.toFixed(2) }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards" *ngIf="getKpiSummary()">
+      <h3 class="section-title">Period Summary</h3>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-label">Avg Occupancy</div>
+          <div class="summary-value">{{ getKpiSummary()?.avgOccupancy?.toFixed(2) }}%</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Avg ADR</div>
+          <div class="summary-value">{{ getKpiSummary()?.avgAdr }}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Avg RevPAR</div>
+          <div class="summary-value">{{ getKpiSummary()?.avgRevpar }}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Total Room Revenue</div>
+          <div class="summary-value">{{ getKpiSummary()?.totalRoomRevenue }}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Total Pickup</div>
+          <div class="summary-value">{{ getKpiSummary()?.totalPickup }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: TRENDS -->
+  <div *ngIf="!isLoading() && activeTab() === 'trends'" class="tab-content">
+    <div class="trends-grid">
+      <!-- Occupancy Trend -->
+      <div class="chart-card">
+        <h3 class="chart-title">Occupancy Trend</h3>
+        <div class="chart-placeholder" *ngIf="!occupancyTrend()?.data?.length">
+          <p>No data available</p>
+        </div>
+        <div class="mini-table" *ngIf="occupancyTrend()?.data?.length">
+          <table class="data-table">
+            <thead>
+              <tr><th>Date</th><th>Occupancy %</th><th>Available</th><th>Occupied</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of occupancyTrend()?.data">
+                <td class="font-mono">{{ d.date }}</td>
+                <td><span class="badge" [class]="getOccupancyBadgeClass(d.occupancyPercent)">{{ d.occupancyPercent.toFixed(2) }}%</span></td>
+                <td class="font-mono">{{ d.availableRooms }}</td>
+                <td class="font-mono">{{ d.occupiedRooms }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADR Trend -->
+      <div class="chart-card">
+        <h3 class="chart-title">ADR Trend</h3>
+        <div class="chart-placeholder" *ngIf="!adrTrend()?.data?.length">
+          <p>No data available</p>
+        </div>
+        <div class="mini-table" *ngIf="adrTrend()?.data?.length">
+          <table class="data-table">
+            <thead>
+              <tr><th>Date</th><th>ADR</th><th>Room Revenue</th><th>Occupied</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of adrTrend()?.data">
+                <td class="font-mono">{{ d.date }}</td>
+                <td class="font-mono font-bold">{{ d.adr }}</td>
+                <td class="font-mono">{{ d.roomRevenue }}</td>
+                <td class="font-mono">{{ d.occupiedRooms }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Revenue Trend -->
+      <div class="chart-card">
+        <h3 class="chart-title">Revenue Trend</h3>
+        <div class="chart-placeholder" *ngIf="!revenueTrend()?.data?.length">
+          <p>No data available</p>
+        </div>
+        <div class="mini-table" *ngIf="revenueTrend()?.data?.length">
+          <table class="data-table">
+            <thead>
+              <tr><th>Date</th><th>Room Revenue</th><th>Occupancy %</th><th>ADR</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of revenueTrend()?.data">
+                <td class="font-mono">{{ d.date }}</td>
+                <td class="font-mono font-bold">{{ d.roomRevenue }}</td>
+                <td>{{ d.occupancyPercent.toFixed(2) }}%</td>
+                <td class="font-mono">{{ d.adr }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: PICKUP ANALYSIS -->
+  <div *ngIf="!isLoading() && activeTab() === 'pickup'" class="tab-content">
+    <div class="pickup-summary" *ngIf="pickupAnalysis()?.summary">
+      <div class="summary-card">
+        <div class="summary-label">Total New Bookings</div>
+        <div class="summary-value">{{ pickupAnalysis()?.summary?.totalNewBookings }}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Total Cancellations</div>
+        <div class="summary-value">{{ pickupAnalysis()?.summary?.totalCancellations }}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Net Pickup</div>
+        <div class="summary-value" [class.positive]="pickupAnalysis()?.summary?.netPickup > 0" [class.negative]="pickupAnalysis()?.summary?.netPickup < 0">{{ pickupAnalysis()?.summary?.netPickup }}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Avg Booking Pace (7d)</div>
+        <div class="summary-value">{{ pickupAnalysis()?.summary?.avgBookingPace?.toFixed(2) }}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Avg Booking Window</div>
+        <div class="summary-value">{{ pickupAnalysis()?.summary?.avgBookingWindow?.toFixed(2) }} days</div>
+      </div>
+    </div>
+
+    <h3 class="section-title">Daily Pickup Detail</h3>
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>New Bookings</th>
+            <th>Cancellations</th>
+            <th>Net Pickup</th>
+            <th>Cumulative</th>
+            <th>Booking Pace (7d)</th>
+            <th>Occupancy Pace (7d)</th>
+            <th>Booking Window</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of pickupAnalysis()?.data">
+            <td class="font-mono">{{ d.date }}</td>
+            <td>{{ d.newBookings }}</td>
+            <td>{{ d.cancellations }}</td>
+            <td [class.positive]="d.netPickup > 0" [class.negative]="d.netPickup < 0">{{ d.netPickup }}</td>
+            <td>{{ d.cumulativeBooked }}</td>
+            <td>{{ d.bookingPace }}</td>
+            <td>{{ d.occupancyPace }}%</td>
+            <td>{{ d.bookingWindowDays }} days</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 4: FORECAST -->
+  <div *ngIf="!isLoading() && activeTab() === 'forecast'" class="tab-content">
+    <div class="forecast-controls">
+      <label>From:</label>
+      <input type="date" class="form-input" [(ngModel)]="forecastStartDate" (change)="onForecastDateChange()" />
+      <label>To:</label>
+      <input type="date" class="form-input" [(ngModel)]="forecastEndDate" (change)="onForecastDateChange()" />
+      <span class="methodology-note">Methodology: {{ forecast()?.methodology }}</span>
+    </div>
+
+    <h3 class="section-title">Demand Forecast</h3>
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Demand Level</th>
+            <th>Occupancy Forecast</th>
+            <th>Reason</th>
+            <th>Confidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of forecast()?.data">
+            <td class="font-mono">{{ f.date }}</td>
+            <td>
+              <hms-status-pill [status]="getDemandLevelPill(f.demandLevel)" [label]="f.demandLevel"></hms-status-pill>
+            </td>
+            <td class="font-mono">{{ f.occupancyForecast }}%</td>
+            <td>{{ f.reason }}</td>
+            <td>
+              <hms-status-pill [status]="getConfidencePill(f.confidence)" [label]="f.confidence" size="sm"></hms-status-pill>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 5: MARKET RATES -->
+  <div *ngIf="!isLoading() && activeTab() === 'market-rate'" class="tab-content">
+    <div class="toolbar">
+      <hms-button variant="gold" *ngIf="hasPermission('revenue.market-rate.manage')" (click)="openProviderModal()">
+        + Add Provider
+      </hms-button>
+    </div>
+
+    <!-- Providers -->
+    <h3 class="section-title">Market Rate Providers</h3>
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr><th>Name</th><th>Type</th><th>Status</th><th>Last Sync</th><th>Last Error</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of marketRateProviders()">
+            <td>{{ p.providerName }}</td>
+            <td>{{ p.providerType }}</td>
+            <td><hms-status-pill [status]="p.isEnabled ? 'success' : 'default'" [label]="p.isEnabled ? 'Enabled' : 'Disabled'"></hms-status-pill></td>
+            <td class="font-mono">{{ p.lastSyncAt || 'Never' }}</td>
+            <td>{{ p.lastError || 'None' }}</td>
+            <td>
+              <hms-button variant="ghost" size="sm" (click)="openProviderModal(p)">Edit</hms-button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Market Rates -->
+    <h3 class="section-title">Market Rates (Demo)</h3>
+    <div class="filter-bar">
+      <select class="form-select filter-select" [(ngModel)]="marketRateRoomTypeId" (change)="loadMarketRates()">
+        <option value="">All Room Types</option>
+        <option *ngFor="let rt of roomTypePerformance()?.data" [value]="rt.roomTypeId">{{ rt.roomTypeName }}</option>
+      </select>
+      <select class="form-select filter-select" [(ngModel)]="marketRateCompetitorCode" (change)="loadMarketRates()">
+        <option value="">All Competitors</option>
+        <option *ngFor="let c of competitorSet()?.data" [value]="c.competitorCode">{{ c.competitorName }}</option>
+      </select>
+    </div>
+    <div class="table-container" *ngIf="marketRates()?.data?.length">
+      <table class="data-table">
+        <thead>
+          <tr><th>Date</th><th>Competitor</th><th>Room Type</th><th>Rate</th><th>Source</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let m of marketRates()?.data">
+            <td class="font-mono">{{ m.date }}</td>
+            <td>{{ m.competitorName }}</td>
+            <td>{{ m.roomTypeCode }}</td>
+            <td class="font-mono">{{ formatPrice(m.rate) }}</td>
+            <td>{{ m.source }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 6: PRICING RECOMMENDATIONS -->
+  <div *ngIf="!isLoading() && activeTab() === 'pricing'" class="tab-content">
+    <div class="filter-bar">
+      <select class="form-select filter-select" [(ngModel)]="pricingRoomTypeId" (change)="loadPricingRecommendations()">
+        <option value="">All Room Types</option>
+        <option *ngFor="let rt of roomTypePerformance()?.data" [value]="rt.roomTypeId">{{ rt.roomTypeName }}</option>
+      </select>
+    </div>
+
+    <h3 class="section-title">Pricing Recommendations</h3>
+    <div class="table-container" *ngIf="pricingRecommendations()?.data?.length">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Room Type</th>
+            <th>Current Rate</th>
+            <th>Recommended</th>
+            <th>Demand</th>
+            <th>Reason</th>
+            <th>Confidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of pricingRecommendations()?.data">
+            <td class="font-mono">{{ p.date }}</td>
+            <td>{{ p.roomTypeName }}</td>
+            <td class="font-mono">{{ formatPrice(p.currentRate) }}</td>
+            <td class="font-mono font-bold">{{ formatPrice(p.recommendedRate) }}</td>
+            <td><hms-status-pill [status]="getDemandLevelPill(p.demandLevel)" [label]="p.demandLevel"></hms-status-pill></td>
+            <td>{{ p.reason }}</td>
+            <td><hms-status-pill [status]="getConfidencePill(p.confidence)" [label]="p.confidence" size="sm"></hms-status-pill></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 7: COMPSET -->
+  <div *ngIf="!isLoading() && activeTab() === 'competitors'" class="tab-content">
+    <div class="toolbar">
+      <hms-button variant="gold" *ngIf="hasPermission('revenue.market-rate.manage')" (click)="openCompetitorModal()">
+        + Add Competitor
+      </hms-button>
+    </div>
+
+    <h3 class="section-title">Competitor Set</h3>
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr><th>Code</th><th>Name</th><th>Segment</th><th>Distance</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of competitorSet()?.data">
+            <td class="font-mono">{{ c.competitorCode }}</td>
+            <td>{{ c.competitorName }}</td>
+            <td><span class="badge">{{ c.segment }}</span></td>
+            <td>{{ c.distanceKm ? c.distanceKm + ' km' : 'N/A' }}</td>
+            <td><hms-status-pill [status]="c.isActive ? 'success' : 'default'" [label]="c.isActive ? 'Active' : 'Inactive'"></hms-status-pill></td>
+            <td>
+              <hms-button variant="ghost" size="sm" (click)="openCompetitorModal(c)">Edit</hms-button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <!-- Provider Modal -->
+  <hms-modal *ngIf="showProviderModal()" [title]="editingProvider ? 'Edit Provider' : 'Create Provider'" (closed)="closeProviderModal()">
+    <div class="modal-form-body">
+      <div class="form-group">
+        <label class="form-label">Provider Name</label>
+        <input type="text" class="form-input" [(ngModel)]="providerForm.providerName" placeholder="e.g. Tokyo Compset" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Provider Type</label>
+        <select class="form-select" [(ngModel)]="providerForm.providerType">
+          <option value="DEMO_COMPSET">Demo Compset</option>
+          <option value="DEMO_OTA">Demo OTA</option>
+          <option value="CUSTOM">Custom</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Configuration (JSON)</label>
+        <textarea class="form-textarea" [(ngModel)]="providerForm.configuration" rows="4" placeholder='{ "competitors": ["COMP-001", "COMP-002"] }'></textarea>
+      </div>
+    </div>
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="closeProviderModal()">Cancel</hms-button>
+      <hms-button variant="gold" [disabled]="isSubmitting()" (click)="confirmProvider()">
+        <span *ngIf="!isSubmitting()">{{ editingProvider ? 'Save Changes' : 'Create Provider' }}</span>
+        <span *ngIf="isSubmitting()">Saving...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
+
+  <!-- Competitor Modal -->
+  <hms-modal *ngIf="showCompetitorModal()" [title]="editingCompetitor ? 'Edit Competitor' : 'Add Competitor'" (closed)="closeCompetitorModal()">
+    <div class="modal-form-body">
+      <div class="form-group">
+        <label class="form-label">Competitor Code</label>
+        <input type="text" class="form-input" [(ngModel)]="competitorForm.competitorCode" placeholder="e.g. COMP-TOK-001" maxlength="30" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Competitor Name</label>
+        <input type="text" class="form-input" [(ngModel)]="competitorForm.competitorName" placeholder="e.g. Grand Hyatt Tokyo" maxlength="100" />
+      </div>
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Segment</label>
+          <select class="form-select" [(ngModel)]="competitorForm.segment">
+            <option value="LUXURY">Luxury</option>
+            <option value="UPSCALE">Upscale</option>
+            <option value="MIDSCALE">Midscale</option>
+            <option value="ECONOMY">Economy</option>
+          </select>
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Distance (km)</label>
+          <input type="number" class="form-input" [(ngModel)]="competitorForm.distanceKm" placeholder="2.5" step="0.1" min="0" />
+        </div>
+      </div>
+    </div>
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="closeCompetitorModal()">Cancel</hms-button>
+      <hms-button variant="gold" [disabled]="isSubmitting()" (click)="confirmCompetitor()">
+        <span *ngIf="!isSubmitting()">{{ editingCompetitor ? 'Save Changes' : 'Add Competitor' }}</span>
+        <span *ngIf="isSubmitting()">Saving...</span>
+      </hms-button>
+    </div>
+  </hms-modal>
+</div>

@@ -155,14 +155,16 @@ model Property {
   employeeCompensations     EmployeeCompensation[]
   payrollPeriods            PayrollPeriod[]
   payrollRuns               PayrollRun[]
-  payrollLines              PayrollLine[]
+payrollLines              PayrollLine[]
+    marketRateProviders       MarketRateProvider[]
+    competitorSets            CompetitorSet[]
 
-  @@index([countryId])
-  @@index([status])
-  @@index([deletedAt])
-  @@map("properties")
-  @@schema("platform_schema")
-}
+    @@index([countryId])
+    @@index([status])
+    @@index([deletedAt])
+    @@map("properties")
+    @@schema("platform_schema")
+  }
 
 // ==============================================================================
 // 5. BUILDING (Physical Tower / Wing Tier)
@@ -2196,3 +2198,47 @@ model PayrollLine {
 }
 
 // End of HR & Payroll models
+// 36. REVENUE MANAGEMENT MODELS (New Slice)
+// ==============================================================================
+
+model MarketRateProvider {
+  id              String   @id @default(uuid())
+  propertyId      String   @map("property_id")
+  providerName    String   @map("provider_name") @db.VarChar(100)
+  providerType    String   @map("provider_type") @db.VarChar(30) // DEMO_COMPSET | DEMO_OTA | CUSTOM
+  configuration   Json     @default("{}") @map("configuration")
+  isEnabled       Boolean  @default(true) @map("is_enabled")
+  lastSyncAt      DateTime? @map("last_sync_at") @db.Timestamptz(6)
+  lastError       String?  @map("last_error")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+
+  @@unique([propertyId, id], name: "uq_market_rate_provider_property_id")
+  @@index([propertyId, isEnabled], name: "idx_market_rate_provider_enabled")
+  @@map("market_rate_providers")
+  @@schema("pms_schema")
+}
+
+model CompetitorSet {
+  id              String   @id @default(uuid())
+  propertyId      String   @map("property_id")
+  competitorCode  String   @map("competitor_code") @db.VarChar(30)
+  competitorName  String   @map("competitor_name") @db.VarChar(100)
+  segment         String   @default("UPSCALE") @db.VarChar(20) // LUXURY | UPSCALE | MIDSCALE | ECONOMY
+  distanceKm      Decimal? @map("distance_km") @db.Decimal(6, 2)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+
+  @@unique([propertyId, competitorCode], name: "uq_competitor_set_property_code")
+  @@unique([propertyId, id], name: "uq_competitor_set_property_id")
+  @@index([propertyId, isActive], name: "idx_competitor_set_active")
+  @@map("competitor_set")
+  @@schema("pms_schema")
+}
+
+// End of Revenue Management models

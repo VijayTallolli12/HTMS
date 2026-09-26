@@ -62,6 +62,9 @@ import { ProcurementModule } from './procurement/procurement.module';
 // HR & Payroll
 import { HrPayrollModule } from './hr-payroll/hr-payroll.module';
 
+// Revenue
+import { RevenueModule } from './revenue/revenue.module';
+
 @Module({
   imports: [
     ReservationsModule,
@@ -74,6 +77,7 @@ import { HrPayrollModule } from './hr-payroll/hr-payroll.module';
     CrmModule,
     ProcurementModule,
     HrPayrollModule,
+    RevenueModule,
   ],
   controllers: [
     RoomTypeController,
@@ -137,6 +141,7 @@ import { HrPayrollModule } from './hr-payroll/hr-payroll.module';
     CrmModule,
     ProcurementModule,
     HrPayrollModule,
+    RevenueModule,
   ],
 })
 export class PmsModule {}

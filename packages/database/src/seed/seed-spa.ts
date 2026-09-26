@@ -435,5 +435,81 @@ export async function seedSpa(propertyId: string): Promise<void> {
     console.log('  Created 3 Demo Spa Appointments.');
   }
 
+  // 7. Market Rate Providers (Revenue Management)
+  const marketProviders = [
+    {
+      providerName: 'Tokyo Luxury Compset',
+      providerType: 'DEMO_COMPSET',
+      configuration: { competitors: ['COMP-TOK-001', 'COMP-TOK-002', 'COMP-TOK-003'] },
+    },
+    {
+      providerName: 'Tokyo OTA Rates',
+      providerType: 'DEMO_OTA',
+      configuration: { endpoints: ['https://demo-ota.example.com/rates'] },
+    },
+  ];
+
+  for (const mp of marketProviders) {
+    let provider = await prisma.marketRateProvider.findFirst({
+      where: { propertyId, providerName: mp.providerName },
+    });
+    if (!provider) {
+      provider = await prisma.marketRateProvider.create({
+        data: {
+          id: generateUuidV7(),
+          propertyId,
+          providerName: mp.providerName,
+          providerType: mp.providerType,
+          configuration: mp.configuration,
+          isEnabled: true,
+        },
+      });
+      console.log(`  Created Market Rate Provider: ${provider.providerName}`);
+    }
+  }
+
+  // 8. Competitor Set
+  const competitors = [
+    {
+      competitorCode: 'COMP-TOK-001',
+      competitorName: 'The Peninsula Tokyo',
+      segment: 'LUXURY',
+      distanceKm: 2.1,
+    },
+    {
+      competitorCode: 'COMP-TOK-002',
+      competitorName: 'Park Hyatt Tokyo',
+      segment: 'LUXURY',
+      distanceKm: 3.5,
+    },
+    {
+      competitorCode: 'COMP-TOK-003',
+      competitorName: 'Shangri-La Tokyo',
+      segment: 'LUXURY',
+      distanceKm: 4.2,
+    },
+  ];
+
+  for (const c of competitors) {
+    let competitor = await prisma.competitorSet.findFirst({
+      where: { propertyId, competitorCode: c.competitorCode },
+    });
+    if (!competitor) {
+      competitor = await prisma.competitorSet.create({
+        data: {
+          id: generateUuidV7(),
+          propertyId,
+          competitorCode: c.competitorCode,
+          competitorName: c.competitorName,
+          segment: c.segment,
+          distanceKm: new Prisma.Decimal(c.distanceKm),
+          isActive: true,
+        },
+      });
+      console.log(`  Created Competitor: ${competitor.competitorName} (${competitor.competitorCode})`);
+    }
+  }
+
+  console.log('  Created Market Rate Providers and Competitor Set.');
   console.log('Spa baseline seeding completed.');
 }
