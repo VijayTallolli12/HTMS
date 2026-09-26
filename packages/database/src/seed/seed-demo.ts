@@ -13,6 +13,7 @@ import { seedSpa } from './seed-spa';
 import { seedEvents } from './seed-events';
 import { seedCrmLoyalty } from './seed-crm-loyalty';
 import { seedProcurement } from './seed-procurement';
+import { seedHrPayroll } from './seed-hr-payroll';
 
 export async function seedDemo(): Promise<void> {
   const prisma = getPrismaClient();
@@ -61,6 +62,9 @@ export async function seedDemo(): Promise<void> {
   console.log('\n--- Phase 9: Procurement & Inventory ---');
   await seedProcurement(property.id);
 
+  console.log('\n--- Phase 10: HR & Payroll ---');
+  await seedHrPayroll(property.id);
+
   console.log('\n=== HMS Demo Seed - Complete ===\n');
   const counts = {
     roomTypes: await prisma.roomType.count({ where: { propertyId: property.id, deletedAt: null } }),
@@ -76,6 +80,9 @@ export async function seedDemo(): Promise<void> {
     purchaseOrders: await prisma.purchaseOrder.count({ where: { propertyId: property.id, deletedAt: null } }),
     goodsReceipts: await prisma.goodsReceipt.count({ where: { propertyId: property.id, deletedAt: null } }),
     stockBalances: await prisma.stockBalance.count({ where: { propertyId: property.id, deletedAt: null } }),
+    employees: await prisma.employee.count({ where: { propertyId: property.id, deletedAt: null } }),
+    payrollPeriods: await prisma.payrollPeriod.count({ where: { propertyId: property.id, deletedAt: null } }),
+    payrollRuns: await prisma.payrollRun.count({ where: { propertyId: property.id, deletedAt: null } }),
   };
   console.log('Entity Counts:');
   console.log(`  Room Types:         ${counts.roomTypes}`);
@@ -91,6 +98,9 @@ export async function seedDemo(): Promise<void> {
   console.log(`  Purchase Orders:    ${counts.purchaseOrders}`);
   console.log(`  Goods Receipts:     ${counts.goodsReceipts}`);
   console.log(`  Stock Balances:     ${counts.stockBalances}`);
+  console.log(`  Employees:          ${counts.employees}`);
+  console.log(`  Payroll Periods:    ${counts.payrollPeriods}`);
+  console.log(`  Payroll Runs:       ${counts.payrollRuns}`);
   console.log('\nDemo Users (password: Demo1234!):');
   console.log('  admin@tokyograndeur.demo  - Corporate Platform Admin');
   console.log('  fdesk@tokyograndeur.demo  - Front Desk Agent (Yuki Tanaka)');

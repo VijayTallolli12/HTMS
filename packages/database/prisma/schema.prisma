@@ -149,6 +149,11 @@ model Property {
   purchaseOrders            PurchaseOrder[]
   goodsReceipts             GoodsReceipt[]
   stockBalances             StockBalance[]
+  employees                 Employee[]
+  employeeCompensations     EmployeeCompensation[]
+  payrollPeriods            PayrollPeriod[]
+  payrollRuns               PayrollRun[]
+  payrollLines              PayrollLine[]
 
   @@index([countryId])
   @@index([status])
@@ -1899,3 +1904,173 @@ model StockBalance {
 }
 
 // End of Procurement & Inventory models
+
+// ===============================================================================
+// 35. HR & PAYROLL MODELS (New Slice)
+// ===============================================================================
+
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+  ON_LEAVE
+
+  @@schema("pms_schema")
+}
+
+enum PayrollPeriodStatus {
+  OPEN
+  PROCESSING
+  PROCESSED
+  CLOSED
+
+  @@schema("pms_schema")
+}
+
+enum PayrollRunStatus {
+  DRAFT
+  CALCULATING
+  CALCULATED
+  FINALIZED
+
+  @@schema("pms_schema")
+}
+
+model Employee {
+  id                String    @id @default(uuid())
+  propertyId        String    @map("property_id")
+  employeeCode      String    @map("employee_code") @db.VarChar(30)
+  firstName         String    @map("first_name") @db.VarChar(50)
+  lastName          String    @map("last_name") @db.VarChar(50)
+  email             String?   @db.VarChar(100)
+  phone             String?   @db.VarChar(30)
+  hireDate          DateTime  @map("hire_date") @db.Date
+  terminationDate   DateTime? @map("termination_date") @db.Date
+  status            EmploymentStatus @default(ACTIVE) @map("status")
+  department        String?   @db.VarChar(50)
+  position          String?   @db.VarChar(50)
+  version           Int       @default(0)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property          Property              @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  compensations     EmployeeCompensation[]
+  payrollLines      PayrollLine[]
+
+  @@unique([propertyId, employeeCode], name: "uq_employee_property_code")
+  @@unique([propertyId, id], name: "uq_employee_property_id")
+  @@index([propertyId, status], name: "idx_employee_property_status")
+  @@map("employees")
+  @@schema("pms_schema")
+}
+
+model EmployeeCompensation {
+  id                String   @id @default(uuid())
+  propertyId        String   @map("property_id")
+  employeeId        String   @map("employee_id")
+  effectiveDate     DateTime @map("effective_date") @db.Date
+  basicSalary       Decimal  @map("basic_salary") @db.Decimal(12, 4)
+  housingAllowance  Decimal  @default(0) @map("housing_allowance") @db.Decimal(12, 4)
+  transportAllowance Decimal @default(0) @map("transport_allowance") @db.Decimal(12, 4)
+  otherAllowance    Decimal  @default(0) @map("other_allowance") @db.Decimal(12, 4)
+  currency          String   @default("JPY") @db.VarChar(3)
+  version           Int      @default(0)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property  Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  employee  Employee @relation(fields: [propertyId, employeeId], references: [propertyId, id], onDelete: Cascade)
+
+  @@unique([propertyId, id], name: "uq_compensation_property_id")
+  @@unique([propertyId, employeeId, effectiveDate], name: "uq_compensation_employee_effective")
+  @@index([propertyId, employeeId], name: "idx_compensation_employee")
+  @@map("employee_compensations")
+  @@schema("pms_schema")
+}
+
+model PayrollPeriod {
+  id           String             @id @default(uuid())
+  propertyId   String             @map("property_id")
+  periodStart  DateTime           @map("period_start") @db.Date
+  periodEnd    DateTime           @map("period_end") @db.Date
+  status       PayrollPeriodStatus @default(OPEN) @map("status")
+  processedAt  DateTime?          @map("processed_at") @db.Timestamptz(6)
+  processedBy  String?            @map("processed_by")
+  version      Int                @default(0)
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime?          @map("deleted_at") @db.Timestamptz(6)
+
+  property Property       @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  runs     PayrollRun[]
+
+  @@unique([propertyId, id], name: "uq_payroll_period_property_id")
+  @@unique([propertyId, periodStart, periodEnd], name: "uq_payroll_period_dates")
+  @@index([propertyId, status], name: "idx_payroll_period_status")
+  @@map("payroll_periods")
+  @@schema("pms_schema")
+}
+
+model PayrollRun {
+  id                 String           @id @default(uuid())
+  propertyId         String           @map("property_id")
+  payrollPeriodId    String           @map("payroll_period_id")
+  status             PayrollRunStatus @default(DRAFT) @map("status")
+  totalGross         Decimal          @default(0) @map("total_gross") @db.Decimal(12, 4)
+  totalDeductions    Decimal          @default(0) @map("total_deductions") @db.Decimal(12, 4)
+  totalNet           Decimal          @default(0) @map("total_net") @db.Decimal(12, 4)
+  calculatedAt       DateTime?        @map("calculated_at") @db.Timestamptz(6)
+  calculatedBy       String?          @map("calculated_by")
+  finalizedAt        DateTime?        @map("finalized_at") @db.Timestamptz(6)
+  finalizedBy        String?          @map("finalized_by")
+  idempotencyKey     String?          @unique @map("idempotency_key") @db.VarChar(64)
+  version            Int              @default(0)
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?        @map("deleted_at") @db.Timestamptz(6)
+
+  property      Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  payrollPeriod PayrollPeriod @relation(fields: [propertyId, payrollPeriodId], references: [propertyId, id], onDelete: Restrict)
+  lines         PayrollLine[]
+
+  @@unique([propertyId, id], name: "uq_payroll_run_property_id")
+  @@index([propertyId, payrollPeriodId], name: "idx_payroll_run_period")
+  @@index([propertyId, status], name: "idx_payroll_run_status")
+  @@map("payroll_runs")
+  @@schema("pms_schema")
+}
+
+model PayrollLine {
+  id              String   @id @default(uuid())
+  propertyId      String   @map("property_id")
+  payrollRunId    String   @map("payroll_run_id")
+  employeeId      String   @map("employee_id")
+  basic           Decimal  @db.Decimal(12, 4)
+  housingAllowance Decimal @default(0) @map("housing_allowance") @db.Decimal(12, 4)
+  transportAllowance Decimal @default(0) @map("transport_allowance") @db.Decimal(12, 4)
+  otherAllowance  Decimal  @default(0) @map("other_allowance") @db.Decimal(12, 4)
+  overtime        Decimal  @default(0) @db.Decimal(12, 4)
+  gross           Decimal  @db.Decimal(12, 4)
+  deductions      Decimal  @default(0) @db.Decimal(12, 4)
+  net             Decimal  @db.Decimal(12, 4)
+  currency        String   @default("JPY") @db.VarChar(3)
+  version         Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property   Property   @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  payrollRun PayrollRun @relation(fields: [propertyId, payrollRunId], references: [propertyId, id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [propertyId, employeeId], references: [propertyId, id], onDelete: Restrict)
+
+  @@unique([propertyId, id], name: "uq_payroll_line_property_id")
+  @@unique([payrollRunId, employeeId], name: "uq_payroll_line_run_employee")
+  @@index([propertyId, payrollRunId], name: "idx_payroll_line_run")
+  @@index([propertyId, employeeId], name: "idx_payroll_line_employee")
+  @@map("payroll_lines")
+  @@schema("pms_schema")
+}
+
+// End of HR & Payroll models

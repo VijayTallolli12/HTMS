@@ -59,6 +59,9 @@ import { CrmModule } from './crm/crm.module';
 // Procurement & Inventory
 import { ProcurementModule } from './procurement/procurement.module';
 
+// HR & Payroll
+import { HrPayrollModule } from './hr-payroll/hr-payroll.module';
+
 @Module({
   imports: [
     ReservationsModule,
@@ -70,6 +73,7 @@ import { ProcurementModule } from './procurement/procurement.module';
     NightAuditModule,
     CrmModule,
     ProcurementModule,
+    HrPayrollModule,
   ],
   controllers: [
     RoomTypeController,
@@ -132,6 +136,7 @@ import { ProcurementModule } from './procurement/procurement.module';
     NightAuditModule,
     CrmModule,
     ProcurementModule,
+    HrPayrollModule,
   ],
 })
 export class PmsModule {}

@@ -84,6 +84,22 @@ import {
   AdjustPointsDto,
   QueryLoyaltyTransactionsDto,
   LoyaltyTierThresholds,
+  // HR & Payroll
+  EmployeeDto,
+  CreateEmployeeDto,
+  UpdateEmployeeDto,
+  QueryEmployeesDto,
+  EmployeeCompensationDto,
+  CreateEmployeeCompensationDto,
+  PayrollPeriodDto,
+  CreatePayrollPeriodDto,
+  PayrollRunDto,
+  CreatePayrollRunDto,
+  CalculatePayrollDto,
+  QueryPayrollPeriodsDto,
+  QueryPayrollRunsDto,
+  PayrollLineDto,
+  PayrollSummaryDto,
 } from '@hms/api-contracts';
 import { environment } from '../../../../environments/environment';
 
@@ -736,6 +752,148 @@ export class PmsApiService {
   getLoyaltyTiers(propertyId: string) {
     return this.http.get<ApiSuccessResponse<LoyaltyTierThresholds>>(
       `${this.pmsUrl(propertyId)}/crm/loyalty/tiers`,
+    );
+  }
+
+  // ==========================================
+  // HR & PAYROLL
+  // ==========================================
+  getEmployees(propertyId: string, query?: QueryEmployeesDto) {
+    const params: string[] = [];
+    if (query?.status) params.push(`status=${query.status}`);
+    if (query?.department) params.push(`department=${query.department}`);
+    if (query?.search) params.push(`search=${encodeURIComponent(query.search)}`);
+    if (query?.page) params.push(`page=${query.page}`);
+    if (query?.limit) params.push(`limit=${query.limit}`);
+
+    const q = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<
+      ApiSuccessResponse<{ items: EmployeeDto[]; total: number; page: number; limit: number }>
+    >(`${this.pmsUrl(propertyId)}/hr-payroll/employees${q}`);
+  }
+
+  getEmployeeCount(propertyId: string) {
+    return this.http.get<ApiSuccessResponse<{ count: number }>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/employees/count`,
+    );
+  }
+
+  createEmployee(propertyId: string, dto: CreateEmployeeDto) {
+    return this.http.post<ApiSuccessResponse<EmployeeDto>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/employees`,
+      dto,
+    );
+  }
+
+  getEmployee(propertyId: string, id: string) {
+    return this.http.get<ApiSuccessResponse<EmployeeDto>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/employees/${id}`,
+    );
+  }
+
+  updateEmployee(propertyId: string, id: string, dto: UpdateEmployeeDto) {
+    return this.http.patch<ApiSuccessResponse<EmployeeDto>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/employees/${id}`,
+      dto,
+    );
+  }
+
+  getEmployeeCompensation(propertyId: string, employeeId: string) {
+    return this.http.get<ApiSuccessResponse<EmployeeCompensationDto[]>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/employees/${employeeId}/compensation`,
+    );
+  }
+
+  getLatestCompensation(propertyId: string, employeeId: string) {
+    return this.http.get<ApiSuccessResponse<EmployeeCompensationDto | null>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/employees/${employeeId}/compensation/latest`,
+    );
+  }
+
+  createCompensation(propertyId: string, employeeId: string, dto: CreateEmployeeCompensationDto) {
+    return this.http.post<ApiSuccessResponse<EmployeeCompensationDto>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/employees/${employeeId}/compensation`,
+      dto,
+    );
+  }
+
+  getPayrollPeriods(propertyId: string, query?: QueryPayrollPeriodsDto) {
+    const params: string[] = [];
+    if (query?.page) params.push(`page=${query.page}`);
+    if (query?.limit) params.push(`limit=${query.limit}`);
+
+    const q = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<
+      ApiSuccessResponse<{ items: PayrollPeriodDto[]; total: number; page: number; limit: number }>
+    >(`${this.pmsUrl(propertyId)}/hr-payroll/payroll/periods${q}`);
+  }
+
+  getCurrentPayrollPeriod(propertyId: string) {
+    return this.http.get<ApiSuccessResponse<PayrollPeriodDto | null>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/payroll/periods/current`,
+    );
+  }
+
+  createPayrollPeriod(propertyId: string, dto: CreatePayrollPeriodDto) {
+    return this.http.post<ApiSuccessResponse<PayrollPeriodDto>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/payroll/periods`,
+      dto,
+    );
+  }
+
+  getPayrollPeriod(propertyId: string, id: string) {
+    return this.http.get<ApiSuccessResponse<PayrollPeriodDto | null>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/payroll/periods/${id}`,
+    );
+  }
+
+  getPayrollRuns(propertyId: string, query?: QueryPayrollRunsDto) {
+    const params: string[] = [];
+    if (query?.page) params.push(`page=${query.page}`);
+    if (query?.limit) params.push(`limit=${query.limit}`);
+
+    const q = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<
+      ApiSuccessResponse<{ items: PayrollRunDto[]; total: number; page: number; limit: number }>
+    >(`${this.pmsUrl(propertyId)}/hr-payroll/payroll/runs${q}`);
+  }
+
+  createPayrollRun(propertyId: string, dto: CreatePayrollRunDto) {
+    return this.http.post<ApiSuccessResponse<PayrollRunDto>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/payroll/runs`,
+      dto,
+    );
+  }
+
+  getPayrollRun(propertyId: string, id: string) {
+    return this.http.get<ApiSuccessResponse<PayrollRunDto | null>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/payroll/runs/${id}`,
+    );
+  }
+
+  calculatePayrollRun(propertyId: string, id: string, dto: CalculatePayrollDto) {
+    return this.http.post<ApiSuccessResponse<PayrollRunDto>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/payroll/runs/${id}/calculate`,
+      dto,
+    );
+  }
+
+  finalizePayrollRun(propertyId: string, id: string) {
+    return this.http.post<ApiSuccessResponse<PayrollRunDto>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/payroll/runs/${id}/finalize`,
+      {},
+    );
+  }
+
+  getPayslips(propertyId: string, runId: string) {
+    return this.http.get<ApiSuccessResponse<PayrollLineDto[]>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/payroll/runs/${runId}/payslips`,
+    );
+  }
+
+  getPayrollSummary(propertyId: string) {
+    return this.http.get<ApiSuccessResponse<PayrollSummaryDto>>(
+      `${this.pmsUrl(propertyId)}/hr-payroll/payroll/summary`,
     );
   }
 }

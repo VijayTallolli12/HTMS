@@ -10,3 +10,4 @@ export * from './housekeeping.contract';
 export * from './engineering.contract';
 export * from './night-audit.contract';
 export * from './crm.contract';
+export * from './hr-payroll.contract';

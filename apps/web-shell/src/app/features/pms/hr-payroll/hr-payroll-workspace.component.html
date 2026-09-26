@@ -1,0 +1,527 @@
+<div class="hr-payroll-workspace">
+  <div class="workspace-header">
+    <h1>HR & Payroll</h1>
+    <p class="subtitle">Employee management, compensation, and payroll operations</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+
+  <div class="tab-navigation">
+    <button
+      *ngFor="let tab of tabs"
+      class="tab-btn"
+      [class.active]="activeTab === tab.id"
+      (click)="activeTab = tab.id"
+    >
+      {{ tab.label }}
+    </button>
+  </div>
+
+  <div class="workspace-content">
+    <!-- Overview Tab -->
+    <div *ngIf="activeTab === 'overview'" class="tab-pane">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-label">Total Employees</span>
+          <span class="kpi-value">{{ summary?.employeeCount || 0 }}</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Active Employees</span>
+          <span class="kpi-value">{{ summary?.activeEmployeeCount || 0 }}</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Current Period</span>
+          <span class="kpi-value">{{ summary?.currentPeriod ? formatDate(summary.currentPeriod.periodStart) + ' – ' + formatDate(summary.currentPeriod.periodEnd) : 'None' }}</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Latest Run Status</span>
+          <span class="kpi-value">
+            <span *ngIf="summary?.latestRun" class="status-badge" [class]="getStatusClass(summary.latestRun.status)">{{ summary.latestRun.status }}</span>
+            <span *ngIf="!summary?.latestRun">No runs</span>
+          </span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Gross Payroll</span>
+          <span class="kpi-value">{{ formatCurrency(summary?.totalGross || 0) }} JPY</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Net Payroll</span>
+          <span class="kpi-value">{{ formatCurrency(summary?.totalNet || 0) }} JPY</span>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <button class="btn btn-primary" (click)="openCreateEmployee()">Add Employee</button>
+        <button class="btn btn-secondary" (click)="activeTab = 'periods'" *ngIf="!summary?.currentPeriod">Create First Period</button>
+        <button class="btn btn-secondary" (click)="createRun(summary.currentPeriod!)" *ngIf="summary?.currentPeriod && !summary?.latestRun">Run Payroll</button>
+      </div>
+    </div>
+
+    <!-- Employees Tab -->
+    <div *ngIf="activeTab === 'employees'" class="tab-pane">
+      <div class="pane-header">
+        <h2>Employees</h2>
+        <button class="btn btn-primary" (click)="openCreateEmployee()">Add Employee</button>
+      </div>
+
+      <div class="search-filters">
+        <div class="form-group">
+          <label>Search</label>
+          <input type="text" [(ngModel)]="employeeSearch.search" (ngModelChange)="onEmployeeSearchChange()" placeholder="Name, code..." class="form-input" />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select [(ngModel)]="employeeSearch.status" (ngModelChange)="onEmployeeSearchChange()" class="form-select">
+            <option value="">All</option>
+            <option *ngFor="let status of employmentStatuses" [value]="status">{{ status }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <input type="text" [(ngModel)]="employeeSearch.department" (ngModelChange)="onEmployeeSearchChange()" placeholder="Department" class="form-input" />
+        </div>
+      </div>
+
+      <div class="employee-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Department</th>
+              <th>Position</th>
+              <th>Hire Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let emp of employees; trackBy: trackByEmployeeId">
+              <td>{{ emp.employeeCode }}</td>
+              <td>{{ emp.firstName }} {{ emp.lastName }}</td>
+              <td>{{ emp.email || '-' }}</td>
+              <td>{{ emp.department || '-' }}</td>
+              <td>{{ emp.position || '-' }}</td>
+              <td>{{ formatDate(emp.hireDate) }}</td>
+              <td><span class="status-badge" [class]="getStatusClass(emp.status)">{{ emp.status }}</span></td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn btn-icon" (click)="openEditEmployee(emp)" title="Edit">✎</button>
+                  <button class="btn btn-icon" (click)="viewEmployeeCompensation(emp)" title="Compensation">💰</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="!employees.length">
+              <td colspan="8" class="empty-state">No employees found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination" *ngIf="totalEmployees > employeeLimit">
+        <button class="btn btn-secondary" (click)="onEmployeePageChange(employeePage - 1)" [disabled]="employeePage === 1">Previous</button>
+        <span class="page-info">Page {{ employeePage }} of {{ Math.ceil(totalEmployees / employeeLimit) }}</span>
+        <button class="btn btn-secondary" (click)="onEmployeePageChange(employeePage + 1)" [disabled]="employeePage >= Math.ceil(totalEmployees / employeeLimit)">Next</button>
+      </div>
+
+      <!-- Employee Drawer -->
+      <div class="drawer" *ngIf="showEmployeeDrawer">
+        <div class="drawer-header">
+          <h3>{{ isEditingEmployee ? 'Edit Employee' : 'Create Employee' }}</h3>
+          <button class="btn btn-close" (click)="closeEmployeeDrawer()">✕</button>
+        </div>
+        <div class="drawer-body">
+          <!-- Create Employee Form -->
+          <div *ngIf="!isEditingEmployee">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Employee Code *</label>
+                <input type="text" [(ngModel)]="createEmployeeForm.employeeCode" class="form-input" required />
+              </div>
+              <div class="form-group">
+                <label>First Name *</label>
+                <input type="text" [(ngModel)]="createEmployeeForm.firstName" class="form-input" required />
+              </div>
+              <div class="form-group">
+                <label>Last Name *</label>
+                <input type="text" [(ngModel)]="createEmployeeForm.lastName" class="form-input" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" [(ngModel)]="createEmployeeForm.email" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="text" [(ngModel)]="createEmployeeForm.phone" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Hire Date *</label>
+                <input type="date" [(ngModel)]="createEmployeeForm.hireDate" class="form-input" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Department</label>
+                <input type="text" [(ngModel)]="createEmployeeForm.department" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Position</label>
+                <input type="text" [(ngModel)]="createEmployeeForm.position" class="form-input" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Edit Employee Form -->
+          <div *ngIf="isEditingEmployee">
+            <div class="form-row">
+              <div class="form-group">
+                <label>First Name *</label>
+                <input type="text" [(ngModel)]="updateEmployeeForm.firstName" class="form-input" required />
+              </div>
+              <div class="form-group">
+                <label>Last Name *</label>
+                <input type="text" [(ngModel)]="updateEmployeeForm.lastName" class="form-input" required />
+              </div>
+              <div class="form-group">
+                <label>Hire Date</label>
+                <input type="date" [(ngModel)]="updateEmployeeForm.hireDate" class="form-input" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" [(ngModel)]="updateEmployeeForm.email" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="text" [(ngModel)]="updateEmployeeForm.phone" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Termination Date</label>
+                <input type="date" [(ngModel)]="updateEmployeeForm.terminationDate" class="form-input" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Department</label>
+                <input type="text" [(ngModel)]="updateEmployeeForm.department" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Position</label>
+                <input type="text" [(ngModel)]="updateEmployeeForm.position" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select [(ngModel)]="updateEmployeeForm.status" class="form-select">
+                  <option *ngFor="let status of employmentStatuses" [value]="status">{{ status }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="drawer-actions">
+            <button class="btn btn-secondary" (click)="closeEmployeeDrawer()">Cancel</button>
+            <button class="btn btn-primary" (click)="saveEmployee()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compensation Tab -->
+    <div *ngIf="activeTab === 'compensation'" class="tab-pane">
+      <div *ngIf="selectedCompensationEmployee" class="compensation-view">
+        <div class="pane-header">
+          <h2>Compensation for {{ selectedCompensationEmployee.firstName }} {{ selectedCompensationEmployee.lastName }}</h2>
+          <button class="btn btn-secondary" (click)="closeCompensationDrawer()">← Back to Employees</button>
+        </div>
+
+        <div class="compensation-form">
+          <h3>Add Compensation Record</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Effective Date *</label>
+              <input type="date" [(ngModel)]="compensationForm.effectiveDate" class="form-input" required />
+            </div>
+            <div class="form-group">
+              <label>Basic Salary *</label>
+              <input type="number" [(ngModel)]="compensationForm.basicSalary" class="form-input" min="0" step="1000" required />
+            </div>
+            <div class="form-group">
+              <label>Housing Allowance</label>
+              <input type="number" [(ngModel)]="compensationForm.housingAllowance" class="form-input" min="0" step="1000" />
+            </div>
+            <div class="form-group">
+              <label>Transport Allowance</label>
+              <input type="number" [(ngModel)]="compensationForm.transportAllowance" class="form-input" min="0" step="1000" />
+            </div>
+            <div class="form-group">
+              <label>Other Allowance</label>
+              <input type="number" [(ngModel)]="compensationForm.otherAllowance" class="form-input" min="0" step="1000" />
+            </div>
+            <div class="form-group">
+              <label>Currency</label>
+              <input type="text" [(ngModel)]="compensationForm.currency" class="form-input" value="JPY" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" (click)="addCompensation()">Add</button>
+          </div>
+        </div>
+
+        <div class="compensation-history">
+          <h3>Compensation History</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Effective Date</th>
+                <th>Basic Salary</th>
+                <th>Housing</th>
+                <th>Transport</th>
+                <th>Other</th>
+                <th>Currency</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let comp of compensation">
+                <td>{{ formatDate(comp.effectiveDate) }}</td>
+                <td>{{ formatCurrency(comp.basicSalary) }}</td>
+                <td>{{ formatCurrency(comp.housingAllowance) }}</td>
+                <td>{{ formatCurrency(comp.transportAllowance) }}</td>
+                <td>{{ formatCurrency(comp.otherAllowance) }}</td>
+                <td>{{ comp.currency }}</td>
+              </tr>
+              <tr *ngIf="!compensation.length">
+                <td colspan="6" class="empty-state">No compensation records</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="!selectedCompensationEmployee" class="empty-state-panel">
+        <div class="empty-icon">💰</div>
+        <h3>Select an Employee</h3>
+        <p>Go to the Employees tab and click the compensation icon to manage compensation records.</p>
+      </div>
+    </div>
+
+    <!-- Payroll Periods Tab -->
+    <div *ngIf="activeTab === 'periods'" class="tab-pane">
+      <div class="pane-header">
+        <h2>Payroll Periods</h2>
+        <button class="btn btn-primary" (click)="openCreatePeriod()" *ngIf="!showCreatePeriod">Create Period</button>
+        <button class="btn btn-secondary" (click)="closeCreatePeriod()" *ngIf="showCreatePeriod">Cancel</button>
+      </div>
+
+      <div class="period-form" *ngIf="showCreatePeriod">
+        <h3>Create Payroll Period</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Period Start *</label>
+            <input type="date" [(ngModel)]="periodForm.periodStart" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label>Period End *</label>
+            <input type="date" [(ngModel)]="periodForm.periodEnd" class="form-input" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" (click)="createPeriod()">Create</button>
+          <button class="btn btn-secondary" (click)="closeCreatePeriod()">Cancel</button>
+        </div>
+      </div>
+
+      <div class="period-list">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Status</th>
+              <th>Processed</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let period of periods; trackBy: trackByPeriodId">
+              <td>{{ formatDate(period.periodStart) }} – {{ formatDate(period.periodEnd) }}</td>
+              <td><span class="status-badge" [class]="getStatusClass(period.status)">{{ period.status }}</span></td>
+              <td>{{ period.processedAt ? formatDate(period.processedAt) : '-' }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn btn-primary" (click)="createRun(period)" [disabled]="period.status !== 'OPEN'">Run Payroll</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="!periods.length">
+              <td colspan="4" class="empty-state">No payroll periods</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination" *ngIf="totalPeriods > periodLimit">
+        <button class="btn btn-secondary" (click)="onPeriodPageChange(periodPage - 1)" [disabled]="periodPage === 1">Previous</button>
+        <span class="page-info">Page {{ periodPage }} of {{ Math.ceil(totalPeriods / periodLimit) }}</span>
+        <button class="btn btn-secondary" (click)="onPeriodPageChange(periodPage + 1)" [disabled]="periodPage >= Math.ceil(totalPeriods / periodLimit)">Next</button>
+      </div>
+    </div>
+
+    <!-- Payroll Runs Tab -->
+    <div *ngIf="activeTab === 'runs'" class="tab-pane">
+      <div class="pane-header">
+        <h2>Payroll Runs</h2>
+      </div>
+
+      <div class="run-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Status</th>
+              <th>Employees</th>
+              <th>Gross</th>
+              <th>Deductions</th>
+              <th>Net</th>
+              <th>Calculated</th>
+              <th>Finalized</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let run of runs; trackBy: trackByRunId">
+              <td>{{ formatDate(run.payrollPeriodId) }}</td>
+              <td><span class="status-badge" [class]="getStatusClass(run.status)">{{ run.status }}</span></td>
+              <td>{{ run.lines?.length || 0 }}</td>
+              <td>{{ formatCurrency(run.totalGross) }}</td>
+              <td>{{ formatCurrency(run.totalDeductions) }}</td>
+              <td>{{ formatCurrency(run.totalNet) }}</td>
+              <td>{{ run.calculatedAt ? formatDate(run.calculatedAt) : '-' }}</td>
+              <td>{{ run.finalizedAt ? formatDate(run.finalizedAt) : '-' }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn btn-icon" (click)="viewRun(run)" title="View">👁</button>
+                  <button class="btn btn-primary" (click)="calculateRun(run)" [disabled]="run.status !== 'DRAFT' && run.status !== 'CALCULATED'" title="Calculate">⚙</button>
+                  <button class="btn btn-success" (click)="finalizeRun(run)" [disabled]="run.status !== 'CALCULATED'" title="Finalize">✓</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="!runs.length">
+              <td colspan="9" class="empty-state">No payroll runs</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination" *ngIf="totalRuns > runLimit">
+        <button class="btn btn-secondary" (click)="onRunPageChange(runPage - 1)" [disabled]="runPage === 1">Previous</button>
+        <span class="page-info">Page {{ runPage }} of {{ Math.ceil(totalRuns / runLimit) }}</span>
+        <button class="btn btn-secondary" (click)="onRunPageChange(runPage + 1)" [disabled]="runPage >= Math.ceil(totalRuns / runLimit)">Next</button>
+      </div>
+
+      <!-- Run Detail Drawer -->
+      <div class="drawer" *ngIf="showRunDrawer && selectedRun">
+        <div class="drawer-header">
+          <h3>Payroll Run Details</h3>
+          <button class="btn btn-close" (click)="closeRunDrawer()">✕</button>
+        </div>
+        <div class="drawer-body">
+          <div class="run-summary">
+            <div class="summary-row">
+              <span>Status:</span>
+              <span class="status-badge" [class]="getStatusClass(selectedRun.status)">{{ selectedRun.status }}</span>
+            </div>
+            <div class="summary-row">
+              <span>Gross:</span>
+              <span>{{ formatCurrency(selectedRun.totalGross) }} JPY</span>
+            </div>
+            <div class="summary-row">
+              <span>Deductions:</span>
+              <span>{{ formatCurrency(selectedRun.totalDeductions) }} JPY</span>
+            </div>
+            <div class="summary-row">
+              <span>Net:</span>
+              <span>{{ formatCurrency(selectedRun.totalNet) }} JPY</span>
+            </div>
+          </div>
+
+          <div class="payslip-table" *ngIf="runLines.length">
+            <h4>Payslips</h4>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Basic</th>
+                  <th>Housing</th>
+                  <th>Transport</th>
+                  <th>Other</th>
+                  <th>Overtime</th>
+                  <th>Gross</th>
+                  <th>Deductions</th>
+                  <th>Net</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let line of runLines; trackBy: trackByLineId">
+                  <td>{{ line.employee?.firstName }} {{ line.employee?.lastName }} ({{ line.employee?.employeeCode }})</td>
+                  <td>{{ formatCurrency(line.basic) }}</td>
+                  <td>{{ formatCurrency(line.housingAllowance) }}</td>
+                  <td>{{ formatCurrency(line.transportAllowance) }}</td>
+                  <td>{{ formatCurrency(line.otherAllowance) }}</td>
+                  <td>{{ formatCurrency(line.overtime) }}</td>
+                  <td>{{ formatCurrency(line.gross) }}</td>
+                  <td>{{ formatCurrency(line.deductions) }}</td>
+                  <td>{{ formatCurrency(line.net) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div *ngIf="!runLines.length" class="empty-state">No payslips generated</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Tab -->
+    <div *ngIf="activeTab === 'summary'" class="tab-pane">
+      <h2>Payroll Summary</h2>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <h3>Employee Statistics</h3>
+          <div class="summary-stats">
+            <div class="stat"><span class="stat-value">{{ summary?.employeeCount || 0 }}</span><span class="stat-label">Total Employees</span></div>
+            <div class="stat"><span class="stat-value">{{ summary?.activeEmployeeCount || 0 }}</span><span class="stat-label">Active Employees</span></div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <h3>Current Period</h3>
+          <div *ngIf="summary?.currentPeriod" class="period-info">
+            <p>{{ formatDate(summary.currentPeriod.periodStart) }} – {{ formatDate(summary.currentPeriod.periodEnd) }}</p>
+            <p class="status-badge" [class]="getStatusClass(summary.currentPeriod.status)">{{ summary.currentPeriod.status }}</p>
+          </div>
+          <div *ngIf="!summary?.currentPeriod" class="empty-state">No current period</div>
+        </div>
+        <div class="summary-card">
+          <h3>Latest Payroll Run</h3>
+          <div *ngIf="summary?.latestRun" class="run-info">
+            <p>Status: <span class="status-badge" [class]="getStatusClass(summary.latestRun.status)">{{ summary.latestRun.status }}</span></p>
+            <p>Gross: {{ formatCurrency(summary.latestRun.totalGross) }} JPY</p>
+            <p>Net: {{ formatCurrency(summary.latestRun.totalNet) }} JPY</p>
+            <p *ngIf="summary.latestRun.calculatedAt">Calculated: {{ formatDate(summary.latestRun.calculatedAt) }}</p>
+            <p *ngIf="summary.latestRun.finalizedAt">Finalized: {{ formatDate(summary.latestRun.finalizedAt) }}</p>
+          </div>
+          <div *ngIf="!summary?.latestRun" class="empty-state">No payroll runs yet</div>
+        </div>
+        <div class="summary-card">
+          <h3>Payroll Totals</h3>
+          <div class="totals">
+            <div class="total-row"><span>Gross Payroll:</span><span>{{ formatCurrency(summary?.totalGross || 0) }} JPY</span></div>
+            <div class="total-row"><span>Net Payroll:</span><span>{{ formatCurrency(summary?.totalNet || 0) }} JPY</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

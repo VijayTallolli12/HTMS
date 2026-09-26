@@ -646,6 +646,67 @@ export async function seedIamBaseline() {
       description: 'View current on-hand, reserved, and available stock levels',
       module: 'PROCUREMENT',
     },
+    // ── HR & Payroll ──────────────────────────────────────────────────────
+    {
+      code: 'hr.employee.view',
+      name: 'View Employees',
+      description: 'View employee directory and profiles',
+      module: 'HR',
+    },
+    {
+      code: 'hr.employee.manage',
+      name: 'Manage Employees',
+      description: 'Create and update employee records',
+      module: 'HR',
+    },
+    {
+      code: 'hr.compensation.view',
+      name: 'View Employee Compensation',
+      description: 'View employee salary and allowance details',
+      module: 'HR',
+    },
+    {
+      code: 'hr.compensation.manage',
+      name: 'Manage Employee Compensation',
+      description: 'Create and update employee compensation records',
+      module: 'HR',
+    },
+    {
+      code: 'payroll.period.view',
+      name: 'View Payroll Periods',
+      description: 'View payroll period definitions and status',
+      module: 'PAYROLL',
+    },
+    {
+      code: 'payroll.period.manage',
+      name: 'Manage Payroll Periods',
+      description: 'Create and update payroll periods',
+      module: 'PAYROLL',
+    },
+    {
+      code: 'payroll.run.view',
+      name: 'View Payroll Runs',
+      description: 'View payroll run details, calculations, and payslips',
+      module: 'PAYROLL',
+    },
+    {
+      code: 'payroll.run.process',
+      name: 'Process Payroll Runs',
+      description: 'Calculate and process payroll runs',
+      module: 'PAYROLL',
+    },
+    {
+      code: 'payroll.run.finalize',
+      name: 'Finalize Payroll Runs',
+      description: 'Finalize calculated payroll runs',
+      module: 'PAYROLL',
+    },
+    {
+      code: 'payroll.payslip.view',
+      name: 'View Payslips',
+      description: 'View individual employee payslips',
+      module: 'PAYROLL',
+    },
   ];
 
   const permMap = new Map<string, string>();
@@ -743,6 +804,16 @@ export async function seedIamBaseline() {
         'procurement.receipt.view',
         'procurement.receipt.create',
         'procurement.stock.view',
+        'hr.employee.view',
+        'hr.employee.manage',
+        'hr.compensation.view',
+        'hr.compensation.manage',
+        'payroll.period.view',
+        'payroll.period.manage',
+        'payroll.run.view',
+        'payroll.run.process',
+        'payroll.run.finalize',
+        'payroll.payslip.view',
       ],
     },
     {

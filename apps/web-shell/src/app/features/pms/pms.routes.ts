@@ -114,4 +114,12 @@ export const PMS_ROUTES: Routes = [
       ),
     title: 'Procurement & Inventory',
   },
+  {
+    path: 'hr-payroll',
+    loadComponent: () =>
+      import('./hr-payroll/hr-payroll-workspace.component').then(
+        (m) => m.HrPayrollWorkspaceComponent,
+      ),
+    title: 'HR & Payroll',
+  },
 ];

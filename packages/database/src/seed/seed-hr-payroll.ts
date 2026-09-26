@@ -1,0 +1,315 @@
+import { getPrismaClient } from '../client';
+import { generateUuidV7 } from '@hms/shared';
+import { Prisma } from '@prisma/client';
+
+// Local enum definitions to avoid cross-package import issues
+enum EmploymentStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  TERMINATED = 'TERMINATED',
+  ON_LEAVE = 'ON_LEAVE',
+}
+
+enum PayrollPeriodStatus {
+  OPEN = 'OPEN',
+  PROCESSING = 'PROCESSING',
+  PROCESSED = 'PROCESSED',
+  CLOSED = 'CLOSED',
+}
+
+enum PayrollRunStatus {
+  DRAFT = 'DRAFT',
+  CALCULATING = 'CALCULATING',
+  CALCULATED = 'CALCULATED',
+  FINALIZED = 'FINALIZED',
+}
+
+export async function seedHrPayroll(propertyId: string): Promise<void> {
+  const prisma = getPrismaClient();
+  console.log('Seeding HR & Payroll demo data...');
+
+  // Create employees
+  const employees = await seedEmployees(prisma, propertyId);
+  console.log(`  Created ${employees.length} employees`);
+
+  // Create compensation records
+  await seedCompensations(prisma, propertyId, employees);
+  console.log('  Created compensation records');
+
+  // Create payroll period
+  const period = await seedPayrollPeriod(prisma, propertyId);
+  console.log('  Created payroll period');
+
+  // Create payroll run
+  const run = await seedPayrollRun(prisma, propertyId, period.id, employees);
+  console.log('  Created payroll run with calculated payslips');
+
+  console.log('HR & Payroll demo seeding completed.');
+}
+
+async function seedEmployees(prisma: any, propertyId: string) {
+  const employeeData = [
+    {
+      employeeCode: 'EMP-001',
+      firstName: 'Daniel',
+      lastName: 'Thomas',
+      email: 'daniel.thomas@demo.hms',
+      phone: '+1-415-555-0202',
+      hireDate: new Date('2020-01-15'),
+      department: 'Front Office',
+      position: 'Front Office Manager',
+    },
+    {
+      employeeCode: 'EMP-002',
+      firstName: 'Sara',
+      lastName: 'Khan',
+      email: 'sara.khan@demo.hms',
+      phone: '+44-20-555-0303',
+      hireDate: new Date('2021-03-22'),
+      department: 'Housekeeping',
+      position: 'Housekeeping Supervisor',
+    },
+    {
+      employeeCode: 'EMP-003',
+      firstName: 'James',
+      lastName: 'Wright',
+      email: 'james.wright@demo.hms',
+      phone: '+61-2-555-0606',
+      hireDate: new Date('2019-06-10'),
+      department: 'Engineering',
+      position: 'Maintenance Technician',
+    },
+    {
+      employeeCode: 'EMP-004',
+      firstName: 'Maria',
+      lastName: 'Fernandes',
+      email: 'maria.fernandes@demo.hms',
+      phone: '+351-91-555-0505',
+      hireDate: new Date('2022-09-01'),
+      department: 'F&B',
+      position: 'Restaurant Server',
+    },
+    {
+      employeeCode: 'EMP-005',
+      firstName: 'Michael',
+      lastName: 'Chen',
+      email: 'michael.chen@demo.hms',
+      phone: '+1-212-555-0101',
+      hireDate: new Date('2018-11-05'),
+      department: 'Management',
+      position: 'General Manager',
+    },
+    {
+      employeeCode: 'EMP-006',
+      firstName: 'Aisha',
+      lastName: 'Rahman',
+      email: 'aisha.rahman@demo.hms',
+      phone: '+971-50-555-0707',
+      hireDate: new Date('2023-02-14'),
+      department: 'Spa',
+      position: 'Spa Therapist',
+    },
+  ];
+
+  const createdEmployees = [];
+  for (const emp of employeeData) {
+    let existing = await prisma.employee.findFirst({
+      where: { propertyId, employeeCode: emp.employeeCode },
+    });
+
+    if (!existing) {
+      existing = await prisma.employee.create({
+        data: {
+          id: generateUuidV7(),
+          propertyId,
+          ...emp,
+          status: EmploymentStatus.ACTIVE,
+        },
+      });
+      console.log(`    Created Employee: ${emp.employeeCode} - ${emp.firstName} ${emp.lastName}`);
+    } else {
+      console.log(`    Employee exists: ${emp.employeeCode} - ${emp.firstName} ${emp.lastName}`);
+    }
+    createdEmployees.push(existing);
+  }
+
+  return createdEmployees;
+}
+
+async function seedCompensations(prisma: any, propertyId: string, employees: any[]) {
+  const compensationData: Record<string, { basic: number; housing: number; transport: number; other: number }> = {
+    'EMP-001': { basic: 450000, housing: 90000, transport: 30000, other: 20000 },   // Daniel - FOM
+    'EMP-002': { basic: 380000, housing: 76000, transport: 25000, other: 15000 },   // Sara - HK Supervisor
+    'EMP-003': { basic: 350000, housing: 70000, transport: 20000, other: 10000 },   // James - Maint Tech
+    'EMP-004': { basic: 280000, housing: 56000, transport: 15000, other: 5000 },    // Maria - Server
+    'EMP-005': { basic: 800000, housing: 160000, transport: 50000, other: 40000 },  // Michael - GM
+    'EMP-006': { basic: 320000, housing: 64000, transport: 20000, other: 10000 },   // Aisha - Spa Therapist
+  };
+
+  for (const employee of employees) {
+    const comp = compensationData[employee.employeeCode];
+    if (!comp) continue;
+
+    const existing = await prisma.employeeCompensation.findFirst({
+      where: { propertyId, employeeId: employee.id, deletedAt: null },
+    });
+
+    if (!existing) {
+      await prisma.employeeCompensation.create({
+        data: {
+          id: generateUuidV7(),
+          propertyId,
+          employeeId: employee.id,
+          effectiveDate: new Date('2024-01-01'),
+          basicSalary: new Prisma.Decimal(comp.basic),
+          housingAllowance: new Prisma.Decimal(comp.housing),
+          transportAllowance: new Prisma.Decimal(comp.transport),
+          otherAllowance: new Prisma.Decimal(comp.other),
+          currency: 'JPY',
+        },
+      });
+    }
+  }
+}
+
+async function seedPayrollPeriod(prisma: any, propertyId: string) {
+  // Create a period for October 2024
+  let period = await prisma.payrollPeriod.findFirst({
+    where: { propertyId, periodStart: new Date('2024-10-01'), periodEnd: new Date('2024-10-31') },
+  });
+
+  if (!period) {
+    period = await prisma.payrollPeriod.create({
+      data: {
+        id: generateUuidV7(),
+        propertyId,
+        periodStart: new Date('2024-10-01'),
+        periodEnd: new Date('2024-10-31'),
+        status: PayrollPeriodStatus.PROCESSED,
+        processedAt: new Date('2024-11-02'),
+        processedBy: 'system-seed',
+      },
+    });
+  }
+
+  return period;
+}
+
+async function seedPayrollRun(prisma: any, propertyId: string, periodId: string, employees: any[]) {
+  // Check if run already exists
+  let run = await prisma.payrollRun.findFirst({
+    where: { propertyId, payrollPeriodId: periodId },
+  });
+
+  if (run) {
+    // Update to finalized if not already
+    if (run.status !== PayrollRunStatus.FINALIZED) {
+      run = await prisma.payrollRun.update({
+        where: { id: run.id },
+        data: {
+          status: PayrollRunStatus.FINALIZED,
+          finalizedAt: new Date('2024-11-05'),
+          finalizedBy: 'system-seed',
+        },
+      });
+    }
+    return run;
+  }
+
+  // Calculate payroll for each employee
+  const employeesWithComp = await prisma.employee.findMany({
+    where: { propertyId, deletedAt: null, status: 'ACTIVE' },
+    include: {
+      compensations: {
+        where: { deletedAt: null },
+        orderBy: { effectiveDate: 'desc' },
+        take: 1,
+      },
+    },
+  });
+
+  const linesData: any[] = [];
+  let totalGross = new Prisma.Decimal(0);
+  let totalDeductions = new Prisma.Decimal(0);
+  let totalNet = new Prisma.Decimal(0);
+
+  for (const employee of employeesWithComp) {
+    const compensation = employee.compensations[0];
+    if (!compensation) continue;
+
+    const basic = new Prisma.Decimal(compensation.basicSalary);
+    const housing = new Prisma.Decimal(compensation.housingAllowance);
+    const transport = new Prisma.Decimal(compensation.transportAllowance);
+    const other = new Prisma.Decimal(compensation.otherAllowance);
+    const overtime = new Prisma.Decimal(0);
+
+    const gross = basic.add(housing).add(transport).add(other).add(overtime);
+    const deductions = gross.mul(new Prisma.Decimal('0.15')); // 15% demo deductions
+    const net = gross.sub(deductions);
+
+    totalGross = totalGross.add(gross);
+    totalDeductions = totalDeductions.add(deductions);
+    totalNet = totalNet.add(net);
+
+    linesData.push({
+      id: generateUuidV7(),
+      propertyId,
+      payrollRunId: '', // Will be set after run creation
+      employeeId: employee.id,
+      basic,
+      housingAllowance: housing,
+      transportAllowance: transport,
+      otherAllowance: other,
+      overtime,
+      gross,
+      deductions,
+      net,
+      currency: 'JPY',
+    });
+  }
+
+  // Create run and lines in transaction
+  run = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const newRun = await tx.payrollRun.create({
+      data: {
+        id: generateUuidV7(),
+        propertyId,
+        payrollPeriodId: periodId,
+        status: PayrollRunStatus.FINALIZED,
+        totalGross,
+        totalDeductions,
+        totalNet,
+        calculatedAt: new Date('2024-11-03'),
+        calculatedBy: 'system-seed',
+        finalizedAt: new Date('2024-11-05'),
+        finalizedBy: 'system-seed',
+        idempotencyKey: 'demo-seed-run-' + periodId,
+      },
+    });
+
+    // Create lines with run ID
+    for (const line of linesData) {
+      await tx.payrollLine.create({
+        data: { ...line, payrollRunId: newRun.id },
+      });
+    }
+
+    return newRun;
+  });
+
+  return run;
+}
+
+if (require.main === module) {
+  (async () => {
+    const prisma = getPrismaClient();
+    const property = await prisma.property.findUnique({ where: { code: 'PROP-TYO-001' } });
+    if (property) {
+      await seedHrPayroll(property.id);
+    }
+    await prisma.$disconnect();
+  })().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}
