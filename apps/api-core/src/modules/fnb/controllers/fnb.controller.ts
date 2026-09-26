@@ -26,6 +26,12 @@ import {
   RestaurantTableDto,
   FnbOrderDto,
   SecurityContext,
+  MenuItemDetailDto,
+  MenuItemVariantDto,
+  ModifierGroupDto,
+  ModifierDto,
+  MenuItemPriceDto,
+  MenuItemAvailability,
 } from '@hms/api-contracts';
 import {
   CurrentSecurityContext,
@@ -43,6 +49,16 @@ import {
   UpdateOrderStatusDto,
   CloseOrderDto,
   QueryFnbOrdersDto,
+  CreateMenuItemVariantDto,
+  UpdateMenuItemVariantDto,
+  CreateModifierGroupDto,
+  UpdateModifierGroupDto,
+  CreateModifierDto,
+  UpdateModifierDto,
+  UpdateMenuItemDto,
+  UpdateMenuItemAvailabilityDto,
+  UpdateMenuItemPriceDto,
+  QueryMenuItemsDto,
 } from '../dto/fnb.dto';
 
 @ApiTags('F&B - Restaurant & Outlets')
@@ -324,6 +340,227 @@ export class FnbController {
   }>>> {
     const data = await this.orderService.getInHouseGuests(propertyId);
     return createApiResponse(data, req);
+  }
+
+  // ----------------------------------------------------------------------
+  // Menu Item Detail (with variants and modifiers)
+  // ----------------------------------------------------------------------
+  @Get('outlets/:outletId/menu/items/:itemId')
+  @RequirePermissions('fnb.menu.view')
+  @ApiOperation({ summary: 'Get menu item detail with variants and modifiers' })
+  async getMenuItemDetail(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<MenuItemDetailDto>> {
+    const data = await this.menuService.findMenuItemDetail(propertyId, outletId, itemId);
+    return createApiResponse(data, req);
+  }
+
+  // ----------------------------------------------------------------------
+  // Menu Item Update
+  // ----------------------------------------------------------------------
+  @Patch('outlets/:outletId/menu/items/:itemId')
+  @RequirePermissions('fnb.menu.manage')
+  @ApiOperation({ summary: 'Update a menu item' })
+  async updateMenuItem(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateMenuItemDto,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<MenuItemDetailDto>> {
+    const data = await this.menuService.updateMenuItem(propertyId, outletId, itemId, dto);
+    return createApiResponse(data, req);
+  }
+
+  @Patch('outlets/:outletId/menu/items/:itemId/availability')
+  @RequirePermissions('fnb.availability.manage')
+  @ApiOperation({ summary: 'Update menu item availability' })
+  async updateMenuItemAvailability(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateMenuItemAvailabilityDto,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<MenuItemDetailDto>> {
+    const data = await this.menuService.updateMenuItemAvailability(propertyId, outletId, itemId, dto);
+    return createApiResponse(data, req);
+  }
+
+  @Patch('outlets/:outletId/menu/items/:itemId/price')
+  @RequirePermissions('fnb.pricing.manage')
+  @ApiOperation({ summary: 'Update menu item base price' })
+  async updateMenuItemPrice(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateMenuItemPriceDto,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<MenuItemPriceDto>> {
+    const data = await this.menuService.updateMenuItemPrice(propertyId, outletId, itemId, dto);
+    return createApiResponse(data, req);
+  }
+
+  @Get('outlets/:outletId/menu/items/search')
+  @RequirePermissions('fnb.menu.view')
+  @ApiOperation({ summary: 'Search menu items with pagination' })
+  async searchMenuItems(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Query() query: QueryMenuItemsDto,
+    @Req() req?: Request,
+  ) {
+    const data = await this.menuService.findMenuItemsPaginated(propertyId, {
+      ...query,
+      outletId,
+    });
+    return createApiResponse(data, req);
+  }
+
+  // ----------------------------------------------------------------------
+  // Menu Item Variants
+  // ----------------------------------------------------------------------
+  @Post('outlets/:outletId/menu/items/:itemId/variants')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermissions('fnb.catalog.manage')
+  @ApiOperation({ summary: 'Create a menu item variant' })
+  async createVariant(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: CreateMenuItemVariantDto,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<MenuItemVariantDto>> {
+    dto.menuItemId = itemId;
+    const data = await this.menuService.createVariant(propertyId, outletId, dto);
+    return createApiResponse(data, req);
+  }
+
+  @Patch('outlets/:outletId/menu/items/:itemId/variants/:variantId')
+  @RequirePermissions('fnb.catalog.manage')
+  @ApiOperation({ summary: 'Update a menu item variant' })
+  async updateVariant(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Param('variantId') variantId: string,
+    @Body() dto: UpdateMenuItemVariantDto,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<MenuItemVariantDto>> {
+    const data = await this.menuService.updateVariant(propertyId, outletId, variantId, dto);
+    return createApiResponse(data, req);
+  }
+
+  @Delete('outlets/:outletId/menu/items/:itemId/variants/:variantId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermissions('fnb.catalog.manage')
+  @ApiOperation({ summary: 'Delete a menu item variant' })
+  async deleteVariant(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Param('variantId') variantId: string,
+  ): Promise<void> {
+    await this.menuService.deleteVariant(propertyId, outletId, variantId);
+  }
+
+  // ----------------------------------------------------------------------
+  // Modifier Groups
+  // ----------------------------------------------------------------------
+  @Post('outlets/:outletId/menu/items/:itemId/modifier-groups')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermissions('fnb.catalog.manage')
+  @ApiOperation({ summary: 'Create a modifier group' })
+  async createModifierGroup(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: CreateModifierGroupDto,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ModifierGroupDto>> {
+    dto.menuItemId = itemId;
+    const data = await this.menuService.createModifierGroup(propertyId, outletId, dto);
+    return createApiResponse(data, req);
+  }
+
+  @Patch('outlets/:outletId/menu/items/:itemId/modifier-groups/:groupId')
+  @RequirePermissions('fnb.catalog.manage')
+  @ApiOperation({ summary: 'Update a modifier group' })
+  async updateModifierGroup(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Param('groupId') groupId: string,
+    @Body() dto: UpdateModifierGroupDto,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ModifierGroupDto>> {
+    const data = await this.menuService.updateModifierGroup(propertyId, outletId, groupId, dto);
+    return createApiResponse(data, req);
+  }
+
+  @Delete('outlets/:outletId/menu/items/:itemId/modifier-groups/:groupId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermissions('fnb.catalog.manage')
+  @ApiOperation({ summary: 'Delete a modifier group' })
+  async deleteModifierGroup(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Param('groupId') groupId: string,
+  ): Promise<void> {
+    await this.menuService.deleteModifierGroup(propertyId, outletId, groupId);
+  }
+
+  // ----------------------------------------------------------------------
+  // Modifiers
+  // ----------------------------------------------------------------------
+  @Post('outlets/:outletId/menu/items/:itemId/modifier-groups/:groupId/modifiers')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermissions('fnb.catalog.manage')
+  @ApiOperation({ summary: 'Create a modifier' })
+  async createModifier(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Param('groupId') groupId: string,
+    @Body() dto: CreateModifierDto,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ModifierDto>> {
+    dto.modifierGroupId = groupId;
+    const data = await this.menuService.createModifier(propertyId, outletId, dto);
+    return createApiResponse(data, req);
+  }
+
+  @Patch('outlets/:outletId/menu/items/:itemId/modifier-groups/:groupId/modifiers/:modifierId')
+  @RequirePermissions('fnb.catalog.manage')
+  @ApiOperation({ summary: 'Update a modifier' })
+  async updateModifier(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Param('groupId') groupId: string,
+    @Param('modifierId') modifierId: string,
+    @Body() dto: UpdateModifierDto,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ModifierDto>> {
+    const data = await this.menuService.updateModifier(propertyId, outletId, modifierId, dto);
+    return createApiResponse(data, req);
+  }
+
+  @Delete('outlets/:outletId/menu/items/:itemId/modifier-groups/:groupId/modifiers/:modifierId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermissions('fnb.catalog.manage')
+  @ApiOperation({ summary: 'Delete a modifier' })
+  async deleteModifier(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('itemId') itemId: string,
+    @Param('groupId') groupId: string,
+    @Param('modifierId') modifierId: string,
+  ): Promise<void> {
+    await this.menuService.deleteModifier(propertyId, outletId, modifierId);
   }
 }
 

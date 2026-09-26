@@ -13,6 +13,22 @@ import {
   CloseOrderDto,
   TableStatus,
   FnbOrderStatus,
+  MenuItemDetailDto,
+  MenuItemVariantDto,
+  ModifierGroupDto,
+  ModifierDto,
+  MenuItemPriceDto,
+  MenuItemAvailability,
+  CreateMenuItemVariantDto,
+  UpdateMenuItemVariantDto,
+  CreateModifierGroupDto,
+  UpdateModifierGroupDto,
+  CreateModifierDto,
+  UpdateModifierDto,
+  UpdateMenuItemDto,
+  UpdateMenuItemAvailabilityDto,
+  UpdateMenuItemPriceDto,
+  QueryMenuItemsDto,
 } from '@hms/api-contracts';
 import { environment } from '../../../../environments/environment';
 
@@ -88,6 +104,13 @@ export class FnbApiService {
     >(`${this.fnbUrl(propertyId)}/outlets/${outletId}/menu`);
   }
 
+  createItem(propertyId: string, outletId: string, dto: any) {
+    return this.http.post<ApiSuccessResponse<MenuItemDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items`,
+      dto,
+    );
+  }
+
   // -------------------------------------------------------------
   // In-House Checked-in Guests
   // -------------------------------------------------------------
@@ -155,6 +178,120 @@ export class FnbApiService {
     return this.http.post<ApiSuccessResponse<FnbOrderDto>>(
       `${this.fnbUrl(propertyId)}/orders/${orderId}/close`,
       dto,
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Menu Item Detail (with variants and modifiers)
+  // -------------------------------------------------------------
+  getMenuItemDetail(propertyId: string, outletId: string, itemId: string) {
+    return this.http.get<ApiSuccessResponse<MenuItemDetailDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}`,
+    );
+  }
+
+  updateMenuItem(propertyId: string, outletId: string, itemId: string, dto: UpdateMenuItemDto) {
+    return this.http.patch<ApiSuccessResponse<MenuItemDetailDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}`,
+      dto,
+    );
+  }
+
+  updateMenuItemAvailability(propertyId: string, outletId: string, itemId: string, dto: UpdateMenuItemAvailabilityDto) {
+    return this.http.patch<ApiSuccessResponse<MenuItemDetailDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}/availability`,
+      dto,
+    );
+  }
+
+  updateMenuItemPrice(propertyId: string, outletId: string, itemId: string, dto: UpdateMenuItemPriceDto) {
+    return this.http.patch<ApiSuccessResponse<MenuItemPriceDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}/price`,
+      dto,
+    );
+  }
+
+  searchMenuItems(propertyId: string, outletId: string, query: QueryMenuItemsDto) {
+    const params = new URLSearchParams();
+    if (query.categoryId) params.set('categoryId', query.categoryId);
+    if (query.availability) params.set('availability', query.availability);
+    if (query.isActive !== undefined) params.set('isActive', String(query.isActive));
+    if (query.search) params.set('search', query.search);
+    if (query.page) params.set('page', String(query.page));
+    if (query.limit) params.set('limit', String(query.limit));
+
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    return this.http.get<
+      ApiSuccessResponse<{ items: MenuItemDto[]; total: number; page: number; limit: number }>
+    >(`${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/search${queryString}`);
+  }
+
+  // -------------------------------------------------------------
+  // Menu Item Variants
+  // -------------------------------------------------------------
+  createVariant(propertyId: string, outletId: string, itemId: string, dto: CreateMenuItemVariantDto) {
+    return this.http.post<ApiSuccessResponse<MenuItemVariantDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}/variants`,
+      dto,
+    );
+  }
+
+  updateVariant(propertyId: string, outletId: string, itemId: string, variantId: string, dto: UpdateMenuItemVariantDto) {
+    return this.http.patch<ApiSuccessResponse<MenuItemVariantDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}/variants/${variantId}`,
+      dto,
+    );
+  }
+
+  deleteVariant(propertyId: string, outletId: string, itemId: string, variantId: string) {
+    return this.http.delete(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}/variants/${variantId}`,
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Modifier Groups
+  // -------------------------------------------------------------
+  createModifierGroup(propertyId: string, outletId: string, itemId: string, dto: CreateModifierGroupDto) {
+    return this.http.post<ApiSuccessResponse<ModifierGroupDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}/modifier-groups`,
+      dto,
+    );
+  }
+
+  updateModifierGroup(propertyId: string, outletId: string, itemId: string, groupId: string, dto: UpdateModifierGroupDto) {
+    return this.http.patch<ApiSuccessResponse<ModifierGroupDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}/modifier-groups/${groupId}`,
+      dto,
+    );
+  }
+
+  deleteModifierGroup(propertyId: string, outletId: string, itemId: string, groupId: string) {
+    return this.http.delete(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}/modifier-groups/${groupId}`,
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Modifiers
+  // -------------------------------------------------------------
+  createModifier(propertyId: string, outletId: string, itemId: string, groupId: string, dto: CreateModifierDto) {
+    return this.http.post<ApiSuccessResponse<ModifierDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}/modifier-groups/${groupId}/modifiers`,
+      dto,
+    );
+  }
+
+  updateModifier(propertyId: string, outletId: string, itemId: string, groupId: string, modifierId: string, dto: UpdateModifierDto) {
+    return this.http.patch<ApiSuccessResponse<ModifierDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}/modifier-groups/${groupId}/modifiers/${modifierId}`,
+      dto,
+    );
+  }
+
+  deleteModifier(propertyId: string, outletId: string, itemId: string, groupId: string, modifierId: string) {
+    return this.http.delete(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items/${itemId}/modifier-groups/${groupId}/modifiers/${modifierId}`,
     );
   }
 }

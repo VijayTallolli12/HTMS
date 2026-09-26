@@ -1378,14 +1378,17 @@ model FnbMenuItem {
   description  String?  @db.VarChar(500)
   price        Decimal  @db.Decimal(12, 2)
   currency     String   @default("JPY") @db.VarChar(3)
+  availability String   @default("AVAILABLE") @db.VarChar(20) // AVAILABLE | UNAVAILABLE
   displayOrder Int      @default(0) @map("display_order")
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  outlet     FnbOutlet       @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  category   FnbMenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  orderItems FnbOrderItem[]
+  outlet         FnbOutlet            @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  category       FnbMenuCategory      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems     FnbOrderItem[]
+  variants       FnbMenuItemVariant[]
+  modifierGroups FnbModifierGroup[]
 
   @@unique([outletId, code], name: "uq_fnb_menu_item_outlet_code")
   @@index([categoryId, displayOrder], name: "idx_fnb_menu_items_cat_display")
@@ -1484,6 +1487,73 @@ model FnbOrderItem {
 
   @@index([orderId], name: "idx_fnb_order_items_order")
   @@map("fnb_order_items")
+  @@schema("fnb_schema")
+}
+
+// ==============================================================================
+// 24a. F&B MENU ITEM VARIANTS (fnb_schema)
+// ==============================================================================
+model FnbMenuItemVariant {
+  id           String   @id
+  propertyId   String   @map("property_id")
+  menuItemId   String   @map("menu_item_id")
+  code         String   @db.VarChar(50)
+  name         String   @db.VarChar(100)
+  price        Decimal  @db.Decimal(12, 2)
+  currency     String   @default("JPY") @db.VarChar(3)
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  menuItem FnbMenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@unique([menuItemId, code], name: "uq_fnb_variant_item_code")
+  @@index([menuItemId, displayOrder], name: "idx_fnb_variants_item_display")
+  @@map("fnb_menu_item_variants")
+  @@schema("fnb_schema")
+}
+
+// ==============================================================================
+// 24b. F&B MODIFIER GROUPS (fnb_schema)
+// ==============================================================================
+model FnbModifierGroup {
+  id            String   @id
+  propertyId    String   @map("property_id")
+  menuItemId    String   @map("menu_item_id")
+  name          String   @db.VarChar(100)
+  selectionType String   @default("MULTIPLE") @map("selection_type") @db.VarChar(20)
+  minSelections Int      @default(0) @map("min_selections")
+  maxSelections Int      @default(5) @map("max_selections")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  menuItem  FnbMenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  modifiers FnbModifier[]
+
+  @@unique([menuItemId, name], name: "uq_fnb_mod_group_item_name")
+  @@map("fnb_modifier_groups")
+  @@schema("fnb_schema")
+}
+
+// ==============================================================================
+// 24c. F&B MODIFIERS (fnb_schema)
+// ==============================================================================
+model FnbModifier {
+  id              String   @id
+  propertyId      String   @map("property_id")
+  modifierGroupId String   @map("modifier_group_id")
+  name            String   @db.VarChar(100)
+  priceAdjustment Decimal  @default(0) @map("price_adjustment") @db.Decimal(12, 2)
+  currency        String   @default("JPY") @db.VarChar(3)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  modifierGroup FnbModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@map("fnb_modifiers")
   @@schema("fnb_schema")
 }
 

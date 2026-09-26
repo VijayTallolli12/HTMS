@@ -432,6 +432,36 @@ export async function seedIamBaseline() {
       description: 'Settle order bill and post room charges to guest folio',
       module: 'FNB',
     },
+    {
+      code: 'fnb.catalog.view',
+      name: 'View F&B Catalog',
+      description: 'View menu items, variants, modifiers, and availability',
+      module: 'FNB',
+    },
+    {
+      code: 'fnb.catalog.manage',
+      name: 'Manage F&B Catalog',
+      description: 'Create and update menu items, variants, and modifier groups',
+      module: 'FNB',
+    },
+    {
+      code: 'fnb.pricing.view',
+      name: 'View F&B Pricing',
+      description: 'View menu item and variant pricing',
+      module: 'FNB',
+    },
+    {
+      code: 'fnb.pricing.manage',
+      name: 'Manage F&B Pricing',
+      description: 'Create and update menu item and variant prices',
+      module: 'FNB',
+    },
+    {
+      code: 'fnb.availability.manage',
+      name: 'Manage F&B Availability',
+      description: 'Update menu item and variant availability status',
+      module: 'FNB',
+    },
     // ── Spa Operations ───────────────────────────────────────────────
     {
       code: 'spa.service.view',
@@ -778,6 +808,11 @@ export async function seedIamBaseline() {
         'fnb.order.create',
         'fnb.order.manage',
         'fnb.order.close',
+        'fnb.catalog.view',
+        'fnb.catalog.manage',
+        'fnb.pricing.view',
+        'fnb.pricing.manage',
+        'fnb.availability.manage',
         'spa.service.view',
         'spa.service.manage',
         'spa.therapist.view',

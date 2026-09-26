@@ -25,6 +25,22 @@ import {
   FnbOrderStatus,
   SettlementType,
   FnbPaymentMethod,
+  MenuItemDetailDto,
+  MenuItemVariantDto,
+  ModifierGroupDto,
+  ModifierDto,
+  MenuItemPriceDto,
+  MenuItemAvailability,
+  CreateMenuItemVariantDto,
+  UpdateMenuItemVariantDto,
+  CreateModifierGroupDto,
+  UpdateModifierGroupDto,
+  CreateModifierDto,
+  UpdateModifierDto,
+  UpdateMenuItemDto,
+  UpdateMenuItemAvailabilityDto,
+  UpdateMenuItemPriceDto,
+  QueryMenuItemsDto,
 } from '@hms/api-contracts';
 import {
   HmsButtonComponent,
@@ -35,7 +51,7 @@ import {
   HmsEmptyComponent,
 } from '../../shared/index';
 
-type ActiveViewTab = 'tables' | 'kitchen' | 'menu';
+type ActiveViewTab = 'tables' | 'kitchen' | 'menu' | 'catalog' | 'pricing' | 'outlets';
 
 @Component({
   selector: 'app-fnb-workspace',
@@ -119,6 +135,44 @@ export class FnbWorkspaceComponent implements OnInit {
   closeSelectedGuestReservationId = '';
   closeManualRoomNumber = '';
 
+  // Catalog Management State
+  catalogItems = signal<MenuItemDto[]>([]);
+  catalogCategories = signal<MenuCategoryDto[]>([]);
+  catalogSearch = signal<string>('');
+  catalogCategoryFilter = signal<string>('ALL');
+  catalogAvailabilityFilter = signal<string>('ALL');
+  catalogActiveOnly = signal<boolean>(true);
+  catalogSelectedItem = signal<MenuItemDetailDto | null>(null);
+  showCatalogItemDrawer = signal<boolean>(false);
+  isLoadingCatalog = signal<boolean>(false);
+  catalogPage = signal<number>(1);
+  catalogLimit = signal<number>(20);
+  catalogTotal = signal<number>(0);
+
+  // Catalog Item Form
+  catalogFormMode = signal<'create' | 'edit'>('create');
+  catalogForm = signal<UpdateMenuItemDto>({});
+
+  // Pricing State
+  pricingItems = signal<MenuItemPriceDto[]>([]);
+  pricingSearch = signal<string>('');
+  pricingAvailabilityFilter = signal<string>('ALL');
+  isLoadingPricing = signal<boolean>(false);
+  pricingPage = signal<number>(1);
+  pricingLimit = signal<number>(20);
+  pricingTotal = signal<number>(0);
+  pricingSelectedItem = signal<MenuItemPriceDto | null>(null);
+  showPriceEditDrawer = signal<boolean>(false);
+  priceEditForm = signal<UpdateMenuItemPriceDto>({ price: 0 });
+
+  // Outlets Management State
+  managementOutlets = signal<OutletDto[]>([]);
+  isLoadingOutletsMgmt = signal<boolean>(false);
+  outletSelectedForMgmt = signal<OutletDto | null>(null);
+  showOutletDetailDrawer = signal<boolean>(false);
+  isLoadingOutletDetail = signal<boolean>(false);
+  outletDetail = signal<any>(null);
+
   // Permission helpers
   hasPermission(perm: string): boolean {
     return this.authService.hasPermission(perm);
@@ -176,6 +230,9 @@ export class FnbWorkspaceComponent implements OnInit {
     const prop = this.activeProperty();
     if (prop?.id && outletId) {
       this.loadOutletDetails(prop.id, outletId);
+      this.loadCatalog(prop.id, outletId);
+      this.loadPricing(prop.id, outletId);
+      this.loadCatalogCategories(prop.id, outletId);
     }
   }
 
@@ -527,5 +584,305 @@ export class FnbWorkspaceComponent implements OnInit {
       return `¥${num.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}`;
     }
     return `$${num.toFixed(2)}`;
+  }
+
+  // ================================================================
+  // Catalog Management
+  // ================================================================
+  loadCatalog(propertyId: string, outletId: string, page = 1): void {
+    this.isLoadingCatalog.set(true);
+    const query: QueryMenuItemsDto = {
+      outletId,
+      page,
+      limit: this.catalogLimit(),
+      search: this.catalogSearch() || undefined,
+      categoryId: this.catalogCategoryFilter() === 'ALL' ? undefined : this.catalogCategoryFilter(),
+      availability: this.catalogAvailabilityFilter() === 'ALL' ? undefined : this.catalogAvailabilityFilter() as MenuItemAvailability,
+      isActive: this.catalogActiveOnly() || undefined,
+    };
+
+    this.fnbApi.searchMenuItems(propertyId, outletId, query).subscribe({
+      next: (res) => {
+        this.catalogItems.set(res.data.items);
+        this.catalogTotal.set(res.data.total);
+        this.catalogPage.set(res.data.page);
+        this.isLoadingCatalog.set(false);
+      },
+      error: (err) => {
+        this.errorMessage.set(err?.error?.message || 'Failed to load catalog');
+        this.isLoadingCatalog.set(false);
+      },
+    });
+  }
+
+  loadCatalogCategories(propertyId: string, outletId: string): void {
+    this.fnbApi.getCategories(propertyId, outletId).subscribe({
+      next: (res) => {
+        this.catalogCategories.set(res.data || []);
+      },
+    });
+  }
+
+  openCatalogItem(item: MenuItemDto): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (!propertyId || !outletId) return;
+
+    this.isLoadingCatalog.set(true);
+    this.fnbApi.getMenuItemDetail(propertyId, outletId, item.id).subscribe({
+      next: (res) => {
+        this.catalogSelectedItem.set(res.data);
+        this.showCatalogItemDrawer.set(true);
+        this.isLoadingCatalog.set(false);
+      },
+      error: (err) => {
+        this.errorMessage.set(err?.error?.message || 'Failed to load item details');
+        this.isLoadingCatalog.set(false);
+      },
+    });
+  }
+
+  closeCatalogItemDrawer(): void {
+    this.showCatalogItemDrawer.set(false);
+    this.catalogSelectedItem.set(null);
+  }
+
+  startEditCatalogItem(item: MenuItemDto): void {
+    this.catalogFormMode.set('edit');
+    this.catalogForm.set({
+      name: item.name,
+      description: item.description ?? undefined,
+      price: item.price,
+      currency: item.currency,
+      availability: item.availability,
+      displayOrder: item.displayOrder,
+      isActive: item.isActive,
+    });
+  }
+
+  startCreateCatalogItem(): void {
+    this.catalogFormMode.set('create');
+    this.catalogForm.set({});
+  }
+
+  saveCatalogItem(): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    const item = this.catalogSelectedItem();
+    if (!propertyId || !outletId || !item) return;
+
+    this.isSubmitting.set(true);
+    if (this.catalogFormMode() === 'edit') {
+      this.fnbApi.updateMenuItem(propertyId, outletId, item.id, this.catalogForm()).subscribe({
+        next: (res) => {
+          this.isSubmitting.set(false);
+          this.loadCatalog(propertyId, outletId, this.catalogPage());
+          this.closeCatalogItemDrawer();
+          this.successMessage.set('Menu item updated');
+        },
+        error: (err) => {
+          this.isSubmitting.set(false);
+          this.errorMessage.set(err?.error?.message || 'Failed to update menu item');
+        },
+      });
+    } else {
+      // Create new menu item - need outlet and category
+      const categoryId = this.catalogCategories()[0]?.id;
+      if (!categoryId) return;
+      this.fnbApi.createItem(propertyId, outletId, {
+        categoryId,
+        code: `ITEM-${Date.now()}`,
+        ...this.catalogForm(),
+      } as any).subscribe({
+        next: (res) => {
+          this.isSubmitting.set(false);
+          this.loadCatalog(propertyId, outletId, this.catalogPage());
+          this.successMessage.set('Menu item created');
+        },
+        error: (err) => {
+          this.isSubmitting.set(false);
+          this.errorMessage.set(err?.error?.message || 'Failed to create menu item');
+        },
+      });
+    }
+  }
+
+  deleteCatalogItem(item: MenuItemDto): void {
+    if (!confirm(`Delete menu item "${item.name}"?`)) return;
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (!propertyId || !outletId) return;
+
+    // Note: Delete endpoint would need to be added to API
+    this.errorMessage.set('Delete not yet implemented');
+  }
+
+  onCatalogSearchChange(): void {
+    this.catalogPage.set(1);
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (propertyId && outletId) {
+      this.loadCatalog(propertyId, outletId, 1);
+    }
+  }
+
+  onCatalogPageChange(page: number): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (propertyId && outletId) {
+      this.loadCatalog(propertyId, outletId, page);
+    }
+  }
+
+  // ================================================================
+  // Pricing Management
+  // ================================================================
+  loadPricing(propertyId: string, outletId: string, page = 1): void {
+    this.isLoadingPricing.set(true);
+    const query: QueryMenuItemsDto = {
+      outletId,
+      page,
+      limit: this.pricingLimit(),
+      search: this.pricingSearch() || undefined,
+      availability: this.pricingAvailabilityFilter() === 'ALL' ? undefined : this.pricingAvailabilityFilter() as MenuItemAvailability,
+      isActive: true,
+    };
+
+    this.fnbApi.searchMenuItems(propertyId, outletId, query).subscribe({
+      next: (res) => {
+        this.pricingItems.set(res.data.items as any);
+        this.pricingTotal.set(res.data.total);
+        this.pricingPage.set(res.data.page);
+        this.isLoadingPricing.set(false);
+      },
+      error: (err) => {
+        this.errorMessage.set(err?.error?.message || 'Failed to load pricing');
+        this.isLoadingPricing.set(false);
+      },
+    });
+  }
+
+  openPriceEdit(item: MenuItemPriceDto): void {
+    this.pricingSelectedItem.set(item);
+    this.priceEditForm.set({ price: Number(item.basePrice) });
+    this.showPriceEditDrawer.set(true);
+  }
+
+  closePriceEditDrawer(): void {
+    this.showPriceEditDrawer.set(false);
+    this.pricingSelectedItem.set(null);
+  }
+
+  savePriceEdit(): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    const item = this.pricingSelectedItem();
+    if (!propertyId || !outletId || !item) return;
+
+    this.isSubmitting.set(true);
+    this.fnbApi.updateMenuItemPrice(propertyId, outletId, item.id, this.priceEditForm()).subscribe({
+      next: (res) => {
+        this.isSubmitting.set(false);
+        this.loadPricing(propertyId, outletId, this.pricingPage());
+        this.closePriceEditDrawer();
+        this.successMessage.set('Price updated');
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.errorMessage.set(err?.error?.message || 'Failed to update price');
+      },
+    });
+  }
+
+  onPricingSearchChange(): void {
+    this.pricingPage.set(1);
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (propertyId && outletId) {
+      this.loadPricing(propertyId, outletId, 1);
+    }
+  }
+
+  onPricingPageChange(page: number): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (propertyId && outletId) {
+      this.loadPricing(propertyId, outletId, page);
+    }
+  }
+
+  // ================================================================
+  // Outlets Management
+  // ================================================================
+  loadOutletsForManagement(propertyId: string): void {
+    this.isLoadingOutletsMgmt.set(true);
+    this.fnbApi.getOutlets(propertyId).subscribe({
+      next: (res) => {
+        this.managementOutlets.set(res.data || []);
+        this.isLoadingOutletsMgmt.set(false);
+      },
+      error: (err) => {
+        this.errorMessage.set(err?.error?.message || 'Failed to load outlets');
+        this.isLoadingOutletsMgmt.set(false);
+      },
+    });
+  }
+
+  openOutletDetail(outlet: OutletDto): void {
+    const propertyId = this.activeProperty()?.id;
+    if (!propertyId) return;
+
+    this.isLoadingOutletDetail.set(true);
+    this.fnbApi.getOutlet(propertyId, outlet.id).subscribe({
+      next: (res) => {
+        this.outletDetail.set(res.data);
+        this.outletSelectedForMgmt.set(outlet);
+        this.showOutletDetailDrawer.set(true);
+        this.isLoadingOutletDetail.set(false);
+      },
+      error: (err) => {
+        this.errorMessage.set(err?.error?.message || 'Failed to load outlet details');
+        this.isLoadingOutletDetail.set(false);
+      },
+    });
+  }
+
+  closeOutletDetailDrawer(): void {
+    this.showOutletDetailDrawer.set(false);
+    this.outletSelectedForMgmt.set(null);
+    this.outletDetail.set(null);
+  }
+
+  toggleOutletStatus(outlet: OutletDto): void {
+    // Note: Update outlet status endpoint would need to be added
+    this.errorMessage.set('Outlet status toggle not yet implemented');
+  }
+
+  // ================================================================
+  // Outlet Change Handler Override
+  // ================================================================
+
+  // ================================================================
+  // Quick Availability Toggle
+  // ================================================================
+  quickToggleAvailability(item: MenuItemDto): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (!propertyId || !outletId) return;
+
+    const newAvailability = item.availability === 'AVAILABLE' ? 'UNAVAILABLE' : 'AVAILABLE';
+    this.isSubmitting.set(true);
+    this.fnbApi.updateMenuItemAvailability(propertyId, outletId, item.id, { availability: newAvailability }).subscribe({
+      next: (res) => {
+        this.isSubmitting.set(false);
+        this.loadCatalog(propertyId, outletId, this.catalogPage());
+        this.loadPricing(propertyId, outletId, this.pricingPage());
+        this.successMessage.set(`Availability changed to ${newAvailability}`);
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.errorMessage.set(err?.error?.message || 'Failed to update availability');
+      },
+    });
   }
 }

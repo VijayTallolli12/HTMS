@@ -1,4 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+} from '@nestjs/swagger';
 import {
   IsBoolean,
   IsEnum,
@@ -20,6 +23,7 @@ import {
   FnbOrderStatus,
   SettlementType,
   FnbPaymentMethod,
+  MenuItemAvailability,
 } from '@hms/api-contracts';
 
 // ----------------------------------------------------------------------
@@ -292,5 +296,289 @@ export class QueryFnbOrdersDto {
   @ApiPropertyOptional({ description: 'Page offset (default 1)' })
   @IsOptional()
   page?: number;
+}
+
+// ----------------------------------------------------------------------
+// Menu Item Variant DTOs
+// ----------------------------------------------------------------------
+export class CreateMenuItemVariantDto {
+  @ApiProperty({ description: 'Menu Item UUID' })
+  @IsString()
+  @IsNotEmpty()
+  menuItemId!: string;
+
+  @ApiProperty({ example: 'VAR-SM', description: 'Variant unique code' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  code!: string;
+
+  @ApiProperty({ example: 'Small', description: 'Variant name' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  name!: string;
+
+  @ApiProperty({ example: '3000.00', description: 'Variant price' })
+  @IsNotEmpty()
+  price!: string | number;
+
+  @ApiPropertyOptional({ example: 'JPY', default: 'JPY' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3)
+  currency?: string;
+
+  @ApiPropertyOptional({ example: 1, default: 0 })
+  @IsOptional()
+  @IsInt()
+  displayOrder?: number;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdateMenuItemVariantDto {
+  @ApiPropertyOptional({ description: 'Variant name' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiPropertyOptional({ description: 'Variant price' })
+  @IsOptional()
+  price?: string | number;
+
+  @ApiPropertyOptional({ example: 'JPY', description: 'Currency' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3)
+  currency?: string;
+
+  @ApiPropertyOptional({ example: 1, default: 0 })
+  @IsOptional()
+  @IsInt()
+  displayOrder?: number;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+// ----------------------------------------------------------------------
+// Modifier Group DTOs
+// ----------------------------------------------------------------------
+export class CreateModifierGroupDto {
+  @ApiProperty({ description: 'Menu Item UUID' })
+  @IsString()
+  @IsNotEmpty()
+  menuItemId!: string;
+
+  @ApiProperty({ example: 'Doneness', description: 'Modifier group name' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  name!: string;
+
+  @ApiPropertyOptional({ enum: ['SINGLE', 'MULTIPLE'], default: 'MULTIPLE' })
+  @IsOptional()
+  @IsIn(['SINGLE', 'MULTIPLE'])
+  selectionType?: 'SINGLE' | 'MULTIPLE';
+
+  @ApiPropertyOptional({ example: 0, default: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  minSelections?: number;
+
+  @ApiPropertyOptional({ example: 5, default: 5 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  maxSelections?: number;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdateModifierGroupDto {
+  @ApiPropertyOptional({ description: 'Modifier group name' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiPropertyOptional({ enum: ['SINGLE', 'MULTIPLE'], description: 'Selection type' })
+  @IsOptional()
+  @IsIn(['SINGLE', 'MULTIPLE'])
+  selectionType?: 'SINGLE' | 'MULTIPLE';
+
+  @ApiPropertyOptional({ example: 0, default: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  minSelections?: number;
+
+  @ApiPropertyOptional({ example: 5, default: 5 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  maxSelections?: number;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+// ----------------------------------------------------------------------
+// Modifier DTOs
+// ----------------------------------------------------------------------
+export class CreateModifierDto {
+  @ApiProperty({ description: 'Modifier Group UUID' })
+  @IsString()
+  @IsNotEmpty()
+  modifierGroupId!: string;
+
+  @ApiProperty({ example: 'Medium Rare', description: 'Modifier name' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  name!: string;
+
+  @ApiPropertyOptional({ example: '0.00', default: '0.00' })
+  @IsOptional()
+  priceAdjustment?: string | number;
+
+  @ApiPropertyOptional({ example: 'JPY', default: 'JPY' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3)
+  currency?: string;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdateModifierDto {
+  @ApiPropertyOptional({ description: 'Modifier name' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiPropertyOptional({ description: 'Price adjustment' })
+  @IsOptional()
+  priceAdjustment?: string | number;
+
+  @ApiPropertyOptional({ example: 'JPY', description: 'Currency' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3)
+  currency?: string;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+// ----------------------------------------------------------------------
+// Menu Item Update DTOs
+// ----------------------------------------------------------------------
+export class UpdateMenuItemDto {
+  @ApiPropertyOptional({ description: 'Item name' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiPropertyOptional({ description: 'Item description' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @ApiPropertyOptional({ description: 'Base price' })
+  @IsOptional()
+  price?: string | number;
+
+  @ApiPropertyOptional({ example: 'JPY', description: 'Currency' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3)
+  currency?: string;
+
+  @ApiPropertyOptional({ enum: ['AVAILABLE', 'UNAVAILABLE'], description: 'Availability status' })
+  @IsOptional()
+  @IsIn(['AVAILABLE', 'UNAVAILABLE'])
+  availability?: MenuItemAvailability;
+
+  @ApiPropertyOptional({ example: 1, default: 0 })
+  @IsOptional()
+  @IsInt()
+  displayOrder?: number;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdateMenuItemAvailabilityDto {
+  @ApiProperty({ enum: ['AVAILABLE', 'UNAVAILABLE'], description: 'Availability status' })
+  @IsIn(['AVAILABLE', 'UNAVAILABLE'])
+  availability!: MenuItemAvailability;
+}
+
+export class UpdateMenuItemPriceDto {
+  @ApiProperty({ description: 'New base price' })
+  price!: string | number;
+}
+
+export class QueryMenuItemsDto {
+  @ApiPropertyOptional({ description: 'Filter by outlet UUID' })
+  @IsOptional()
+  @IsString()
+  outletId?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by category UUID' })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ enum: ['AVAILABLE', 'UNAVAILABLE'], description: 'Filter by availability' })
+  @IsOptional()
+  @IsIn(['AVAILABLE', 'UNAVAILABLE'])
+  availability?: MenuItemAvailability;
+
+  @ApiPropertyOptional({ description: 'Filter by active status' })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'Search by name or code' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ description: 'Page number (default 1)' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ description: 'Items per page (default 20)' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  limit?: number = 20;
 }
 

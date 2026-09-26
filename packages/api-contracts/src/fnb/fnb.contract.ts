@@ -68,6 +68,7 @@ export interface MenuItemDto {
   description?: string | null;
   price: string; // Decimal string
   currency: string;
+  availability: MenuItemAvailability;
   displayOrder: number;
   isActive: boolean;
   createdAt: string;
@@ -184,6 +185,156 @@ export interface CloseOrderDto {
   roomNumber?: string;
   reservationId?: string;
   folioId?: string;
+}
+
+export type MenuItemAvailability = 'AVAILABLE' | 'UNAVAILABLE';
+
+export interface MenuItemVariantDto {
+  id: string;
+  propertyId: string;
+  menuItemId: string;
+  code: string;
+  name: string;
+  price: string; // Decimal string
+  currency: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateMenuItemVariantDto {
+  menuItemId: string;
+  code: string;
+  name: string;
+  price: string | number;
+  currency?: string;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateMenuItemVariantDto {
+  name?: string;
+  price?: string | number;
+  currency?: string;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface ModifierGroupDto {
+  id: string;
+  propertyId: string;
+  menuItemId: string;
+  name: string;
+  selectionType: 'SINGLE' | 'MULTIPLE';
+  minSelections: number;
+  maxSelections: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  modifiers?: ModifierDto[];
+}
+
+export interface CreateModifierGroupDto {
+  menuItemId: string;
+  name: string;
+  selectionType?: 'SINGLE' | 'MULTIPLE';
+  minSelections?: number;
+  maxSelections?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateModifierGroupDto {
+  name?: string;
+  selectionType?: 'SINGLE' | 'MULTIPLE';
+  minSelections?: number;
+  maxSelections?: number;
+  isActive?: boolean;
+}
+
+export interface ModifierDto {
+  id: string;
+  propertyId: string;
+  modifierGroupId: string;
+  name: string;
+  priceAdjustment: string; // Decimal string
+  currency: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateModifierDto {
+  modifierGroupId: string;
+  name: string;
+  priceAdjustment?: string | number;
+  currency?: string;
+  isActive?: boolean;
+}
+
+export interface UpdateModifierDto {
+  name?: string;
+  priceAdjustment?: string | number;
+  currency?: string;
+  isActive?: boolean;
+}
+
+export interface MenuItemDetailDto {
+  id: string;
+  propertyId: string;
+  outletId: string;
+  categoryId: string;
+  categoryName?: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  price: string; // Decimal string - base price
+  currency: string;
+  availability: MenuItemAvailability;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  variants: MenuItemVariantDto[];
+  modifierGroups: ModifierGroupDto[];
+}
+
+export interface UpdateMenuItemDto {
+  name?: string;
+  description?: string;
+  price?: string | number;
+  currency?: string;
+  availability?: MenuItemAvailability;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateMenuItemAvailabilityDto {
+  availability: MenuItemAvailability;
+}
+
+export interface MenuItemPriceDto {
+  id: string;
+  code: string;
+  name: string;
+  basePrice: string;
+  currency: string;
+  availability: MenuItemAvailability;
+  variants: MenuItemVariantDto[];
+}
+
+export interface UpdateMenuItemPriceDto {
+  price?: string | number;
+}
+
+export interface QueryMenuItemsDto {
+  outletId?: string;
+  categoryId?: string;
+  availability?: MenuItemAvailability;
+  isActive?: boolean;
+  search?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface QueryFnbOrdersDto {
