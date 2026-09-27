@@ -71,6 +71,9 @@ import { IntegrationModule } from './integrations/integrations.module';
 // Channel Manager
 import { ChannelManagerModule } from './channel-manager/channel-manager.module';
 
+// Payment Gateway
+import { PaymentGatewayModule } from './payments/payment-gateway.module';
+
 @Module({
   imports: [
     ReservationsModule,
@@ -86,6 +89,7 @@ import { ChannelManagerModule } from './channel-manager/channel-manager.module';
     RevenueModule,
     IntegrationModule,
     ChannelManagerModule,
+    PaymentGatewayModule,
   ],
   controllers: [
     RoomTypeController,

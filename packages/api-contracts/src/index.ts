@@ -21,3 +21,4 @@ export * from './events/events.contract';
 export * from './procurement/procurement.contract';
 export * from './integrations/integrations.contract';
 export * from './channel-manager/channel-manager.contract';
+export * from './payments/payments.contract';
