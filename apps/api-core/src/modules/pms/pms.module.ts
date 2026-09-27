@@ -68,6 +68,9 @@ import { RevenueModule } from './revenue/revenue.module';
 // Integrations
 import { IntegrationModule } from './integrations/integrations.module';
 
+// Channel Manager
+import { ChannelManagerModule } from './channel-manager/channel-manager.module';
+
 @Module({
   imports: [
     ReservationsModule,
@@ -82,6 +85,7 @@ import { IntegrationModule } from './integrations/integrations.module';
     HrPayrollModule,
     RevenueModule,
     IntegrationModule,
+    ChannelManagerModule,
   ],
   controllers: [
     RoomTypeController,

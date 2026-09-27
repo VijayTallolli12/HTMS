@@ -160,6 +160,8 @@ payrollLines              PayrollLine[]
     competitorSets            CompetitorSet[]
     integrations              Integration[]
     integrationSyncLogs       IntegrationSyncLog[]
+    channelConfigs            ChannelConfig[]
+    channelSyncLogs           ChannelSyncLog[]
 
     @@index([countryId])
     @@index([status])
@@ -566,6 +568,87 @@ model IntegrationSyncLog {
 }
 
 // End of Integration Hub models
+
+// ==============================================================================
+// 19. CHANNEL MANAGER / OTA MODELS (Platform-Level)
+// ==============================================================================
+
+enum ChannelProvider {
+  BOOKING_COM
+  AIRBNB
+  EXPEDIA
+  DEMO
+
+  @@schema("platform_schema")
+}
+
+enum ChannelSyncType {
+  RESERVATION_INBOUND
+  RESERVATION_OUTBOUND
+  AVAILABILITY
+  RATE
+  RECONCILIATION
+
+  @@schema("platform_schema")
+}
+
+enum ChannelSyncStatus {
+  SUCCESS
+  FAILED
+  PARTIAL
+
+  @@schema("platform_schema")
+}
+
+model ChannelConfig {
+  id               String         @id @default(uuid())
+  propertyId       String         @map("property_id")
+  provider         ChannelProvider @map("provider")
+  name             String         @db.VarChar(100)
+  enabled          Boolean        @default(true)
+  configuration    Json           @default("{}") @map("configuration")
+  fieldMapping     Json           @default("{}") @map("field_mapping")
+  lastSyncAt       DateTime?      @map("last_sync_at") @db.Timestamptz(6)
+  lastError        String?        @map("last_error")
+  version          Int            @default(0)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt        DateTime?      @map("deleted_at") @db.Timestamptz(6)
+
+  property         Property       @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  syncLogs         ChannelSyncLog[]
+
+  @@unique([propertyId, id], name: "uq_channel_config_property_id")
+  @@unique([propertyId, provider], name: "uq_channel_config_property_provider")
+  @@index([propertyId, enabled], name: "idx_channel_config_property_enabled")
+  @@map("channel_configs")
+  @@schema("platform_schema")
+}
+
+model ChannelSyncLog {
+  id               String          @id @default(uuid())
+  channelConfigId  String          @map("channel_config_id")
+  propertyId       String          @map("property_id")
+  syncType         ChannelSyncType @map("sync_type")
+  status           ChannelSyncStatus @map("status")
+  recordsProcessed Int             @default(0) @map("records_processed")
+  recordsFailed    Int             @default(0) @map("records_failed")
+  errorMessage     String?         @map("error_message")
+  correlationId    String?         @map("correlation_id")
+  startedAt        DateTime        @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt      DateTime?       @map("completed_at") @db.Timestamptz(6)
+
+  channelConfig    ChannelConfig   @relation(fields: [channelConfigId], references: [id], onDelete: Cascade)
+  property         Property        @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+
+  @@unique([channelConfigId, id], name: "uq_channel_sync_log_config_id")
+  @@index([channelConfigId, startedAt], name: "idx_channel_sync_log_config_started")
+  @@index([propertyId, startedAt], name: "idx_channel_sync_log_property_started")
+  @@map("channel_sync_logs")
+  @@schema("platform_schema")
+}
+
+// End of Channel Manager models
 // ==============================================================================
 model SecurityAuditLog {
   id            String   @id
