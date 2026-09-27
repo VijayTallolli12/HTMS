@@ -6,8 +6,23 @@ export interface ReservationIds {
   r4_upcoming: string; r5_future: string; r6_departure: string;
 }
 
+// 'Today' is the property's business date (Asia/Tokyo), matching how the API
+// resolves dates, so the today-arrival / in-stay / today-departure scenarios
+// stay valid regardless of the machine timezone the seed runs on.
+const PROPERTY_TIME_ZONE = 'Asia/Tokyo';
+
+function propertyBusinessDate(): Date {
+  const dateStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: PROPERTY_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  return new Date(`${dateStr}T00:00:00.000Z`);
+}
+
 function getDateOffset(days: number): Date {
-  const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + days); return d;
+  const d = propertyBusinessDate(); d.setUTCDate(d.getUTCDate() + days); return d;
 }
 
 interface ReservationDef {
@@ -75,6 +90,34 @@ export async function seedReservations(
 
     } else {
       console.log(`  Reservation exists: ${def.confirmationNumber}`);
+      // Evergreen demo: re-anchor stay dates on re-runs so the today-arrival /
+      // in-stay / today-departure scenarios (DEMO-001..006) stay valid for
+      // live demonstrations regardless of when the seed was first executed.
+      const arrivalDate = getDateOffset(def.arrivalDaysOffset);
+      const departureDate = getDateOffset(def.departureDaysOffset);
+      const datesDrifted =
+        existing.arrivalDate.toISOString().slice(0, 10) !== arrivalDate.toISOString().slice(0, 10) ||
+        existing.departureDate.toISOString().slice(0, 10) !== departureDate.toISOString().slice(0, 10);
+      if (datesDrifted) {
+        const nights = def.departureDaysOffset - def.arrivalDaysOffset;
+        const perNightRate = Math.round(def.totalAmount / nights);
+        await prisma.reservationRateNight.deleteMany({ where: { reservationId: existing.id } });
+        const rateNightData: Array<{ id: string; propertyId: string; reservationId: string; businessDate: Date; baseRateAmount: number; totalAmount: number; currency: string }> = [];
+        for (let night = 0; night < nights; night++) {
+          rateNightData.push({ id: generateUuidV7(), propertyId, reservationId: existing.id, businessDate: getDateOffset(def.arrivalDaysOffset + night), baseRateAmount: perNightRate, totalAmount: perNightRate, currency: 'JPY' });
+        }
+        if (rateNightData.length > 0) { await prisma.reservationRateNight.createMany({ data: rateNightData }); }
+        await prisma.reservation.update({
+          where: { id: existing.id },
+          data: {
+            arrivalDate,
+            departureDate,
+            ...(def.checkInAt ? { checkInAt: getDateOffset(def.arrivalDaysOffset) } : {}),
+            ...(def.assignedRoomKey ? { assignedAt: getDateOffset(def.assignedDaysOffset) } : {}),
+          },
+        });
+        console.log(`  Refreshed stay dates: ${def.confirmationNumber} -> ${arrivalDate.toISOString().slice(0, 10)} .. ${departureDate.toISOString().slice(0, 10)}`);
+      }
     }
     result[def.resultKey] = existing.id;
   }
