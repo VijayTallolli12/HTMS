@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { PasswordService } from './application/services/password.service';
@@ -21,6 +21,7 @@ import { AuthorizationService } from './application/services/authorization.servi
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 import { ScopedRbacGuard } from './presentation/guards/scoped-rbac.guard';
 
+@Global()
 @Module({
   controllers: [AuthController, JwksController],
   providers: [

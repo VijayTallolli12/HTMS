@@ -15,6 +15,7 @@ interface DemoPersona {
   email: string;
   scopeBadge: string;
   icon: string;
+  description: string;
 }
 
 interface SlideItem {
@@ -352,8 +353,8 @@ interface SlideItem {
                 </div>
               </div>
 
-              <!-- Persona Pills Grid (2x2) -->
-              <div class="quick-access-grid">
+              <!-- Persona Grid - Responsive -->
+              <div class="persona-grid">
                 <button
                   *ngFor="let persona of demoPersonas"
                   type="button"
@@ -362,8 +363,13 @@ interface SlideItem {
                   (click)="selectDemoPersona(persona)"
                   [attr.aria-pressed]="selectedPersona()?.email === persona.email"
                 >
-                  <span class="chip-role">{{ persona.roleTitle }}</span>
-                  <span class="chip-name">{{ persona.userName }}</span>
+                  <div class="persona-chip-content">
+                    <span class="persona-chip-icon">{{ persona.icon }}</span>
+                    <div class="persona-chip-text">
+                      <span class="chip-role">{{ persona.roleTitle }}</span>
+                      <span class="chip-desc">{{ persona.description }}</span>
+                    </div>
+                  </div>
                 </button>
               </div>
             </section>
@@ -383,7 +389,106 @@ interface SlideItem {
       </main>
     </div>
   `,
-  styles: [],
+  styles: [`
+    /* Persona Grid - Responsive Layout */
+    .persona-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    @media (max-width: 640px) {
+      .persona-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Persona Chip - Refined Design */
+    .persona-chip {
+      display: flex;
+      align-items: center;
+      padding: 0.85rem 1rem;
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      min-height: 64px;
+    }
+
+    .persona-chip:hover {
+      border-color: var(--gold-accent);
+      background: var(--gold-light);
+      transform: translateX(2px);
+    }
+
+    .persona-chip:focus-visible {
+      outline: 2px solid var(--gold-accent);
+      outline-offset: 1px;
+    }
+
+    .persona-chip.is-selected {
+      border-color: var(--gold-accent);
+      background: var(--gold-light);
+      box-shadow: 0 0 0 1px var(--gold-accent);
+    }
+
+    .persona-chip-content {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+    }
+
+    .persona-chip-icon {
+      font-size: 1.35rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .persona-chip-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      min-width: 0;
+    }
+
+    .chip-role {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .persona-chip.is-selected .chip-role {
+      color: var(--gold-dark);
+    }
+
+    .chip-desc {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      line-height: 1.2;
+    }
+
+    .persona-chip.is-selected .chip-desc {
+      color: var(--gold-accent);
+    }
+
+    /* Keep existing persona-chip styles for backward compat if needed */
+    .quick-access-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    @media (max-width: 640px) {
+      .quick-access-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  `],
 })
 export class LoginComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
@@ -441,6 +546,16 @@ export class LoginComponent implements OnInit, OnDestroy {
       email: 'admin@tokyograndeur.demo',
       scopeBadge: 'Group Scope',
       icon: '🛡️',
+      description: 'Platform Administration',
+    },
+    {
+      roleCode: 'PROPERTY_GM',
+      roleTitle: 'Property GM',
+      userName: 'General Manager',
+      email: 'gm@tokyograndeur.demo',
+      scopeBadge: 'Property Scope',
+      icon: '🏨',
+      description: 'Executive Operations',
     },
     {
       roleCode: 'FDA',
@@ -449,6 +564,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       email: 'fdesk@tokyograndeur.demo',
       scopeBadge: 'Front Office',
       icon: '🛎️',
+      description: 'Front Office',
     },
     {
       roleCode: 'HK_SUPERVISOR',
@@ -457,6 +573,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       email: 'hk@tokyograndeur.demo',
       scopeBadge: 'Housekeeping',
       icon: '🧹',
+      description: 'Housekeeping Operations',
     },
     {
       roleCode: 'MAINT_TECH',
@@ -465,6 +582,25 @@ export class LoginComponent implements OnInit, OnDestroy {
       email: 'maint@tokyograndeur.demo',
       scopeBadge: 'Engineering',
       icon: '🔧',
+      description: 'Engineering & Facilities',
+    },
+    {
+      roleCode: 'FNB_MANAGER',
+      roleTitle: 'Restaurant / F&B Manager',
+      userName: 'Kenji Sato',
+      email: 'fnb@tokyograndeur.demo',
+      scopeBadge: 'Food & Beverage',
+      icon: '🍽️',
+      description: 'Food & Beverage',
+    },
+    {
+      roleCode: 'SPA_MANAGER',
+      roleTitle: 'Spa Manager',
+      userName: 'Aiko Yamamoto',
+      email: 'spa@tokyograndeur.demo',
+      scopeBadge: 'Spa & Wellness',
+      icon: '💆',
+      description: 'Spa Operations',
     },
   ];
 

@@ -1,27 +1,25 @@
-<div class="dashboard-container">
-  <!-- Top Welcome / Property Header -->
-  <header class="dashboard-header">
-    <div class="header-titles">
-      <div class="luxury-badge" *ngIf="isHousekeepingSupervisor()">HOUSEKEEPING OPERATIONS CONSOLE</div>
-      <div class="luxury-badge" *ngIf="isMaintenanceTech()">FACILITIES & ENGINEERING CONSOLE</div>
-      <div class="luxury-badge" *ngIf="isFrontDeskAgent()">FRONT OFFICE OPERATIONS CONSOLE</div>
-      <div class="luxury-badge" *ngIf="!isHousekeepingSupervisor() && !isMaintenanceTech() && !isFrontDeskAgent()">EXECUTIVE OPERATIONS CONSOLE</div>
+<div class="hms-page-shell">
+  <!-- Page Header -->
+  <header class="hms-page-header">
+    <div class="hms-page-header__left">
+      <div class="hms-page-header__badge" *ngIf="isHousekeepingSupervisor()">HOUSEKEEPING OPERATIONS</div>
+      <div class="hms-page-header__badge" *ngIf="isMaintenanceTech()">ENGINEERING OPERATIONS</div>
+      <div class="hms-page-header__badge" *ngIf="isFrontDeskAgent()">FRONT DESK OPERATIONS</div>
+      <div class="hms-page-header__badge" *ngIf="!isHousekeepingSupervisor() && !isMaintenanceTech() && !isFrontDeskAgent()">EXECUTIVE OPERATIONS</div>
 
-      <h1 class="hotel-title">
+      <h1 class="hms-page-header__title">
         <span *ngIf="activeProperty()">{{ activeProperty()!.name }}</span>
         <span *ngIf="!activeProperty()">Grand Luxury Hospitality Portfolio</span>
       </h1>
-      <p class="hotel-subtitle" *ngIf="activeProperty()">
-        Property Code: <strong>{{ activeProperty()!.code }}</strong> &bull; Currency: <strong>{{ activeProperty()!.currency }}</strong> &bull; Timezone: <strong>{{ activeProperty()!.timezone }}</strong>
+      <p class="hms-page-header__subtitle" *ngIf="activeProperty()">
+        Property: <strong>{{ activeProperty()!.code }}</strong> &bull; Currency: <strong>{{ activeProperty()!.currency }}</strong>
       </p>
-      <p class="hotel-subtitle text-warning" *ngIf="!activeProperty()">
-        No active property selected. Please select a property to view operational metrics.
+      <p class="hms-page-header__subtitle text-warning" *ngIf="!activeProperty()">
+        No active property selected.
       </p>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="header-actions">
-      <!-- Executive / Front Desk Actions -->
+    <div class="hms-page-header__actions">
       <hms-button variant="gold" *ngIf="hasPermission('front_office.reservation.create')" (click)="navigateTo('/pms/reservations/new')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
           <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -29,7 +27,6 @@
         </svg>
         <span>New Reservation</span>
       </hms-button>
-
       <hms-button variant="outline" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/front-office')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -37,8 +34,7 @@
         </svg>
         <span>Front Desk</span>
       </hms-button>
-
-      <hms-button variant="outline" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
+      <hms-button variant="outline" *ngIf="canViewRoomOps()" (click)="navigateTo('/pms/room-operations')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
           <path d="M2 4v16"></path>
           <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
@@ -46,22 +42,6 @@
           <path d="M6 8v9"></path>
         </svg>
         <span>Tape Chart</span>
-      </hms-button>
-
-      <!-- Housekeeping Supervisor Specific Quick Action -->
-      <hms-button variant="gold" *ngIf="isHousekeepingSupervisor()" (click)="navigateTo('/pms/housekeeping')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-        </svg>
-        <span>Housekeeping Board</span>
-      </hms-button>
-
-      <!-- Maintenance Technician Specific Quick Action -->
-      <hms-button variant="gold" *ngIf="isMaintenanceTech()" (click)="navigateTo('/pms/engineering')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" aria-hidden="true">
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-        </svg>
-        <span>Engineering Workspace</span>
       </hms-button>
     </div>
   </header>
@@ -72,484 +52,210 @@
   </hms-alert>
 
   <!-- ===================================================================== -->
-  <!-- EXECUTIVE FINANCIAL KPIs (Revenue V2) -->
+  <!-- 1. EXECUTIVE SNAPSHOT -->
   <!-- ===================================================================== -->
-  <section class="executive-kpi-section" *ngIf="canViewFinancials() && executiveKpiCards().length > 0">
-    <div class="section-header">
-      <h2 class="section-title">Revenue Performance</h2>
-      <p class="section-subtitle">30-day rolling metrics · {{ revenueStartDate() }} → {{ revenueEndDate() }}</p>
+  <section class="hms-panel" *ngIf="canViewFinancials() && executiveSnapshotKpis().length > 0">
+    <div class="hms-panel__header">
+      <div>
+        <h2 class="hms-panel__title">Executive Snapshot</h2>
+        <p class="hms-panel__subtitle">{{ revenueStartDate() }} → {{ revenueEndDate() }}</p>
+      </div>
+      <hms-button variant="outline" size="sm" (click)="navigateTo('/pms/revenue')">
+        View Revenue →
+      </hms-button>
     </div>
-    <div class="executive-kpi-grid">
-      <div class="exec-kpi-card" *ngFor="let kpi of executiveKpiCards()" [class]="'exec-kpi-' + kpi.icon">
-        <div class="exec-kpi-icon" [class]="'exec-kpi-icon-' + kpi.icon">
-          <ng-container [ngSwitch]="kpi.icon">
-            <svg *ngSwitchCase="'occupancy'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="exec-icon-svg">
-              <rect x="3" y="3" width="7" height="9" rx="1"></rect>
-              <rect x="14" y="3" width="7" height="5" rx="1"></rect>
-              <rect x="3" y="15" width="7" height="6" rx="1"></rect>
-              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-            </svg>
-            <svg *ngSwitchCase="'adr'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="exec-icon-svg">
-              <line x1="12" y1="1" x2="12" y2="23"></line>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            <svg *ngSwitchCase="'revpar'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="exec-icon-svg">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            <svg *ngSwitchCase="'revenue'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="exec-icon-svg">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            <svg *ngSwitchCase="'pickup'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="exec-icon-svg">
-              <polyline points="23 4 8 16 8 4"></polyline>
-            </svg>
-          </ng-container>
-        </div>
-        <div class="exec-kpi-content">
-          <div class="exec-kpi-label">{{ kpi.label }}</div>
-          <div class="exec-kpi-value">{{ kpi.value }}</div>
-          <div class="exec-kpi-desc">{{ kpi.desc }}</div>
-          <div class="exec-kpi-trend" [class]="'trend-' + kpi.trend">
-            <span class="trend-icon">{{ getTrendIcon(kpi.trend) }}</span>
-            <span class="trend-label">{{ kpi.trend === 'up' ? 'Up' : kpi.trend === 'down' ? 'Down' : 'Flat' }}</span>
+    <div class="hms-panel__body" style="padding: 0;">
+      <div class="hms-kpi-strip" style="margin: 0; border-radius: 0;">
+        <div class="hms-kpi-card" *ngFor="let kpi of executiveSnapshotKpis()" style="min-height: 110px; border-radius: 0; border-left: none; border-right: none;">
+          <div class="hms-kpi-card__label">{{ kpi.label }}</div>
+          <div class="hms-kpi-card__value">{{ kpi.value }}</div>
+          <div class="hms-kpi-card__desc">{{ kpi.period }}</div>
+          <div class="hms-kpi-card__trend" [class]="getTrendClass(kpi.trend)">
+            <span>{{ getTrendIcon(kpi.trend) }}</span>
+            <span>{{ getTrendLabel(kpi.trend) }}</span>
           </div>
-        </div>
-        <div class="exec-kpi-footer">
-          <a [routerLink]="kpi.path" class="exec-kpi-link">{{ kpi.footer }} →</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Operational Stat Cards (Existing) -->
-  <section class="metrics-grid" *ngIf="kpiCards.length > 0">
-    <hms-kpi-strip [cards]="kpiCards" (cardClick)="onCardClick($event)"></hms-kpi-strip>
-  </section>
-
   <!-- ===================================================================== -->
-  <!-- EXECUTIVE CHARTS ROW -->
+  <!-- 2. TODAY'S OPERATIONS -->
   <!-- ===================================================================== -->
-  <section class="charts-row" *ngIf="canViewFinancials()">
-    <div class="chart-card" *ngIf="occupancyChartData()">
-      <div class="chart-header">
-        <h3 class="chart-title">Occupancy Trend (30 Days)</h3>
-        <span class="chart-period">{{ revenueStartDate() }} → {{ revenueEndDate() }}</span>
-      </div>
-      <div class="chart-container">
-        <canvas #occupancyChart class="chart-canvas"></canvas>
-      </div>
+  <section class="hms-panel" *ngIf="showTodayOperations()">
+    <div class="hms-panel__header">
+      <h2 class="hms-panel__title">Today's Operations</h2>
     </div>
-
-    <div class="chart-card" *ngIf="adrChartData()">
-      <div class="chart-header">
-        <h3 class="chart-title">ADR Trend (30 Days)</h3>
-        <span class="chart-period">{{ revenueStartDate() }} → {{ revenueEndDate() }}</span>
-      </div>
-      <div class="chart-container">
-        <canvas #adrChart class="chart-canvas"></canvas>
-      </div>
-    </div>
-
-    <div class="chart-card" *ngIf="revenueChartData()">
-      <div class="chart-header">
-        <h3 class="chart-title">Revenue Trend (30 Days)</h3>
-        <span class="chart-period">{{ revenueStartDate() }} → {{ revenueEndDate() }}</span>
-      </div>
-      <div class="chart-container">
-        <canvas #revenueChart class="chart-canvas"></canvas>
+    <div class="hms-panel__body" style="padding: 0;">
+      <div class="hms-kpi-strip" style="margin: 0; border-radius: 0;">
+        <ng-container *ngFor="let op of todayOperations(); let i = index">
+          <div class="hms-kpi-card"
+               [style.border-radius]="0"
+               [style.border-left]="i > 0 ? '1px solid var(--surface-border)' : 'none'"
+               [style.border-right]="i < todayOperations().length - 1 ? '1px solid var(--surface-border)' : 'none'"
+               *ngIf="hasPermission(op.perm)"
+               (click)="navigateTo(op.path)">
+            <div class="hms-kpi-card__label">{{ op.label }}</div>
+            <div class="hms-kpi-card__value">{{ op.value }}</div>
+            <div class="hms-kpi-card__desc">{{ op.desc }}</div>
+          </div>
+        </ng-container>
       </div>
     </div>
   </section>
 
   <!-- ===================================================================== -->
-  <!-- OPERATIONAL CHARTS ROW -->
+  <!-- 3. DEPARTMENT STATUS -->
   <!-- ===================================================================== -->
-  <section class="charts-row operational-charts">
-    <div class="chart-card" *ngIf="roomStatusDistribution()">
-      <div class="chart-header">
-        <h3 class="chart-title">Room Status Distribution</h3>
-        <span class="chart-subtitle">{{ stats().totalRooms }} Total Rooms</span>
-      </div>
-      <div class="chart-container">
-        <canvas #roomStatusChart class="chart-canvas"></canvas>
-      </div>
-      <div class="chart-legend">
-        <div class="legend-item" *ngFor="let label of roomStatusDistribution()?.labels; let i = index">
-          <span class="legend-color" [style.background-color]="roomStatusDistribution()?.datasets[0]?.backgroundColor[i]"></span>
-          <span class="legend-label">{{ label }}</span>
-        </div>
-      </div>
+  <section class="hms-panel" *ngIf="showDepartmentStatus()">
+    <div class="hms-panel__header">
+      <h2 class="hms-panel__title">Department Status</h2>
     </div>
-
-    <div class="chart-card" *ngIf="revenueByDepartmentChart() && canViewFinancials()">
-      <div class="chart-header">
-        <h3 class="chart-title">Revenue by Department</h3>
-        <span class="chart-subtitle">Today's Business</span>
-      </div>
-      <div class="chart-container">
-        <canvas #revenueDeptChart class="chart-canvas"></canvas>
-      </div>
-      <div class="chart-legend">
-        <div class="legend-item" *ngFor="let label of revenueByDepartmentChart()?.labels; let i = index">
-          <span class="legend-color" [style.background-color]="revenueByDepartmentChart()?.datasets[0]?.backgroundColor[i]"></span>
-          <span class="legend-label">{{ label }}</span>
+    <div class="hms-panel__body" style="padding: 0;">
+      <div class="hms-kpi-strip" style="margin: 0; border-radius: 0;">
+        <!-- Housekeeping Readiness -->
+        <div class="hms-kpi-card" *ngIf="canViewHousekeeping()" (click)="navigateTo('/pms/room-operations')">
+          <div class="hms-kpi-card__label">Housekeeping Readiness</div>
+          <div class="hms-kpi-card__value">{{ housekeepingReadiness() }}%</div>
+          <div class="hms-kpi-card__desc">Rooms ready for check-in</div>
         </div>
-      </div>
-    </div>
 
-    <div class="chart-card" *ngIf="pickupChartData() && canViewFinancials()">
-      <div class="chart-header">
-        <h3 class="chart-title">Pickup Analysis (30 Days)</h3>
-        <span class="chart-period">{{ revenueStartDate() }} → {{ revenueEndDate() }}</span>
-      </div>
-      <div class="chart-container">
-        <canvas #pickupChart class="chart-canvas"></canvas>
-      </div>
-      <div class="chart-legend">
-        <div class="legend-item" *ngFor="let dataset of pickupChartData()?.datasets">
-          <span class="legend-color" [style.background-color]="dataset.borderColor"></span>
-          <span class="legend-label">{{ dataset.label }}</span>
+        <!-- Maintenance / OOO-OOS -->
+        <div class="hms-kpi-card" *ngIf="canViewEngineering()" (click)="navigateTo('/pms/engineering')">
+          <div class="hms-kpi-card__label">Maintenance / OOO-OOS</div>
+          <div class="hms-kpi-card__value">{{ maintenanceOOSCount() }}</div>
+          <div class="hms-kpi-card__desc">Rooms out of service</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Operational Widgets Row -->
-  <section class="widgets-row">
-    <!-- Arrivals Today -->
-    <div class="widget-card arrivals-widget">
-      <div class="widget-icon arrivals-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v10"></path>
-          <polyline points="17 8 12 13 7 8"></polyline>
-        </svg>
-      </div>
-      <div class="widget-content">
-        <div class="widget-label">ARRIVALS TODAY</div>
-        <div class="widget-value">{{ arrivalsToday() }}</div>
-        <div class="widget-desc">Expected arrivals</div>
-      </div>
-      <div class="widget-action" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/front-office')">
-        View →
-      </div>
+  <!-- ===================================================================== -->
+  <!-- 4. PERFORMANCE TRENDS -->
+  <!-- ===================================================================== -->
+  <section class="hms-panel" *ngIf="canViewFinancials()">
+    <div class="hms-panel__header">
+      <h2 class="hms-panel__title">Performance Trends</h2>
+      <p class="hms-panel__subtitle">{{ revenueStartDate() }} → {{ revenueEndDate() }}</p>
     </div>
+    <div class="hms-panel__body">
+      <div class="hms-tabs" style="margin-bottom: 1rem;">
+        <button type="button" class="hms-tab-btn" [class.hms-tab-btn--active]="activeTrendTab() === 'occupancy'" (click)="onTrendTabChange('occupancy')">Occupancy</button>
+        <button type="button" class="hms-tab-btn" [class.hms-tab-btn--active]="activeTrendTab() === 'adr'" (click)="onTrendTabChange('adr')">ADR</button>
+        <button type="button" class="hms-tab-btn" [class.hms-tab-btn--active]="activeTrendTab() === 'revenue'" (click)="onTrendTabChange('revenue')">Revenue</button>
+      </div>
 
-    <!-- Departures Today -->
-    <div class="widget-card departures-widget">
-      <div class="widget-icon departures-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-          <polyline points="9 22 9 12 15 12 15 22"></polyline>
-        </svg>
-      </div>
-      <div class="widget-content">
-        <div class="widget-label">DEPARTURES TODAY</div>
-        <div class="widget-value">{{ departuresToday() }}</div>
-        <div class="widget-desc">Scheduled departures</div>
-      </div>
-      <div class="widget-action" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/reservations')">
-        View →
-      </div>
-    </div>
-
-    <!-- In-House Guests -->
-    <div class="widget-card inhouse-widget">
-      <div class="widget-icon inhouse-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
-      </div>
-      <div class="widget-content">
-        <div class="widget-label">IN-HOUSE GUESTS</div>
-        <div class="widget-value">{{ inHouseGuests() }}</div>
-        <div class="widget-desc">Currently staying</div>
-      </div>
-      <div class="widget-action" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/front-office')">
-        View →
-      </div>
-    </div>
-
-    <!-- Rooms Requiring Attention -->
-    <div class="widget-card attention-widget">
-      <div class="widget-icon attention-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-      </div>
-      <div class="widget-content">
-        <div class="widget-label">ROOMS NEEDING ATTENTION</div>
-        <div class="widget-value">{{ roomsRequiringAttention() }}</div>
-        <div class="widget-desc">Dirty, failed inspection, OOO</div>
-      </div>
-      <div class="widget-action" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
-        View →
-      </div>
-    </div>
-
-    <!-- Housekeeping Readiness -->
-    <div class="widget-card readiness-widget">
-      <div class="widget-icon readiness-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 11l3 3L22 4"></path>
-          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"></path>
-        </svg>
-      </div>
-      <div class="widget-content">
-        <div class="widget-label">HOUSEKEEPING READINESS</div>
-        <div class="widget-value">{{ housekeepingReadiness() }}%</div>
-        <div class="widget-desc">Rooms ready for check-in</div>
-      </div>
-      <div class="widget-action" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
-        View →
-      </div>
-    </div>
-
-    <!-- Maintenance/OOS -->
-    <div class="widget-card maintenance-widget">
-      <div class="widget-icon maintenance-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-        </svg>
-      </div>
-      <div class="widget-content">
-        <div class="widget-label">MAINTENANCE / OOS</div>
-        <div class="widget-value">{{ maintenanceOOSCount() }}</div>
-        <div class="widget-desc">Rooms out of service</div>
-      </div>
-      <div class="widget-action" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
-        View →
+      <div class="hms-chart-card">
+        <div class="hms-chart-container">
+          <canvas #trendChart class="hms-chart-canvas" *ngIf="trendChartHasData()"></canvas>
+          <div class="hms-empty-state" *ngIf="!trendChartHasData()">
+            <div class="hms-empty-state__title">No trend data available</div>
+            <div class="hms-empty-state__desc">Revenue data will appear once reservations are recorded for this period.</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ===================================================================== -->
-  <!-- VIP GUESTS (Authorized Only) -->
+  <!-- 5. GUESTS BY COUNTRY + ROOM STATUS (side by side) -->
   <!-- ===================================================================== -->
-  <section class="vip-section" *ngIf="canViewFinancials() && vipGuests().length > 0">
-    <div class="section-header">
-      <h2 class="section-title">VIP Guests In-House</h2>
-      <p class="section-subtitle">High-value guests currently staying</p>
-    </div>
-    <div class="vip-grid">
-      <div class="vip-card" *ngFor="let guest of vipGuests()">
-        <div class="vip-avatar">
-          <span>{{ guest.guest?.firstName?.[0] }}{{ guest.guest?.lastName?.[0] }}</span>
-        </div>
-        <div class="vip-info">
-          <div class="vip-name">{{ guest.guest?.firstName }} {{ guest.guest?.lastName }}</div>
-          <div class="vip-details">
-            <span class="vip-tier">{{ guest.guest?.loyaltyTier || 'VIP' }}</span>
-            <span class="vip-room">Room {{ guest.roomNumber }}</span>
+  <section class="hms-content-grid">
+    <!-- Guests by Country -->
+    <div class="hms-panel" *ngIf="showGuestsByCountry()">
+      <div class="hms-panel__header">
+        <h2 class="hms-panel__title">Guests by Country</h2>
+      </div>
+      <div class="hms-panel__body">
+        <div class="hms-chart-card">
+          <div class="hms-chart-container" style="height: 250px;">
+            <canvas #countryChart class="hms-chart-canvas" *ngIf="guestsByCountryChartData()" style="height: 250px;"></canvas>
+            <div class="hms-empty-state" *ngIf="!guestsByCountryChartData()">
+              <div class="hms-empty-state__title">No guest nationality data available</div>
+              <div class="hms-empty-state__desc">Guest data will appear once reservations with guest profiles are recorded.</div>
+            </div>
           </div>
         </div>
-        <div class="vip-status">
-          <hms-status-pill [statusKey]="guest.status.toLowerCase()" [statusLabel]="guest.status"></hms-status-pill>
+      </div>
+    </div>
+
+    <!-- Room Status Summary -->
+    <div class="hms-panel" *ngIf="showRoomStatus()">
+      <div class="hms-panel__header">
+        <h2 class="hms-panel__title">Room Status</h2>
+      </div>
+      <div class="hms-panel__body">
+        <div class="hms-empty-state" *ngIf="!roomStatusSummary()">
+          <div class="hms-empty-state__title">Configure rooms to see room status</div>
+        </div>
+        <div *ngIf="roomStatusSummary()" class="room-status-grid">
+          <div class="room-status-item" [class]="'status-' + item.key" *ngFor="let item of roomStatusEntries()">
+            <div class="room-status-icon">
+              <ng-container [ngSwitch]="item.key">
+                <svg *ngSwitchCase="'available'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="status-svg">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <svg *ngSwitchCase="'occupied'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="status-svg">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <svg *ngSwitchCase="'dirty'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="status-svg">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <svg *ngSwitchCase="'cleaning'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="status-svg">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                </svg>
+                <svg *ngSwitchCase="'inspected'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="status-svg">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <svg *ngSwitchCase="'ooo'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="status-svg">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+              </ng-container>
+            </div>
+            <div class="room-status-info">
+              <div class="room-status-label">{{ item.label }}</div>
+              <div class="room-status-count">{{ item.value }}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Two-Column Operational Activity Section -->
-  <section class="dashboard-content-grid">
-    <!-- Left: Today's Recent Bookings -->
-    <div class="panel-card" *ngIf="hasPermission('front_office.reservation.read')">
-      <div class="panel-header">
-        <div>
-          <h2 class="panel-title">Recent Reservations</h2>
-          <p class="panel-subtitle">Latest bookings recorded across channels</p>
-        </div>
-        <hms-button variant="outline" size="sm" (click)="navigateTo('/pms/reservations')">
-          View All Bookings
-        </hms-button>
+  <!-- ===================================================================== -->
+  <!-- 6. RECENT RESERVATIONS -->
+  <!-- ===================================================================== -->
+  <section class="hms-panel" *ngIf="hasPermission('front_office.reservation.read')">
+    <div class="hms-panel__header">
+      <div>
+        <h2 class="hms-panel__title">Recent Reservations</h2>
+        <p class="hms-panel__subtitle">Latest bookings across channels</p>
       </div>
-
-      <div class="panel-body">
-        <hms-loading [message]="'Loading...'" *ngIf="isLoading()"></hms-loading>
-
-        <hms-empty *ngIf="!isLoading() && recentReservations().length === 0"
-          title="No reservations found"
-          desc="There are no reservations for this property."
-          actionLabel="Create First Reservation"
-          (action)="navigateTo('/pms/reservations/new')">
-        </hms-empty>
-
-        <hms-data-table *ngIf="!isLoading() && recentReservations().length > 0"
-          [columns]="columns"
-          [rows]="tableRows">
-        </hms-data-table>
-      </div>
+      <hms-button variant="outline" size="sm" (click)="navigateTo('/pms/reservations')">
+        View All →
+      </hms-button>
     </div>
+    <div class="hms-panel__body">
+      <hms-loading [message]="'Loading...'" *ngIf="isLoading()"></hms-loading>
 
-    <!-- Right: Quick Operations Hub (Executive / Front Desk) -->
-    <div class="panel-card" *ngIf="canAccessOperationsHub()">
-      <div class="panel-header">
-        <div>
-          <h2 class="panel-title">Hospitality Operations Hub</h2>
-          <p class="panel-subtitle">Core PMS modules & workflow gateways</p>
-        </div>
-      </div>
+      <hms-empty *ngIf="!isLoading() && recentReservationsDisplay().length === 0"
+        title="No reservations found"
+        desc="There are no recent reservations for this property."
+        actionLabel="Create First Reservation"
+        (action)="navigateTo('/pms/reservations/new')">
+      </hms-empty>
 
-      <div class="panel-body">
-        <div class="quick-gateways-list">
-          <div class="gateway-item" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/front-office')">
-            <div class="gateway-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
-            </div>
-            <div class="gateway-info">
-              <h3 class="gateway-title">Front Desk & Arrivals</h3>
-              <p class="gateway-desc">Perform room assignments, check-ins, and key issuances.</p>
-            </div>
-            <div class="gateway-arrow">&rarr;</div>
-          </div>
-
-          <div class="gateway-item" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
-            <div class="gateway-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 4v16"></path>
-                <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
-                <path d="M2 17h20"></path>
-                <path d="M6 8v9"></path>
-              </svg>
-            </div>
-            <div class="gateway-info">
-              <h3 class="gateway-title">Room Operations & Tape Chart</h3>
-              <p class="gateway-desc">Live room board, housekeeping states, and maintenance controls.</p>
-            </div>
-            <div class="gateway-arrow">&rarr;</div>
-          </div>
-
-          <div class="gateway-item" *ngIf="hasPermission('folio:view')" (click)="navigateTo('/pms/folios')">
-            <div class="gateway-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                <line x1="2" y1="10" x2="22" y2="10"></line>
-              </svg>
-            </div>
-            <div class="gateway-info">
-              <h3 class="gateway-title">Cashiering & Folio Settlement</h3>
-              <p class="gateway-desc">Post charges, record payments, and execute zero-balance checkouts.</p>
-            </div>
-            <div class="gateway-arrow">&rarr;</div>
-          </div>
-
-          <div class="gateway-item" *ngIf="hasPermission('front_office.reservation.create')" (click)="navigateTo('/pms/reservations/new')">
-            <div class="gateway-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-                <line x1="12" y1="14" x2="12" y2="18"></line>
-                <line x1="10" y1="16" x2="14" y2="16"></line>
-              </svg>
-            </div>
-            <div class="gateway-info">
-              <h3 class="gateway-title">New Booking Engine</h3>
-              <p class="gateway-desc">Book inventory with atomic hold and stay rate pricing.</p>
-            </div>
-            <div class="gateway-arrow">&rarr;</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Dedicated Departmental Hero Card for Housekeeping Supervisor -->
-    <div class="panel-card" *ngIf="isHousekeepingSupervisor() && !canAccessOperationsHub()">
-      <div class="panel-header">
-        <div>
-          <h2 class="panel-title">Housekeeping Operations</h2>
-          <p class="panel-subtitle">Room turnover, task dispatch & supervisor quality audits</p>
-        </div>
-      </div>
-      <div class="panel-body">
-        <div class="quick-gateways-list">
-          <div class="gateway-item" (click)="navigateTo('/pms/housekeeping')">
-            <div class="gateway-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-              </svg>
-            </div>
-            <div class="gateway-info">
-              <h3 class="gateway-title">Open Housekeeping Workspace</h3>
-              <p class="gateway-desc">View assigned attendant queues, log room turnover completions, and certify inspected status.</p>
-            </div>
-            <div class="gateway-arrow">&rarr;</div>
-          </div>
-
-          <div class="gateway-item" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
-            <div class="gateway-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 4v16"></path>
-                <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
-                <path d="M2 17h20"></path>
-                <path d="M6 8v9"></path>
-              </svg>
-            </div>
-            <div class="gateway-info">
-              <h3 class="gateway-title">Room Operations & Readiness Board</h3>
-              <p class="gateway-desc">Check floor plan status, occupancy states, and maintenance blocks.</p>
-            </div>
-            <div class="gateway-arrow">&rarr;</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Dedicated Departmental Hero Card for Maintenance Technician -->
-    <div class="panel-card" *ngIf="isMaintenanceTech() && !canAccessOperationsHub()">
-      <div class="panel-header">
-        <div>
-          <h2 class="panel-title">Engineering & Maintenance Operations</h2>
-          <p class="panel-subtitle">Asset register, work orders & preventive maintenance</p>
-        </div>
-      </div>
-      <div class="panel-body">
-        <div class="quick-gateways-list">
-          <div class="gateway-item" (click)="navigateTo('/pms/engineering')">
-            <div class="gateway-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-              </svg>
-            </div>
-            <div class="gateway-info">
-              <h3 class="gateway-title">Open Engineering Workspace</h3>
-              <p class="gateway-desc">Manage repair tickets, update work order lifecycle, and view preventive schedules.</p>
-            </div>
-            <div class="gateway-arrow">&rarr;</div>
-          </div>
-
-          <div class="gateway-item" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
-            <div class="gateway-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 4v16"></path>
-                <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
-                <path d="M2 17h20"></path>
-                <path d="M6 8v9"></path>
-              </svg>
-            </div>
-            <div class="gateway-info">
-              <h3 class="gateway-title">Out-of-Order (OOO) Room Controls</h3>
-              <p class="gateway-desc">Inspect room service states, place maintenance holds, or return rooms to service.</p>
-            </div>
-            <div class="gateway-arrow">&rarr;</div>
-          </div>
-        </div>
-      </div>
+      <hms-data-table *ngIf="!isLoading() && recentReservationsDisplay().length > 0"
+        [columns]="dashboardTableColumns"
+        [rows]="tableRows.slice(0, 6)">
+      </hms-data-table>
     </div>
   </section>
 </div>
-
-<!-- Cell templates for data table (defined at component level for @ViewChild access) -->
-<ng-template #statusCellTpl let-value let-row="row">
-  <hms-status-pill [statusKey]="(value || row?.status || '').toLowerCase()" [statusLabel]="value || row?.status"></hms-status-pill>
-</ng-template>
-<ng-template #actionCellTpl let-id let-row="row">
-  <a [routerLink]="['/pms/reservations', id || row?.action || row?.id]" class="table-link">Details &rarr;</a>
-</ng-template>

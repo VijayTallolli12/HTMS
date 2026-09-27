@@ -2,7 +2,7 @@ import * as argon2 from 'argon2';
 import { getPrismaClient } from '../client';
 import { generateUuidV7 } from '@hms/shared';
 
-export interface DemoUserIds { adminUserId: string; fdeskUserId: string; hkUserId: string; maintUserId: string; }
+export interface DemoUserIds { adminUserId: string; fdeskUserId: string; hkUserId: string; maintUserId: string; fnbUserId: string; spaUserId: string; }
 
 async function hashPassword(password: string): Promise<string> {
   return argon2.hash(password, { type: argon2.argon2id, memoryCost: 65536, timeCost: 3, parallelism: 4 });
@@ -13,6 +13,8 @@ const DEMO_USERS = [
   { email: 'fdesk@tokyograndeur.demo', firstName: 'Yuki', lastName: 'Tanaka', phone: '+81-90-5555-0201', roleCode: 'FDA', scopeType: 'PROPERTY' },
   { email: 'hk@tokyograndeur.demo', firstName: 'Chen', lastName: 'Wei', phone: '+81-80-5555-0301', roleCode: 'HK_SUPERVISOR', scopeType: 'PROPERTY' },
   { email: 'maint@tokyograndeur.demo', firstName: 'Raj', lastName: 'Patel', phone: '+81-70-5555-0401', roleCode: 'MAINT_TECH', scopeType: 'PROPERTY' },
+  { email: 'fnb@tokyograndeur.demo', firstName: 'Kenji', lastName: 'Sato', phone: '+81-80-5555-0501', roleCode: 'FNB_MANAGER', scopeType: 'PROPERTY' },
+  { email: 'spa@tokyograndeur.demo', firstName: 'Aiko', lastName: 'Yamamoto', phone: '+81-90-5555-0601', roleCode: 'SPA_MANAGER', scopeType: 'PROPERTY' },
 ];
 
 const DEMO_PASSWORD = 'Demo1234!';
@@ -27,6 +29,8 @@ export async function seedDemoUsers(propertyId: string, hotelGroupId: string): P
     'fdesk@tokyograndeur.demo': 'fdeskUserId',
     'hk@tokyograndeur.demo': 'hkUserId',
     'maint@tokyograndeur.demo': 'maintUserId',
+    'fnb@tokyograndeur.demo': 'fnbUserId',
+    'spa@tokyograndeur.demo': 'spaUserId',
   };
 
   for (const def of DEMO_USERS) {
