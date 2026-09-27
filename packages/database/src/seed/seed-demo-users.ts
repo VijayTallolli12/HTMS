@@ -10,6 +10,7 @@ async function hashPassword(password: string): Promise<string> {
 
 const DEMO_USERS = [
   { email: 'admin@tokyograndeur.demo', firstName: 'Platform', lastName: 'Admin', phone: '+81-3-5555-0100', roleCode: 'CORP_ADMIN', scopeType: 'GROUP' },
+  { email: 'gm@tokyograndeur.demo', firstName: 'General', lastName: 'Manager', phone: '+81-3-5555-0150', roleCode: 'PROPERTY_GM', scopeType: 'PROPERTY' },
   { email: 'fdesk@tokyograndeur.demo', firstName: 'Yuki', lastName: 'Tanaka', phone: '+81-90-5555-0201', roleCode: 'FDA', scopeType: 'PROPERTY' },
   { email: 'hk@tokyograndeur.demo', firstName: 'Chen', lastName: 'Wei', phone: '+81-80-5555-0301', roleCode: 'HK_SUPERVISOR', scopeType: 'PROPERTY' },
   { email: 'maint@tokyograndeur.demo', firstName: 'Raj', lastName: 'Patel', phone: '+81-70-5555-0401', roleCode: 'MAINT_TECH', scopeType: 'PROPERTY' },

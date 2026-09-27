@@ -120,8 +120,8 @@ async function seedEmployees(prisma: any, propertyId: string) {
     if (!existing) {
       // Use raw SQL to avoid enum type issues
       await prisma.$executeRaw`
-        INSERT INTO pms_schema.employees (id, property_id, employee_code, first_name, last_name, email, phone, hire_date, department, position, status, created_at, updated_at)
-        VALUES (${generateUuidV7()}, ${propertyId}, ${emp.employeeCode}, ${emp.firstName}, ${emp.lastName}, ${emp.email}, ${emp.phone}, ${emp.hireDate}, ${emp.department}, ${emp.position}, 'ACTIVE'::pms_schema.employment_status, now(), now())
+        INSERT INTO pms_schema.employees (id, property_id, employee_code, first_name, last_name, email, phone, hire_date, department, position, status, version, created_at, updated_at)
+        VALUES (${generateUuidV7()}, ${propertyId}, ${emp.employeeCode}, ${emp.firstName}, ${emp.lastName}, ${emp.email}, ${emp.phone}, ${emp.hireDate}, ${emp.department}, ${emp.position}, 'ACTIVE'::pms_schema."EmploymentStatus", 0, now(), now())
         ON CONFLICT (property_id, employee_code) DO NOTHING
       `;
       existing = await prisma.employee.findFirst({
@@ -182,7 +182,7 @@ async function seedPayrollPeriod(prisma: any, propertyId: string) {
   if (!period) {
     await prisma.$executeRaw`
       INSERT INTO pms_schema.payroll_periods (id, property_id, period_start, period_end, status, processed_at, processed_by, created_at, updated_at)
-      VALUES (${generateUuidV7()}::uuid, ${propertyId}::uuid, '2024-10-01', '2024-10-31', 'PROCESSED'::pms_schema.payroll_period_status, '2024-11-02', '00000000-0000-0000-0000-000000000001'::uuid, now(), now())
+      VALUES (${generateUuidV7()}::uuid, ${propertyId}::uuid, '2024-10-01', '2024-10-31', 'PROCESSED'::pms_schema."PayrollPeriodStatus", '2024-11-02', '00000000-0000-0000-0000-000000000001'::uuid, now(), now())
       ON CONFLICT (property_id, period_start, period_end) DO NOTHING
       RETURNING id, property_id, period_start, period_end, status, processed_at, processed_by, created_at, updated_at
     `;
@@ -205,7 +205,7 @@ async function seedPayrollRun(prisma: any, propertyId: string, periodId: string,
     if (run.status !== 'FINALIZED') {
       await prisma.$executeRaw`
         UPDATE pms_schema.payroll_runs
-        SET status = 'FINALIZED'::pms_schema.payroll_run_status,
+        SET status = 'FINALIZED'::pms_schema."PayrollRunStatus",
             finalized_at = '2024-11-05',
             finalized_by = 'system-seed'
         WHERE id = ${run.id}
@@ -226,7 +226,7 @@ async function seedPayrollRun(prisma: any, propertyId: string, periodId: string,
       ORDER BY ec.effective_date DESC
       LIMIT 1
     ) c ON true
-    WHERE e.property_id = ${propertyId} AND e.deleted_at IS NULL AND e.status = 'ACTIVE'::pms_schema.employment_status
+    WHERE e.property_id = ${propertyId} AND e.deleted_at IS NULL AND e.status = 'ACTIVE'::pms_schema."EmploymentStatus"
   `;
 
   const linesData: any[] = [];
@@ -273,7 +273,7 @@ async function seedPayrollRun(prisma: any, propertyId: string, periodId: string,
   const systemUserId = '00000000-0000-0000-0000-000000000001';
 await prisma.$executeRaw`
     INSERT INTO pms_schema.payroll_runs (id, property_id, payroll_period_id, status, total_gross, total_deductions, total_net, calculated_at, calculated_by, finalized_at, finalized_by, idempotency_key, created_at, updated_at)
-    VALUES (${runId}::uuid, ${propertyId}::uuid, ${periodId}::uuid, 'FINALIZED'::pms_schema.payroll_run_status, ${totalGross}, ${totalDeductions}, ${totalNet}, '2024-11-03', ${systemUserId}::uuid, '2024-11-05', ${systemUserId}::uuid, 'demo-seed-run-' || ${periodId}, now(), now())
+    VALUES (${runId}::uuid, ${propertyId}::uuid, ${periodId}::uuid, 'FINALIZED'::pms_schema."PayrollRunStatus", ${totalGross}, ${totalDeductions}, ${totalNet}, '2024-11-03', ${systemUserId}::uuid, '2024-11-05', ${systemUserId}::uuid, 'demo-seed-run-' || ${periodId}, now(), now())
   `;
 
   // Create lines

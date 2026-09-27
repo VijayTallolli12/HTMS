@@ -327,21 +327,25 @@ export async function seedProcurement(propertyId: string): Promise<void> {
       },
     });
     console.log(`  Created Purchase Order: ${poReceived.poNumber} [RECEIVED]`);
+  }
 
-    // Create corresponding GoodsReceipt
-    const grNumber = 'GR-2026-0001';
-    const idempotencyKey = `procurement_receipt_${propertyId}_${grNumber}`;
+  // Create corresponding GoodsReceipt (independent of PO creation so re-runs
+  // recover if a previous run crashed between PO and receipt)
+  const waterId = itemMap.get('FNB-WTR-001')!;
+  const matchaId = itemMap.get('FNB-TEA-001')!;
+  const grNumber = 'GR-2026-0001';
+  const idempotencyKey = `procurement_receipt_${propertyId}_${grNumber}`;
 
-    const existingGr = await prisma.goodsReceipt.findUnique({
-      where: { idempotencyKey },
-    });
+  const existingGr = await prisma.goodsReceipt.findUnique({
+    where: { idempotencyKey },
+  });
 
-    if (!existingGr) {
-      await prisma.goodsReceipt.create({
-        data: {
-          id: generateUuidV7(),
-          propertyId,
-          purchaseOrderId: poReceived.id,
+  if (!existingGr) {
+    await prisma.goodsReceipt.create({
+      data: {
+        id: generateUuidV7(),
+        propertyId,
+        purchaseOrderId: poReceived!.id,
           receiptNumber: grNumber,
           receivedDate: new Date('2026-09-25'),
           status: 'POSTED',
@@ -366,8 +370,7 @@ export async function seedProcurement(propertyId: string): Promise<void> {
           },
         },
       });
-      console.log(`  Created Goods Receipt: ${grNumber} (IdempotencyKey: ${idempotencyKey})`);
-    }
+    console.log(`  Created Goods Receipt: ${grNumber} (IdempotencyKey: ${idempotencyKey})`);
   }
 
   console.log('Procurement & Inventory demo seeding completed successfully.');
