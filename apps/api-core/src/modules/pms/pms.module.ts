@@ -65,6 +65,9 @@ import { HrPayrollModule } from './hr-payroll/hr-payroll.module';
 // Revenue
 import { RevenueModule } from './revenue/revenue.module';
 
+// Integrations
+import { IntegrationModule } from './integrations/integrations.module';
+
 @Module({
   imports: [
     ReservationsModule,
@@ -78,6 +81,7 @@ import { RevenueModule } from './revenue/revenue.module';
     ProcurementModule,
     HrPayrollModule,
     RevenueModule,
+    IntegrationModule,
   ],
   controllers: [
     RoomTypeController,

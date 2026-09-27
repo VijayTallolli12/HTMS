@@ -158,6 +158,8 @@ model Property {
 payrollLines              PayrollLine[]
     marketRateProviders       MarketRateProvider[]
     competitorSets            CompetitorSet[]
+    integrations              Integration[]
+    integrationSyncLogs       IntegrationSyncLog[]
 
     @@index([countryId])
     @@index([status])
@@ -491,7 +493,79 @@ model RefreshToken {
 }
 
 // ==============================================================================
-// 18. SECURITY AUDIT LOG (Append-Only Immutable Ledger)
+// 18. INTEGRATION HUB (Platform-Level External Provider Configurations)
+// ==============================================================================
+
+enum IntegrationType {
+  OTA
+  PAYMENT
+  EMAIL
+  WHATSAPP
+
+  @@schema("platform_schema")
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  TESTING
+
+  @@schema("platform_schema")
+}
+
+model Integration {
+  id              String           @id @default(uuid())
+  propertyId      String           @map("property_id")
+  provider        String           @db.VarChar(100) // e.g., "booking_com", "stripe", "sendgrid", "twilio_whatsapp"
+  type            IntegrationType  @map("type")
+  name            String           @db.VarChar(100) // Human-readable name
+  status          IntegrationStatus @default(INACTIVE) @map("status")
+  enabled         Boolean          @default(false)
+  configuration   Json             @default("{}") // Provider-specific config (encrypted secrets stored separately)
+  lastSyncAt      DateTime?        @map("last_sync_at") @db.Timestamptz(6)
+  lastError       String?          @map("last_error")
+  lastErrorAt     DateTime?        @map("last_error_at") @db.Timestamptz(6)
+  version         Int              @default(0)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?        @map("deleted_at") @db.Timestamptz(6)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  syncLogs IntegrationSyncLog[]
+
+  @@unique([propertyId, id], name: "uq_integration_property_id")
+  @@unique([propertyId, provider, type], name: "uq_integration_property_provider_type")
+  @@index([propertyId, type], name: "idx_integration_property_type")
+  @@index([propertyId, status], name: "idx_integration_property_status")
+  @@map("integrations")
+  @@schema("platform_schema")
+}
+
+model IntegrationSyncLog {
+  id              String   @id @default(uuid())
+  integrationId   String   @map("integration_id")
+  propertyId      String   @map("property_id")
+  syncType        String   @map("sync_type") // MANUAL | SCHEDULED | WEBHOOK
+  status          String   @map("status") // SUCCESS | FAILED | PARTIAL
+  recordsProcessed Int     @default(0) @map("records_processed")
+  recordsFailed   Int      @default(0) @map("records_failed")
+  errorMessage    String?  @map("error_message")
+  correlationId   String?  @map("correlation_id")
+  startedAt       DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+
+  @@unique([integrationId, id], name: "uq_sync_log_integration_id")
+  @@index([integrationId, startedAt], name: "idx_sync_log_integration_started")
+  @@index([propertyId, startedAt], name: "idx_sync_log_property_started")
+  @@map("integration_sync_logs")
+  @@schema("platform_schema")
+}
+
+// End of Integration Hub models
 // ==============================================================================
 model SecurityAuditLog {
   id            String   @id

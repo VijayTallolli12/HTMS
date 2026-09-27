@@ -19,3 +19,4 @@ export * from './fnb/fnb.contract';
 export * from './spa/spa.contract';
 export * from './events/events.contract';
 export * from './procurement/procurement.contract';
+export * from './integrations/integrations.contract';
