@@ -23,3 +23,4 @@ export * from './integrations/integrations.contract';
 export * from './channel-manager/channel-manager.contract';
 export * from './payments/payments.contract';
 export * from './notifications/email.contract';
+export * from './notifications/whatsapp.contract';

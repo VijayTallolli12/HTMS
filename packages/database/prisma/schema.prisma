@@ -169,6 +169,10 @@ payrollLines              PayrollLine[]
     emailTemplates            EmailTemplate[]
     emails                    Email[]
     emailWebhooks             EmailWebhook[]
+    whatsAppProviderConfigs   WhatsAppProviderConfig[]
+    whatsAppTemplates         WhatsAppTemplate[]
+    whatsAppMessages          WhatsAppMessage[]
+    whatsAppWebhooks          WhatsAppWebhook[]
     marketRateProviders       MarketRateProvider[]
     @@index([status])
     @@index([deletedAt])
@@ -975,6 +979,166 @@ model EmailWebhook {
 }
 
 // End of Email Notifications models
+
+// ==============================================================================
+// 22. WHATSAPP NOTIFICATIONS (Platform-Level)
+// ==============================================================================
+
+enum WhatsAppProviderType {
+  TWILIO
+  GUPSHUP
+  META
+  DEMO
+
+  @@schema("platform_schema")
+}
+
+enum WhatsAppStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+
+  @@schema("platform_schema")
+}
+
+enum WhatsAppTemplateType {
+  RESERVATION_CONFIRMATION
+  ARRIVAL_REMINDER
+  CHECK_IN
+  CHECKOUT
+  PAYMENT_RECEIPT
+  SERVICE_CONFIRMATION
+
+  @@schema("platform_schema")
+}
+
+model WhatsAppProviderConfig {
+  id                String                 @id @default(uuid())
+  propertyId        String                 @map("property_id")
+  provider          WhatsAppProviderType   @map("provider")
+  name              String                 @db.VarChar(100)
+  enabled           Boolean                @default(true)
+  configuration     Json                   @default("{}")
+  phoneNumberId     String                 @map("phone_number_id") @db.VarChar(100)
+  businessAccountId String                 @map("business_account_id") @db.VarChar(100)
+  lastSyncAt        DateTime?              @map("last_sync_at") @db.Timestamptz(6)
+  lastError         String?                @map("last_error")
+  version           Int                    @default(0)
+  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime?              @map("deleted_at") @db.Timestamptz(6)
+
+  property          Property               @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  templates         WhatsAppTemplate[]
+  messages          WhatsAppMessage[]
+  webhooks          WhatsAppWebhook[]
+
+  @@unique([propertyId, id], name: "uq_whatsapp_provider_config_property_id")
+  @@index([propertyId, enabled], name: "idx_whatsapp_provider_config_enabled")
+  @@map("whatsapp_provider_configs")
+  @@schema("platform_schema")
+}
+
+model WhatsAppTemplate {
+  id                       String            @id @default(uuid())
+  propertyId               String            @map("property_id")
+  whatsAppProviderConfigId String            @map("whatsapp_provider_config_id")
+  type                     WhatsAppTemplateType @map("type")
+  name                     String            @db.VarChar(100)
+  language                 String            @db.VarChar(10)
+  category                 String            @db.VarChar(20)
+  headerText               String?           @map("header_text") @db.VarChar(60)
+  bodyText                 String            @map("body_text") @db.Text
+  footerText               String?           @map("footer_text") @db.VarChar(60)
+  buttons                  Json              @default("[]") @map("buttons")
+  variables                String[]          @default([]) @map("variables")
+  isActive                 Boolean           @default(true) @map("is_active")
+  externalTemplateId       String?           @map("external_template_id") @db.VarChar(100)
+  createdAt                DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt                DateTime?         @map("deleted_at") @db.Timestamptz(6)
+
+  property                 Property          @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  whatsAppProviderConfig   WhatsAppProviderConfig @relation(fields: [whatsAppProviderConfigId], references: [id], onDelete: Restrict)
+  messages                 WhatsAppMessage[]
+
+  @@unique([propertyId, id], name: "uq_whatsapp_template_property_id")
+  @@unique([propertyId, whatsAppProviderConfigId, type, name], name: "uq_whatsapp_template_config_type_name")
+  @@index([propertyId, isActive], name: "idx_whatsapp_template_active")
+  @@map("whatsapp_templates")
+  @@schema("platform_schema")
+}
+
+model WhatsAppMessage {
+  id                       String            @id @default(uuid())
+  propertyId               String            @map("property_id")
+  whatsAppProviderConfigId String            @map("whatsapp_provider_config_id")
+  templateId               String?           @map("template_id")
+  to                       String            @db.VarChar(20)
+  type                     String            @db.VarChar(20)
+  templateName             String?           @map("template_name") @db.VarChar(100)
+  language                 String?           @db.VarChar(10)
+  templateVariables        Json?             @map("template_variables")
+  textContent              String?           @map("text_content") @db.Text
+  mediaUrl                 String?           @map("media_url") @db.VarChar(500)
+  status                   WhatsAppStatus    @map("status")
+  priority                 String            @default("NORMAL") @map("priority") @db.VarChar(20)
+  scheduledAt              DateTime?         @map("scheduled_at") @db.Timestamptz(6)
+  sentAt                   DateTime?         @map("sent_at") @db.Timestamptz(6)
+  deliveredAt              DateTime?         @map("delivered_at") @db.Timestamptz(6)
+  readAt                   DateTime?         @map("read_at") @db.Timestamptz(6)
+  failedAt                 DateTime?         @map("failed_at") @db.Timestamptz(6)
+  errorMessage             String?           @map("error_message")
+  retryCount               Int               @default(0) @map("retry_count")
+  maxRetries               Int               @default(3) @map("max_retries")
+  idempotencyKey           String            @unique @map("idempotency_key") @db.VarChar(64)
+  correlationId            String?           @map("correlation_id") @db.VarChar(64)
+  metadata                 Json              @default("{}")
+  version                  Int               @default(0)
+  createdAt                DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt                DateTime?         @map("deleted_at") @db.Timestamptz(6)
+
+  property                 Property                 @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  whatsAppProviderConfig   WhatsAppProviderConfig   @relation(fields: [whatsAppProviderConfigId], references: [id], onDelete: Restrict)
+  template                 WhatsAppTemplate?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@unique([propertyId, id], name: "uq_whatsapp_message_property_id")
+  @@index([propertyId, status], name: "idx_whatsapp_message_status")
+  @@index([propertyId, createdAt], name: "idx_whatsapp_message_created_at")
+  @@index([idempotencyKey], name: "idx_whatsapp_message_idempotency")
+  @@map("whatsapp_messages")
+  @@schema("platform_schema")
+}
+
+model WhatsAppWebhook {
+  id                       String   @id @default(uuid())
+  propertyId               String   @map("property_id")
+  whatsAppProviderConfigId String   @map("whatsapp_provider_config_id")
+  messageId                String   @map("message_id")
+  eventType                String   @map("event_type") @db.VarChar(50)
+  payload                  Json
+  processed                Boolean  @default(false)
+  processedAt              DateTime? @map("processed_at") @db.Timestamptz(6)
+  correlationId            String?  @unique @map("correlation_id") @db.VarChar(64)
+  idempotencyKey           String   @unique @map("idempotency_key") @db.VarChar(64)
+  version                  Int      @default(0)
+  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt                DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  property                 Property                 @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  whatsAppProviderConfig   WhatsAppProviderConfig   @relation(fields: [whatsAppProviderConfigId], references: [id], onDelete: Restrict)
+
+  @@unique([propertyId, id], name: "uq_whatsapp_webhook_property_id")
+  @@index([whatsAppProviderConfigId, processedAt], name: "idx_whatsapp_webhook_config_processed")
+  @@map("whatsapp_webhooks")
+  @@schema("platform_schema")
+}
+
+// End of WhatsApp Notifications models
 // ==============================================================================
 model SecurityAuditLog {
   id            String   @id
