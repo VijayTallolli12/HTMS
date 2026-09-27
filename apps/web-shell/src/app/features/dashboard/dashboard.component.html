@@ -3,7 +3,7 @@
   <header class="dashboard-header">
     <div class="header-titles">
       <div class="luxury-badge" *ngIf="isHousekeepingSupervisor()">HOUSEKEEPING OPERATIONS CONSOLE</div>
-      <div class="luxury-badge" *ngIf="isMaintenanceTech()">FACILITIES &amp; ENGINEERING CONSOLE</div>
+      <div class="luxury-badge" *ngIf="isMaintenanceTech()">FACILITIES & ENGINEERING CONSOLE</div>
       <div class="luxury-badge" *ngIf="isFrontDeskAgent()">FRONT OFFICE OPERATIONS CONSOLE</div>
       <div class="luxury-badge" *ngIf="!isHousekeepingSupervisor() && !isMaintenanceTech() && !isFrontDeskAgent()">EXECUTIVE OPERATIONS CONSOLE</div>
 
@@ -71,9 +71,286 @@
     {{ errorMessage() }}
   </hms-alert>
 
-  <!-- Operational Stat Cards -->
+  <!-- ===================================================================== -->
+  <!-- EXECUTIVE FINANCIAL KPIs (Revenue V2) -->
+  <!-- ===================================================================== -->
+  <section class="executive-kpi-section" *ngIf="canViewFinancials() && executiveKpiCards().length > 0">
+    <div class="section-header">
+      <h2 class="section-title">Revenue Performance</h2>
+      <p class="section-subtitle">30-day rolling metrics · {{ revenueStartDate() }} → {{ revenueEndDate() }}</p>
+    </div>
+    <div class="executive-kpi-grid">
+      <div class="exec-kpi-card" *ngFor="let kpi of executiveKpiCards()" [class]="'exec-kpi-' + kpi.icon">
+        <div class="exec-kpi-icon" [class]="'exec-kpi-icon-' + kpi.icon">
+          <ng-container [ngSwitch]="kpi.icon">
+            <svg *ngSwitchCase="'occupancy'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="exec-icon-svg">
+              <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+              <rect x="3" y="15" width="7" height="6" rx="1"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+            <svg *ngSwitchCase="'adr'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="exec-icon-svg">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            <svg *ngSwitchCase="'revpar'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="exec-icon-svg">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            <svg *ngSwitchCase="'revenue'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="exec-icon-svg">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            <svg *ngSwitchCase="'pickup'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="exec-icon-svg">
+              <polyline points="23 4 8 16 8 4"></polyline>
+            </svg>
+          </ng-container>
+        </div>
+        <div class="exec-kpi-content">
+          <div class="exec-kpi-label">{{ kpi.label }}</div>
+          <div class="exec-kpi-value">{{ kpi.value }}</div>
+          <div class="exec-kpi-desc">{{ kpi.desc }}</div>
+          <div class="exec-kpi-trend" [class]="'trend-' + kpi.trend">
+            <span class="trend-icon">{{ getTrendIcon(kpi.trend) }}</span>
+            <span class="trend-label">{{ kpi.trend === 'up' ? 'Up' : kpi.trend === 'down' ? 'Down' : 'Flat' }}</span>
+          </div>
+        </div>
+        <div class="exec-kpi-footer">
+          <a [routerLink]="kpi.path" class="exec-kpi-link">{{ kpi.footer }} →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Operational Stat Cards (Existing) -->
   <section class="metrics-grid" *ngIf="kpiCards.length > 0">
     <hms-kpi-strip [cards]="kpiCards" (cardClick)="onCardClick($event)"></hms-kpi-strip>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- EXECUTIVE CHARTS ROW -->
+  <!-- ===================================================================== -->
+  <section class="charts-row" *ngIf="canViewFinancials()">
+    <div class="chart-card" *ngIf="occupancyChartData()">
+      <div class="chart-header">
+        <h3 class="chart-title">Occupancy Trend (30 Days)</h3>
+        <span class="chart-period">{{ revenueStartDate() }} → {{ revenueEndDate() }}</span>
+      </div>
+      <div class="chart-container">
+        <canvas #occupancyChart class="chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card" *ngIf="adrChartData()">
+      <div class="chart-header">
+        <h3 class="chart-title">ADR Trend (30 Days)</h3>
+        <span class="chart-period">{{ revenueStartDate() }} → {{ revenueEndDate() }}</span>
+      </div>
+      <div class="chart-container">
+        <canvas #adrChart class="chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card" *ngIf="revenueChartData()">
+      <div class="chart-header">
+        <h3 class="chart-title">Revenue Trend (30 Days)</h3>
+        <span class="chart-period">{{ revenueStartDate() }} → {{ revenueEndDate() }}</span>
+      </div>
+      <div class="chart-container">
+        <canvas #revenueChart class="chart-canvas"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- OPERATIONAL CHARTS ROW -->
+  <!-- ===================================================================== -->
+  <section class="charts-row operational-charts">
+    <div class="chart-card" *ngIf="roomStatusDistribution()">
+      <div class="chart-header">
+        <h3 class="chart-title">Room Status Distribution</h3>
+        <span class="chart-subtitle">{{ stats().totalRooms }} Total Rooms</span>
+      </div>
+      <div class="chart-container">
+        <canvas #roomStatusChart class="chart-canvas"></canvas>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item" *ngFor="let label of roomStatusDistribution()?.labels; let i = index">
+          <span class="legend-color" [style.background-color]="roomStatusDistribution()?.datasets[0]?.backgroundColor[i]"></span>
+          <span class="legend-label">{{ label }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card" *ngIf="revenueByDepartmentChart() && canViewFinancials()">
+      <div class="chart-header">
+        <h3 class="chart-title">Revenue by Department</h3>
+        <span class="chart-subtitle">Today's Business</span>
+      </div>
+      <div class="chart-container">
+        <canvas #revenueDeptChart class="chart-canvas"></canvas>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item" *ngFor="let label of revenueByDepartmentChart()?.labels; let i = index">
+          <span class="legend-color" [style.background-color]="revenueByDepartmentChart()?.datasets[0]?.backgroundColor[i]"></span>
+          <span class="legend-label">{{ label }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card" *ngIf="pickupChartData() && canViewFinancials()">
+      <div class="chart-header">
+        <h3 class="chart-title">Pickup Analysis (30 Days)</h3>
+        <span class="chart-period">{{ revenueStartDate() }} → {{ revenueEndDate() }}</span>
+      </div>
+      <div class="chart-container">
+        <canvas #pickupChart class="chart-canvas"></canvas>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item" *ngFor="let dataset of pickupChartData()?.datasets">
+          <span class="legend-color" [style.background-color]="dataset.borderColor"></span>
+          <span class="legend-label">{{ dataset.label }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Operational Widgets Row -->
+  <section class="widgets-row">
+    <!-- Arrivals Today -->
+    <div class="widget-card arrivals-widget">
+      <div class="widget-icon arrivals-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v10"></path>
+          <polyline points="17 8 12 13 7 8"></polyline>
+        </svg>
+      </div>
+      <div class="widget-content">
+        <div class="widget-label">ARRIVALS TODAY</div>
+        <div class="widget-value">{{ arrivalsToday() }}</div>
+        <div class="widget-desc">Expected arrivals</div>
+      </div>
+      <div class="widget-action" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/front-office')">
+        View →
+      </div>
+    </div>
+
+    <!-- Departures Today -->
+    <div class="widget-card departures-widget">
+      <div class="widget-icon departures-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </div>
+      <div class="widget-content">
+        <div class="widget-label">DEPARTURES TODAY</div>
+        <div class="widget-value">{{ departuresToday() }}</div>
+        <div class="widget-desc">Scheduled departures</div>
+      </div>
+      <div class="widget-action" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/reservations')">
+        View →
+      </div>
+    </div>
+
+    <!-- In-House Guests -->
+    <div class="widget-card inhouse-widget">
+      <div class="widget-icon inhouse-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
+      <div class="widget-content">
+        <div class="widget-label">IN-HOUSE GUESTS</div>
+        <div class="widget-value">{{ inHouseGuests() }}</div>
+        <div class="widget-desc">Currently staying</div>
+      </div>
+      <div class="widget-action" *ngIf="hasPermission('front_office.reservation.read')" (click)="navigateTo('/pms/front-office')">
+        View →
+      </div>
+    </div>
+
+    <!-- Rooms Requiring Attention -->
+    <div class="widget-card attention-widget">
+      <div class="widget-icon attention-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div class="widget-content">
+        <div class="widget-label">ROOMS NEEDING ATTENTION</div>
+        <div class="widget-value">{{ roomsRequiringAttention() }}</div>
+        <div class="widget-desc">Dirty, failed inspection, OOO</div>
+      </div>
+      <div class="widget-action" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
+        View →
+      </div>
+    </div>
+
+    <!-- Housekeeping Readiness -->
+    <div class="widget-card readiness-widget">
+      <div class="widget-icon readiness-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"></path>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"></path>
+        </svg>
+      </div>
+      <div class="widget-content">
+        <div class="widget-label">HOUSEKEEPING READINESS</div>
+        <div class="widget-value">{{ housekeepingReadiness() }}%</div>
+        <div class="widget-desc">Rooms ready for check-in</div>
+      </div>
+      <div class="widget-action" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
+        View →
+      </div>
+    </div>
+
+    <!-- Maintenance/OOS -->
+    <div class="widget-card maintenance-widget">
+      <div class="widget-icon maintenance-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+        </svg>
+      </div>
+      <div class="widget-content">
+        <div class="widget-label">MAINTENANCE / OOS</div>
+        <div class="widget-value">{{ maintenanceOOSCount() }}</div>
+        <div class="widget-desc">Rooms out of service</div>
+      </div>
+      <div class="widget-action" *ngIf="hasPermission('room_operations.status.read')" (click)="navigateTo('/pms/room-operations')">
+        View →
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- VIP GUESTS (Authorized Only) -->
+  <!-- ===================================================================== -->
+  <section class="vip-section" *ngIf="canViewFinancials() && vipGuests().length > 0">
+    <div class="section-header">
+      <h2 class="section-title">VIP Guests In-House</h2>
+      <p class="section-subtitle">High-value guests currently staying</p>
+    </div>
+    <div class="vip-grid">
+      <div class="vip-card" *ngFor="let guest of vipGuests()">
+        <div class="vip-avatar">
+          <span>{{ guest.guest?.firstName?.[0] }}{{ guest.guest?.lastName?.[0] }}</span>
+        </div>
+        <div class="vip-info">
+          <div class="vip-name">{{ guest.guest?.firstName }} {{ guest.guest?.lastName }}</div>
+          <div class="vip-details">
+            <span class="vip-tier">{{ guest.guest?.loyaltyTier || 'VIP' }}</span>
+            <span class="vip-room">Room {{ guest.roomNumber }}</span>
+          </div>
+        </div>
+        <div class="vip-status">
+          <hms-status-pill [statusKey]="guest.status.toLowerCase()" [statusLabel]="guest.status"></hms-status-pill>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- Two-Column Operational Activity Section -->
@@ -126,7 +403,7 @@
               </svg>
             </div>
             <div class="gateway-info">
-              <h3 class="gateway-title">Front Desk &amp; Arrivals</h3>
+              <h3 class="gateway-title">Front Desk & Arrivals</h3>
               <p class="gateway-desc">Perform room assignments, check-ins, and key issuances.</p>
             </div>
             <div class="gateway-arrow">&rarr;</div>
@@ -142,7 +419,7 @@
               </svg>
             </div>
             <div class="gateway-info">
-              <h3 class="gateway-title">Room Operations &amp; Tape Chart</h3>
+              <h3 class="gateway-title">Room Operations & Tape Chart</h3>
               <p class="gateway-desc">Live room board, housekeeping states, and maintenance controls.</p>
             </div>
             <div class="gateway-arrow">&rarr;</div>
@@ -156,7 +433,7 @@
               </svg>
             </div>
             <div class="gateway-info">
-              <h3 class="gateway-title">Cashiering &amp; Folio Settlement</h3>
+              <h3 class="gateway-title">Cashiering & Folio Settlement</h3>
               <p class="gateway-desc">Post charges, record payments, and execute zero-balance checkouts.</p>
             </div>
             <div class="gateway-arrow">&rarr;</div>
@@ -188,7 +465,7 @@
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Housekeeping Operations</h2>
-          <p class="panel-subtitle">Room turnover, task dispatch &amp; supervisor quality audits</p>
+          <p class="panel-subtitle">Room turnover, task dispatch & supervisor quality audits</p>
         </div>
       </div>
       <div class="panel-body">
@@ -216,7 +493,7 @@
               </svg>
             </div>
             <div class="gateway-info">
-              <h3 class="gateway-title">Room Operations &amp; Readiness Board</h3>
+              <h3 class="gateway-title">Room Operations & Readiness Board</h3>
               <p class="gateway-desc">Check floor plan status, occupancy states, and maintenance blocks.</p>
             </div>
             <div class="gateway-arrow">&rarr;</div>
@@ -229,8 +506,8 @@
     <div class="panel-card" *ngIf="isMaintenanceTech() && !canAccessOperationsHub()">
       <div class="panel-header">
         <div>
-          <h2 class="panel-title">Engineering &amp; Maintenance Operations</h2>
-          <p class="panel-subtitle">Asset register, work orders &amp; preventive maintenance</p>
+          <h2 class="panel-title">Engineering & Maintenance Operations</h2>
+          <p class="panel-subtitle">Asset register, work orders & preventive maintenance</p>
         </div>
       </div>
       <div class="panel-body">
