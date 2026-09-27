@@ -173,6 +173,7 @@ payrollLines              PayrollLine[]
     whatsAppTemplates         WhatsAppTemplate[]
     whatsAppMessages          WhatsAppMessage[]
     whatsAppWebhooks          WhatsAppWebhook[]
+    auditLogs                 AuditLog[]
     marketRateProviders       MarketRateProvider[]
     @@index([status])
     @@index([deletedAt])
@@ -1139,6 +1140,137 @@ model WhatsAppWebhook {
 }
 
 // End of WhatsApp Notifications models
+
+// ==============================================================================
+// 23. AUDIT / ACTIVITY CENTER (Platform-Level Business Activity Logs)
+// ==============================================================================
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  CHECK_IN
+  CHECKOUT
+  CANCEL
+  ASSIGN_ROOM
+  UNASSIGN_ROOM
+  POST_CHARGE
+  RECORD_PAYMENT
+  REFUND
+  CHANGE_ROOM_STATUS
+  HOUSEKEEPING_TASK
+  CREATE_WORK_ORDER
+  UPDATE_WORK_ORDER
+  CREATE_RESERVATION
+  UPDATE_RESERVATION
+  CONFIGURE_INTEGRATION
+  SYNC_INTEGRATION
+  PROCESS_PAYMENT
+  AUTHORIZE_PAYMENT
+  CAPTURE_PAYMENT
+  REFUND_PAYMENT
+  SEND_EMAIL
+  SEND_WHATSAPP
+  RUN_NIGHT_AUDIT
+  VALIDATE_NIGHT_AUDIT
+  CREATE_USER
+  UPDATE_USER
+  DELETE_USER
+  ASSIGN_ROLE
+  REVOKE_ROLE
+  EXPORT_DATA
+  IMPORT_DATA
+
+  @@schema("platform_schema")
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+  PARTIAL
+
+  @@schema("platform_schema")
+}
+
+enum AuditEntityType {
+  USER
+  ROLE
+  PERMISSION
+  PROPERTY
+  ROOM
+  ROOM_TYPE
+  RATE_PLAN
+  RESERVATION
+  GUEST
+  FOLIO
+  PAYMENT
+  HOUSEKEEPING_TASK
+  WORK_ORDER
+  ASSET
+  INTEGRATION
+  CHANNEL_CONFIG
+  EMAIL_PROVIDER
+  EMAIL_TEMPLATE
+  EMAIL
+  WHATSAPP_PROVIDER
+  WHATSAPP_TEMPLATE
+  WHATSAPP_MESSAGE
+  SUPPLIER
+  INVENTORY_ITEM
+  PURCHASE_ORDER
+  GOODS_RECEIPT
+  EMPLOYEE
+  PAYROLL_PERIOD
+  PAYROLL_RUN
+  REVENUE_KPI
+  PRICING_RECOMMENDATION
+  CRM_PROFILE
+  LOYALTY_MEMBERSHIP
+  EVENT_BOOKING
+  EVENT_VENUE
+  FNB_ORDER
+  SPA_APPOINTMENT
+
+  @@schema("platform_schema")
+}
+
+model AuditLog {
+  id            String         @id @default(uuid())
+  timestamp     DateTime       @default(now()) @map("timestamp")
+  actorId       String?        @map("actor_id")
+  actorType     String         @default("USER") @map("actor_type")
+  action        AuditAction    @map("action")
+  outcome       AuditOutcome   @map("outcome")
+  entityType    AuditEntityType? @map("entity_type")
+  entityId      String?        @map("entity_id")
+  propertyId    String?        @map("property_id")
+  before        Json?          @map("before")
+  after         Json?          @map("after")
+  source        String         @default("API") @map("source")
+  correlationId String?        @map("correlation_id")
+  ipAddress     String?        @map("ip_address")
+  userAgent     String?        @map("user_agent")
+  metadata      Json?          @map("metadata")
+  version       Int            @default(0)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  property      Property?      @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([timestamp])
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([propertyId, timestamp])
+  @@index([correlationId])
+  @@map("audit_logs")
+  @@schema("platform_schema")
+}
+
+// End of Audit / Activity Center models
 // ==============================================================================
 model SecurityAuditLog {
   id            String   @id

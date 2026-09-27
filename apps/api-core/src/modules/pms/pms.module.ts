@@ -74,6 +74,9 @@ import { ChannelManagerModule } from './channel-manager/channel-manager.module';
 // Payment Gateway
 import { PaymentGatewayModule } from './payments/payment-gateway.module';
 
+// Audit / Activity Center
+import { AuditModule } from './audit/audit.module';
+
 @Module({
   imports: [
     ReservationsModule,
@@ -90,6 +93,7 @@ import { PaymentGatewayModule } from './payments/payment-gateway.module';
     IntegrationModule,
     ChannelManagerModule,
     PaymentGatewayModule,
+    AuditModule,
   ],
   controllers: [
     RoomTypeController,
