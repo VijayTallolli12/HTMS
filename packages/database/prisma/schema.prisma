@@ -2700,7 +2700,7 @@ model PurchaseOrder {
   id             String             @id @default(uuid())
   propertyId     String             @map("property_id")
   supplierId     String             @map("supplier_id")
-  poNumber       String             @db.VarChar(30)
+  poNumber       String             @map("po_number") @db.VarChar(30)
   status         PurchaseOrderStatus @default(DRAFT) @map("status")
   orderDate      DateTime           @map("order_date") @db.Date
   expectedDate   DateTime?          @map("expected_date") @db.Date
@@ -2746,7 +2746,7 @@ model GoodsReceipt {
   id               String   @id @default(uuid())
   propertyId       String   @map("property_id")
   purchaseOrderId  String   @map("purchase_order_id")
-  receiptNumber    String   @db.VarChar(30)
+  receiptNumber    String   @map("receipt_number") @db.VarChar(30)
   receivedDate     DateTime @map("received_date") @db.Date
   status           String   @default("POSTED") @map("status") @db.VarChar(20)
   notes            String?  @db.Text

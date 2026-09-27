@@ -1,8 +1,8 @@
 -- Create guest_crm_profiles table
 CREATE TABLE pms_schema.guest_crm_profiles (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    property_id             UUID NOT NULL,
-    guest_id                UUID NOT NULL UNIQUE,
+    property_id             TEXT NOT NULL,
+    guest_id                TEXT NOT NULL UNIQUE,
     vip_flag                BOOLEAN NOT NULL DEFAULT false,
     notes                   TEXT,
     communication_preferences JSONB,
@@ -24,8 +24,8 @@ CREATE UNIQUE INDEX uq_crm_profile_guest ON pms_schema.guest_crm_profiles(proper
 -- Create guest_preferences table
 CREATE TABLE pms_schema.guest_preferences (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    property_id UUID NOT NULL,
-    guest_id    UUID NOT NULL,
+    property_id TEXT NOT NULL,
+    guest_id    TEXT NOT NULL,
     category    VARCHAR(50) NOT NULL,
     preference  VARCHAR(100) NOT NULL,
     value       VARCHAR(500) NOT NULL,
@@ -44,8 +44,8 @@ CREATE INDEX idx_guest_preferences_guest ON pms_schema.guest_preferences(propert
 -- Create loyalty_memberships table
 CREATE TABLE pms_schema.loyalty_memberships (
     id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    property_id       UUID NOT NULL,
-    guest_id          UUID NOT NULL UNIQUE,
+    property_id       TEXT NOT NULL,
+    guest_id          TEXT NOT NULL UNIQUE,
     membership_number VARCHAR(30) NOT NULL UNIQUE,
     tier              VARCHAR(20) NOT NULL DEFAULT 'STANDARD',
     points_balance    INT NOT NULL DEFAULT 0,
@@ -69,7 +69,7 @@ CREATE UNIQUE INDEX uq_loyalty_membership_guest ON pms_schema.loyalty_membership
 -- Create loyalty_transactions table
 CREATE TABLE pms_schema.loyalty_transactions (
     id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    property_id       UUID NOT NULL,
+    property_id       TEXT NOT NULL,
     membership_id     UUID NOT NULL,
     type              VARCHAR(20) NOT NULL,
     points            INT NOT NULL,

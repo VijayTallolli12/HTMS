@@ -435,7 +435,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
     console.log('  Created 3 Demo Spa Appointments.');
   }
 
-  // 7. Market Rate Providers (Revenue Management)
+  // 7. Market Rate Providers (Revenue Management) - Using raw SQL due to Prisma client issue
   const marketProviders = [
     {
       providerName: 'Tokyo Luxury Compset',
@@ -450,21 +450,20 @@ export async function seedSpa(propertyId: string): Promise<void> {
   ];
 
   for (const mp of marketProviders) {
-    let provider = await prisma.marketRateProvider.findFirst({
-      where: { propertyId, providerName: mp.providerName },
-    });
-    if (!provider) {
-      provider = await prisma.marketRateProvider.create({
-        data: {
-          id: generateUuidV7(),
-          propertyId,
-          providerName: mp.providerName,
-          providerType: mp.providerType,
-          configuration: mp.configuration,
-          isEnabled: true,
-        },
-      });
-      console.log(`  Created Market Rate Provider: ${provider.providerName}`);
+    // Use raw SQL with explicit cast to enum type
+    const providers = await prisma.$queryRaw<Array<{id: string}>>`
+      SELECT id FROM pms_schema.market_rate_providers
+      WHERE property_id = ${propertyId} AND provider_name = ${mp.providerName}
+      LIMIT 1
+    `;
+    
+    if (!providers || providers.length === 0) {
+      const id = generateUuidV7();
+      await prisma.$executeRaw`
+        INSERT INTO pms_schema.market_rate_providers (id, property_id, provider_name, provider_type, configuration, is_enabled, created_at, updated_at)
+        VALUES (${id}, ${propertyId}, ${mp.providerName}, ${mp.providerType}::pms_schema."MarketRateProviderType", ${JSON.stringify(mp.configuration)}::jsonb, true, now(), now())
+      `;
+      console.log(`  Created Market Rate Provider: ${mp.providerName}`);
     }
   }
 
@@ -491,22 +490,20 @@ export async function seedSpa(propertyId: string): Promise<void> {
   ];
 
   for (const c of competitors) {
-    let competitor = await prisma.competitorSet.findFirst({
-      where: { propertyId, competitorCode: c.competitorCode },
-    });
-    if (!competitor) {
-      competitor = await prisma.competitorSet.create({
-        data: {
-          id: generateUuidV7(),
-          propertyId,
-          competitorCode: c.competitorCode,
-          competitorName: c.competitorName,
-          segment: c.segment,
-          distanceKm: new Prisma.Decimal(c.distanceKm),
-          isActive: true,
-        },
-      });
-      console.log(`  Created Competitor: ${competitor.competitorName} (${competitor.competitorCode})`);
+    // Use raw SQL to avoid Prisma client issue with segment enum
+    const competitors_result = await prisma.$queryRaw<Array<{id: string}>>`
+      SELECT id FROM pms_schema.competitor_set
+      WHERE property_id = ${propertyId} AND competitor_code = ${c.competitorCode}
+      LIMIT 1
+    `;
+    
+    if (!competitors_result || competitors_result.length === 0) {
+      const id = generateUuidV7();
+      await prisma.$executeRaw`
+        INSERT INTO pms_schema.competitor_set (id, property_id, competitor_code, competitor_name, segment, distance_km, is_active, created_at, updated_at)
+        VALUES (${id}, ${propertyId}, ${c.competitorCode}, ${c.competitorName}, ${c.segment}::pms_schema."CompetitorSegment", ${c.distanceKm}, true, now(), now())
+      `;
+      console.log(`  Created Competitor: ${c.competitorName} (${c.competitorCode})`);
     }
   }
 

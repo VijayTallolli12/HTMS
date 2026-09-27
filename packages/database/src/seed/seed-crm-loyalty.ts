@@ -230,23 +230,13 @@ async function upsertPreferences(
   prefs: Array<{ category: string; preference: string; value: string }>,
 ) {
   for (const p of prefs) {
-    await prisma.guestPreference.upsert({
-      where: {
-        propertyId_guestId_category_preference: {
-          propertyId,
-          guestId,
-          category: p.category,
-          preference: p.preference,
-        },
-      },
-      create: {
-        id: generateUuidV7(),
-        propertyId,
-        guestId,
-        ...p,
-      },
-      update: { value: p.value },
-    });
+    // Use raw SQL to avoid Prisma client limitation with compound unique keys in upsert
+    await prisma.$executeRaw`
+      INSERT INTO pms_schema.guest_preferences (id, property_id, guest_id, category, preference, value, created_at, updated_at)
+      VALUES (gen_random_uuid(), ${propertyId}, ${guestId}, ${p.category}, ${p.preference}, ${p.value}, now(), now())
+      ON CONFLICT (property_id, guest_id, category, preference)
+      DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+    `;
   }
 }
 
@@ -300,24 +290,13 @@ async function seedLoyaltyTransactions(
   }>,
 ) {
   for (const tx of transactions) {
-    await prisma.loyaltyTransaction.upsert({
-      where: {
-        id: generateUuidV7(), // This won't match, so it will create
-      },
-      create: {
-        id: generateUuidV7(),
-        propertyId,
-        membershipId,
-        type: tx.type,
-        points: tx.points,
-        reference: tx.reference,
-        referenceType: tx.referenceType,
-        description: tx.description,
-        createdBy: 'system-seed',
-        createdAt: tx.createdAt,
-      },
-      update: {},
-    });
+    // Use a valid UUID for created_by (using a fixed system UUID)
+    const systemUserId = '00000000-0000-0000-0000-000000000001' as const;
+    await prisma.$executeRaw`
+      INSERT INTO pms_schema.loyalty_transactions (id, property_id, membership_id, type, points, reference, reference_type, description, created_by, created_at)
+      VALUES (${generateUuidV7()}::uuid, ${propertyId}::uuid, ${membershipId}::uuid, ${tx.type}, ${tx.points}, ${tx.reference}, ${tx.referenceType}, ${tx.description}, ${systemUserId}::uuid, ${tx.createdAt})
+      ON CONFLICT (id) DO NOTHING
+    `;
   }
 }
 

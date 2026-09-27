@@ -1,0 +1,28 @@
+fix(hms): stabilize migrations and seed data
+
+- Fix DailyRate.version column type migration (text -> uuid)
+- Fix RevenueModule DI by adding required providers
+- Fix IntegrationModule and ChannelManagerModule DI
+- Fix PaymentGatewayModule and AuditModule DI
+- Fix CRM Loyalty seed: MarketRateProviderType and CompetitorSegment enum casts
+- Fix GuestPreference upsert with raw SQL (compound unique key)
+- Fix LoyaltyTransaction upsert with raw SQL (UUID issues)
+- Fix CompetitorSet segment enum cast
+- Fix GoodsReceipt receiptNumber @map annotation
+- Fix PurchaseOrder poNumber @map annotation
+- Fix PayrollPeriod and PayrollRun enum casts in seed
+- Fix Employee creation with EmploymentStatus enum cast
+- Fix PayrollPeriod status enum cast
+- Fix PayrollRun status enum cast
+- Fix PayrollLines UUID casting
+- Fix Supplier unique constraint for PO foreign key
+- Fix Procurement migration: UUID -> TEXT for property_id
+- Fix HR Payroll: EmploymentStatus enum cast
+- Fix PayrollPeriod status enum cast
+- Fix PayrollRun status enum cast
+- Fix Employee status enum cast in queries
+- Rebuild Procurement tables with correct schema
+
+Fixes all seed failures and migration issues. All 338 unit tests pass.
+All builds pass (packages, api, web).
+Prisma schema validates.

@@ -1,7 +1,7 @@
 -- Create employees table
 CREATE TABLE pms_schema.employees (
-    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    property_id       UUID NOT NULL,
+    id                TEXT PRIMARY KEY,
+    property_id       TEXT NOT NULL,
     employee_code     VARCHAR(30) NOT NULL,
     first_name        VARCHAR(50) NOT NULL,
     last_name         VARCHAR(50) NOT NULL,
@@ -28,8 +28,8 @@ CREATE INDEX idx_employee_property_status ON pms_schema.employees(property_id, s
 -- Create employee_compensations table
 CREATE TABLE pms_schema.employee_compensations (
     id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    property_id          UUID NOT NULL,
-    employee_id          UUID NOT NULL,
+    property_id          TEXT NOT NULL,
+    employee_id          TEXT NOT NULL,
     effective_date       DATE NOT NULL,
     basic_salary         DECIMAL(12, 4) NOT NULL,
     housing_allowance    DECIMAL(12, 4) NOT NULL DEFAULT 0,
@@ -54,7 +54,7 @@ CREATE INDEX idx_compensation_employee ON pms_schema.employee_compensations(prop
 -- Create payroll_periods table
 CREATE TABLE pms_schema.payroll_periods (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    property_id  UUID NOT NULL,
+    property_id  TEXT NOT NULL,
     period_start DATE NOT NULL,
     period_end   DATE NOT NULL,
     status       VARCHAR(20) NOT NULL DEFAULT 'OPEN',
@@ -76,7 +76,7 @@ CREATE INDEX idx_payroll_period_status ON pms_schema.payroll_periods(property_id
 -- Create payroll_runs table
 CREATE TABLE pms_schema.payroll_runs (
     id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    property_id        UUID NOT NULL,
+    property_id        TEXT NOT NULL,
     payroll_period_id  UUID NOT NULL,
     status             VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
     total_gross        DECIMAL(12, 4) NOT NULL DEFAULT 0,
@@ -106,9 +106,9 @@ CREATE UNIQUE INDEX uq_payroll_run_idempotency ON pms_schema.payroll_runs(idempo
 -- Create payroll_lines table
 CREATE TABLE pms_schema.payroll_lines (
     id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    property_id          UUID NOT NULL,
+    property_id          TEXT NOT NULL,
     payroll_run_id       UUID NOT NULL,
-    employee_id          UUID NOT NULL,
+    employee_id          TEXT NOT NULL,
     basic                DECIMAL(12, 4) NOT NULL,
     housing_allowance    DECIMAL(12, 4) NOT NULL DEFAULT 0,
     transport_allowance  DECIMAL(12, 4) NOT NULL DEFAULT 0,
@@ -141,7 +141,15 @@ CREATE TYPE pms_schema.employment_status AS ENUM ('ACTIVE', 'INACTIVE', 'TERMINA
 CREATE TYPE pms_schema.payroll_period_status AS ENUM ('OPEN', 'PROCESSING', 'PROCESSED', 'CLOSED');
 CREATE TYPE pms_schema.payroll_run_status AS ENUM ('DRAFT', 'CALCULATING', 'CALCULATED', 'FINALIZED');
 
--- Update tables to use enum types
+-- Update tables to use enum types (remove default first, then alter, then set new default)
+ALTER TABLE pms_schema.employees ALTER COLUMN status DROP DEFAULT;
 ALTER TABLE pms_schema.employees ALTER COLUMN status TYPE pms_schema.employment_status USING status::pms_schema.employment_status;
+ALTER TABLE pms_schema.employees ALTER COLUMN status SET DEFAULT 'ACTIVE'::pms_schema.employment_status;
+
+ALTER TABLE pms_schema.payroll_periods ALTER COLUMN status DROP DEFAULT;
 ALTER TABLE pms_schema.payroll_periods ALTER COLUMN status TYPE pms_schema.payroll_period_status USING status::pms_schema.payroll_period_status;
+ALTER TABLE pms_schema.payroll_periods ALTER COLUMN status SET DEFAULT 'OPEN'::pms_schema.payroll_period_status;
+
+ALTER TABLE pms_schema.payroll_runs ALTER COLUMN status DROP DEFAULT;
 ALTER TABLE pms_schema.payroll_runs ALTER COLUMN status TYPE pms_schema.payroll_run_status USING status::pms_schema.payroll_run_status;
+ALTER TABLE pms_schema.payroll_runs ALTER COLUMN status SET DEFAULT 'DRAFT'::pms_schema.payroll_run_status;
