@@ -7,6 +7,7 @@ import { OrganizationService } from '../../core/services/organization.service';
 import { ApplicationBrandingService } from '../../core/services/application-branding.service';
 import { ApiSuccessResponse, AuthenticationResponse } from '@hms/api-contracts';
 import { HmsButtonComponent, HmsAlertComponent, HmsBrandLogoComponent } from '../../shared/index';
+import { SafeSvgPipe } from './safe-svg.pipe';
 
 interface DemoPersona {
   roleCode: string;
@@ -14,7 +15,7 @@ interface DemoPersona {
   userName: string;
   email: string;
   scopeBadge: string;
-  icon: string;
+  iconSvg: string;
   description: string;
 }
 
@@ -28,7 +29,7 @@ interface SlideItem {
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, HmsButtonComponent, HmsAlertComponent, HmsBrandLogoComponent],
+  imports: [CommonModule, FormsModule, SafeSvgPipe, HmsButtonComponent, HmsAlertComponent, HmsBrandLogoComponent],
   template: `
     <div class="hms-auth-viewport">
       <!-- ========================================================= -->
@@ -364,7 +365,7 @@ interface SlideItem {
                   [attr.aria-pressed]="selectedPersona()?.email === persona.email"
                 >
                   <div class="persona-chip-content">
-                    <span class="persona-chip-icon">{{ persona.icon }}</span>
+                    <span class="persona-chip-icon" [innerHTML]="persona.iconSvg | safeSvg"></span>
                     <div class="persona-chip-text">
                       <span class="chip-role">{{ persona.roleTitle }}</span>
                       <span class="chip-desc">{{ persona.description }}</span>
@@ -390,12 +391,55 @@ interface SlideItem {
     </div>
   `,
   styles: [`
-    /* Persona Grid - Responsive Layout */
+    /* Width reference for container-query breakpoints of the persona grid */
+    .auth-panel-content {
+      container-type: inline-size;
+    }
+
+    /* Persona Grid - Responsive Layout (desktop: 3 columns) */
     .persona-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.75rem;
-      margin-top: 0.75rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Container-based breakpoints so columns track the actual login panel
+       width: 3 cols desktop, 2 cols medium, 1 col mobile. */
+    @container (max-width: 429px) {
+      .persona-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @container (max-width: 319px) {
+      .persona-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Fallback for browsers without container queries: approximate the same
+       breakpoints from viewport width. */
+    @supports not (container-type: inline-size) {
+      @media (max-width: 1500px) {
+        .persona-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .persona-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    }
+
+    /* Stacked layout (panel below hero): width no longer tracks the viewport,
+       so use media queries: 2 columns on medium screens, 1 on mobile. */
+    @media (max-width: 900px) {
+      .persona-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media (max-width: 640px) {
@@ -404,24 +448,24 @@ interface SlideItem {
       }
     }
 
-    /* Persona Chip - Refined Design */
+    /* Persona Chip - Refined Design (compact: target ~58px card height) */
     .persona-chip {
       display: flex;
       align-items: center;
-      padding: 0.85rem 1rem;
+      padding: 0.5rem 0.55rem;
       background: var(--surface-card);
       border: 1px solid var(--surface-border);
       border-radius: 8px;
       text-align: left;
       cursor: pointer;
       transition: all 0.15s ease;
-      min-height: 64px;
+      min-height: 58px;
     }
 
     .persona-chip:hover {
       border-color: var(--gold-accent);
       background: var(--gold-light);
-      transform: translateX(2px);
+      transform: none;
     }
 
     .persona-chip:focus-visible {
@@ -438,25 +482,27 @@ interface SlideItem {
     .persona-chip-content {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.45rem;
       width: 100%;
+      min-width: 0;
     }
 
     .persona-chip-icon {
       font-size: 1.35rem;
       line-height: 1;
       flex-shrink: 0;
+      color: var(--text-muted);
     }
 
     .persona-chip-text {
       display: flex;
       flex-direction: column;
-      gap: 0.15rem;
+      gap: 0.05rem;
       min-width: 0;
     }
 
     .chip-role {
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: var(--text-primary);
       line-height: 1.2;
@@ -467,26 +513,26 @@ interface SlideItem {
     }
 
     .chip-desc {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       color: var(--text-muted);
       line-height: 1.2;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .persona-chip.is-selected .chip-desc {
       color: var(--gold-accent);
     }
 
-    /* Keep existing persona-chip styles for backward compat if needed */
-    .quick-access-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
+    /* Login-side spacing: compact, viewport-aware (globals trimmed as well) */
+    .quick-access-section {
+      margin-top: 0;
     }
 
-    @media (max-width: 640px) {
-      .quick-access-grid {
-        grid-template-columns: 1fr;
-      }
+    .auth-panel-footer {
+      margin-top: 0.75rem;
     }
   `],
 })
@@ -545,7 +591,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       userName: 'Platform Admin',
       email: 'admin@tokyograndeur.demo',
       scopeBadge: 'Group Scope',
-      icon: '🛡️',
+      iconSvg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>',
       description: 'Platform Administration',
     },
     {
@@ -554,7 +600,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       userName: 'General Manager',
       email: 'gm@tokyograndeur.demo',
       scopeBadge: 'Property Scope',
-      icon: '🏨',
+      iconSvg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>',
       description: 'Executive Operations',
     },
     {
@@ -563,7 +609,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       userName: 'Yuki Tanaka',
       email: 'fdesk@tokyograndeur.demo',
       scopeBadge: 'Front Office',
-      icon: '🛎️',
+      iconSvg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20a1 1 0 0 1-1-1v-1a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1Z"/><path d="M20 16a8 8 0 1 0-16 0"/><path d="M12 4v4"/><path d="M10 4h4"/></svg>',
       description: 'Front Office',
     },
     {
@@ -572,7 +618,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       userName: 'Chen Wei',
       email: 'hk@tokyograndeur.demo',
       scopeBadge: 'Housekeeping',
-      icon: '🧹',
+      iconSvg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h.01"/><path d="M7 5h.01"/><path d="M11 7h.01"/><path d="M3 7h.01"/><path d="M7 9h.01"/><path d="M3 11h.01"/><rect width="4" height="4" x="15" y="5"/><path d="m19 9 2 2v10c0 .6-.4 1-1 1h-6c-.6 0-1-.4-1-1V11l2-2"/><path d="m13 14 8-2"/><path d="m13 19 8-2"/></svg>',
       description: 'Housekeeping Operations',
     },
     {
@@ -581,7 +627,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       userName: 'Raj Patel',
       email: 'maint@tokyograndeur.demo',
       scopeBadge: 'Engineering',
-      icon: '🔧',
+      iconSvg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></svg>',
       description: 'Engineering & Facilities',
     },
     {
@@ -590,7 +636,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       userName: 'Kenji Sato',
       email: 'fnb@tokyograndeur.demo',
       scopeBadge: 'Food & Beverage',
-      icon: '🍽️',
+      iconSvg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>',
       description: 'Food & Beverage',
     },
     {
@@ -599,7 +645,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       userName: 'Aiko Yamamoto',
       email: 'spa@tokyograndeur.demo',
       scopeBadge: 'Spa & Wellness',
-      icon: '💆',
+      iconSvg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 1 3 3m-3-3a3 3 0 1 0-3 3m3-3v1M9 8a3 3 0 1 0 3 3M9 8h1m5 0a3 3 0 1 1-3 3m3-3h-1m-2 3v-1"/><circle cx="12" cy="8" r="2"/><path d="M12 10v12"/><path d="M12 22c4.2 0 7-1.667 7-5-4.2 0-7 1.667-7 5Z"/><path d="M12 22c-4.2 0-7-1.667-7-5 4.2 0 7 1.667 7 5Z"/></svg>',
       description: 'Spa Operations',
     },
   ];

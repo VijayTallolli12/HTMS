@@ -1988,24 +1988,27 @@ button:hover,
   max-height: 100dvh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   background: var(--surface-card);
   overflow: hidden;
 }
 
+/* Viewport-aware column: content centers via auto margins; only this
+   container scrolls internally when a viewport is genuinely too short. */
 .auth-panel-scroll {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 1.5rem 2.75rem;
-  overflow: hidden;
+  min-height: 0;
+  padding: 1.5rem clamp(1.25rem, 2.5vw, 2.5rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
 }
 
 .auth-panel-content {
   width: 100%;
-  max-width: 420px;
-  margin: 0 auto;
+  max-width: 500px;
+  margin: auto;
 }
 
 /* Enterprise Brand Lockup */
@@ -2064,7 +2067,7 @@ button:hover,
 
 /* Welcome Section */
 .welcome-section {
-  margin-bottom: 1.1rem;
+  margin-bottom: 0.8rem;
 }
 
 .welcome-heading {
@@ -2083,7 +2086,7 @@ button:hover,
 
 /* Form Layout & Inputs */
 .auth-form {
-  margin-bottom: 1.1rem;
+  margin-bottom: 0.85rem;
 }
 
 .form-group {
@@ -2201,7 +2204,7 @@ button:hover,
 .form-aux-row {
   display: flex;
   align-items: center;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.55rem;
 }
 
 .remember-label {
@@ -2294,13 +2297,13 @@ hms-button:hover:not([disabled]) .btn-arrow {
 }
 
 .auth-error-alert {
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.6rem;
 }
 
 /* Quick Access Demo Personas */
 .quick-access-section {
   border-top: 1px solid var(--surface-border);
-  padding-top: 1rem;
+  padding-top: 0.7rem;
 }
 
 .quick-access-header {
@@ -2308,7 +2311,7 @@ hms-button:hover:not([disabled]) .btn-arrow {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.45rem;
 }
 
 .quick-access-title-wrap {
@@ -2413,7 +2416,7 @@ hms-button:hover:not([disabled]) .btn-arrow {
 
 /* Enterprise Panel Footer */
 .auth-panel-footer {
-  margin-top: 1.15rem;
+  margin-top: 0.75rem;
   text-align: center;
   border-top: 1px solid var(--surface-border-subtle);
   padding-top: 0.75rem;
@@ -2496,10 +2499,6 @@ hms-button:hover:not([disabled]) .btn-arrow {
 }
 
 @media (max-width: 640px) {
-  .quick-access-grid {
-    grid-template-columns: 1fr;
-  }
-
   .hms-visual-panel {
     padding: 1.5rem 1.25rem;
   }
