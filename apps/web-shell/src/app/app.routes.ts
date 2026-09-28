@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { setupGuard, setupWizardGuard } from './core/guards/setup.guard';
 
 export const routes: Routes = [
   {
@@ -14,17 +15,31 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'setup',
+    canActivate: [setupWizardGuard],
+    loadComponent: () =>
+      import('./features/setup/setup-wizard.component').then((m) => m.SetupWizardComponent),
+    title: 'First-Run Setup',
+  },
+  {
+    path: 'setup-center',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/setup/setup-center.component').then((m) => m.SetupCenterComponent),
+    title: 'Setup Center',
+  },
+  {
     path: 'dashboard',
     loadComponent: () =>
       import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
     title: 'Dashboard',
-    canActivate: [authGuard],
+    canActivate: [authGuard, setupGuard],
   },
   {
     path: 'pms',
     loadChildren: () => import('./features/pms/pms.routes').then((m) => m.PMS_ROUTES),
     title: 'Property Management',
-    canActivate: [authGuard],
+    canActivate: [authGuard, setupGuard],
   },
   {
     path: 'organization',
@@ -33,7 +48,7 @@ export const routes: Routes = [
         (m) => m.OrganizationManagementComponent,
       ),
     title: 'Organization',
-    canActivate: [authGuard],
+    canActivate: [authGuard, setupGuard],
   },
   {
     path: 'health',

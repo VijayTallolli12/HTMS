@@ -1,0 +1,338 @@
+<div class="setup-shell">
+  <header class="setup-header">
+    <div class="setup-brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="brand-mark" aria-hidden="true">
+        <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Enterprise HMS</span>
+    </div>
+    <div class="setup-progress" role="progressbar" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100">
+      <div class="setup-progress__bar" [style.width.%]="progressPercent()"></div>
+    </div>
+  </header>
+
+  <main class="setup-main">
+    <section class="setup-card" aria-labelledby="setup-step-title" *ngIf="step() <= 6">
+      <!-- STEP 0: WELCOME -->
+      <div *ngIf="step() === 0" class="step step-welcome">
+        <h1 id="setup-step-title">Welcome to Enterprise HMS</h1>
+        <p class="lead">
+          Set up your hotel management platform in a few guided steps. This wizard creates your
+          organization, your first property, and your administrator account.
+        </p>
+        <ul class="welcome-list">
+          <li><span class="num">1</span> Choose your organization type</li>
+          <li><span class="num">2</span> Describe your organization and property</li>
+          <li><span class="num">3</span> Create the first administrator</li>
+        </ul>
+        <p class="note">
+          Takes about 3 minutes. Room types, rooms, rates, and staff can be configured later from
+          the Setup Center — you are never forced to enter them now.
+        </p>
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--gold" (click)="next()">Begin Setup</button>
+        </div>
+      </div>
+
+      <!-- STEP 1: ORGANIZATION TYPE -->
+      <div *ngIf="step() === 1" class="step">
+        <h1 id="setup-step-title">How is your business organized?</h1>
+        <p class="lead">Choose the structure that fits today. You can add more properties later either way.</p>
+
+        <div class="choice-grid" role="radiogroup" aria-label="Organization type">
+          <button
+            type="button"
+            class="choice-card"
+            [class.is-selected]="organization.type === 'INDEPENDENT'"
+            (click)="organization.type = 'INDEPENDENT'"
+            role="radio"
+            [attr.aria-checked]="organization.type === 'INDEPENDENT'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <strong>Independent Hotel</strong>
+            <span>A single property operating under its own name.</span>
+          </button>
+          <button
+            type="button"
+            class="choice-card"
+            [class.is-selected]="organization.type === 'CHAIN'"
+            (click)="organization.type = 'CHAIN'"
+            role="radio"
+            [attr.aria-checked]="organization.type === 'CHAIN'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <strong>Hotel Group / Chain</strong>
+            <span>Multiple properties across regions and countries.</span>
+          </button>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="back()">Back</button>
+          <button type="button" class="hms-btn hms-btn--gold" (click)="next()">Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: ORGANIZATION DETAILS -->
+      <div *ngIf="step() === 2" class="step">
+        <h1 id="setup-step-title">Organization Details</h1>
+        <p class="lead">
+          {{ organization.type === 'INDEPENDENT'
+            ? 'Your hotel operates as its own organization. Region and country are provisioned automatically.'
+            : 'Define the group and its first region and country. Additional regions can be added later.' }}
+        </p>
+
+        <div class="form-grid">
+          <label class="field span-2">
+            <span>Organization Code</span>
+            <input type="text" [(ngModel)]="organization.code" name="orgCode" required
+                   placeholder="HG-SAKURA" autocomplete="off" maxlength="32" />
+          </label>
+          <label class="field span-2">
+            <span>Organization Name</span>
+            <input type="text" [(ngModel)]="organization.name" name="orgName" required
+                   placeholder="Sakura Hospitality" autocomplete="organization" maxlength="128" />
+          </label>
+          <label class="field span-2">
+            <span>Description <em>(optional)</em></span>
+            <input type="text" [(ngModel)]="organization.description" name="orgDesc"
+                   placeholder="Boutique hotels across Japan" maxlength="512" />
+          </label>
+
+          <ng-container *ngIf="organization.type === 'CHAIN'">
+            <label class="field">
+              <span>Region Code</span>
+              <input type="text" [(ngModel)]="organization.regionCode" name="regionCode"
+                     placeholder="APAC" maxlength="32" />
+            </label>
+            <label class="field">
+              <span>Region Name</span>
+              <input type="text" [(ngModel)]="organization.regionName" name="regionName"
+                     placeholder="Asia-Pacific" maxlength="128" />
+            </label>
+          </ng-container>
+
+          <label class="field" *ngIf="organization.type === 'INDEPENDENT'">
+            <span>Country</span>
+            <select [(ngModel)]="organization.countryCode" name="countryCode">
+              <option *ngFor="let c of countries" [value]="c.code">{{ c.name }} ({{ c.code }})</option>
+            </select>
+          </label>
+          <label class="field" *ngIf="organization.type === 'CHAIN'">
+            <span>Country Code (ISO 3166-1)</span>
+            <input type="text" [(ngModel)]="organization.countryCode" name="countryCodeChain"
+                   placeholder="JP" maxlength="2" />
+          </label>
+          <label class="field" *ngIf="organization.type === 'CHAIN'">
+            <span>Country Name <em>(optional)</em></span>
+            <input type="text" [(ngModel)]="organization.countryName" name="countryName"
+                   placeholder="Japan" maxlength="128" />
+          </label>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="back()">Back</button>
+          <button type="button" class="hms-btn hms-btn--gold" (click)="next()">Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: PROPERTY DETAILS -->
+      <div *ngIf="step() === 3" class="step">
+        <h1 id="setup-step-title">Property Details</h1>
+        <p class="lead">Your first hotel or resort. Buildings and floors are provisioned automatically.</p>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>Property Code</span>
+            <input type="text" [(ngModel)]="property.code" name="propCode" required
+                   placeholder="PROP-TYO-001" autocomplete="off" maxlength="32" />
+          </label>
+          <label class="field">
+            <span>Property Name</span>
+            <input type="text" [(ngModel)]="property.name" name="propName" required
+                   placeholder="Sakura Grand Hotel" autocomplete="off" maxlength="128" />
+          </label>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="back()">Back</button>
+          <button type="button" class="hms-btn hms-btn--gold" (click)="next()">Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: PROPERTY CONFIGURATION -->
+      <div *ngIf="step() === 4" class="step">
+        <h1 id="setup-step-title">Property Configuration</h1>
+        <p class="lead">Time zone and currency drive the business date, billing, and reporting. These matter most.</p>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>Time Zone</span>
+            <input type="text" [(ngModel)]="property.timeZone" name="timeZone" required
+                   list="timezone-list" placeholder="Asia/Tokyo" />
+            <datalist id="timezone-list">
+              <option *ngFor="let tz of timezones" [value]="tz"></option>
+            </datalist>
+          </label>
+          <label class="field">
+            <span>Currency (ISO 4217)</span>
+            <input type="text" [(ngModel)]="property.currency" name="currency" required
+                   placeholder="JPY" maxlength="3" />
+          </label>
+          <label class="field span-2">
+            <span>Legal Name <em>(optional)</em></span>
+            <input type="text" [(ngModel)]="property.legalName" name="legalName" maxlength="128" />
+          </label>
+          <label class="field span-2">
+            <span>Address <em>(optional)</em></span>
+            <input type="text" [(ngModel)]="property.addressLine1" name="address1" maxlength="255" />
+          </label>
+          <label class="field">
+            <span>City <em>(optional)</em></span>
+            <input type="text" [(ngModel)]="property.city" name="city" maxlength="100" />
+          </label>
+          <label class="field">
+            <span>State / Province <em>(optional)</em></span>
+            <input type="text" [(ngModel)]="property.stateProvince" name="state" maxlength="100" />
+          </label>
+          <label class="field">
+            <span>Postal Code <em>(optional)</em></span>
+            <input type="text" [(ngModel)]="property.postalCode" name="postal" maxlength="32" />
+          </label>
+          <label class="field">
+            <span>Phone <em>(optional)</em></span>
+            <input type="tel" [(ngModel)]="property.phone" name="phone" maxlength="32" />
+          </label>
+          <label class="field span-2">
+            <span>Property Email <em>(optional)</em></span>
+            <input type="email" [(ngModel)]="property.email" name="propEmail" maxlength="100" />
+          </label>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="back()">Back</button>
+          <button type="button" class="hms-btn hms-btn--gold" (click)="next()">Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: FIRST ADMINISTRATOR -->
+      <div *ngIf="step() === 5" class="step">
+        <h1 id="setup-step-title">Create First Administrator</h1>
+        <p class="lead">
+          This account receives
+          {{ organization.type === 'CHAIN' ? 'Corporate Platform Admin (group-wide)' : 'General Manager (property-wide)' }}
+          privileges.
+        </p>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>Email</span>
+            <input type="email" [(ngModel)]="admin.email" name="adminEmail" required
+                   autocomplete="username" placeholder="admin@yourhotel.com" />
+          </label>
+          <label class="field">
+            <span>Phone <em>(optional)</em></span>
+            <input type="tel" [(ngModel)]="admin.phone" name="adminPhone" maxlength="32" />
+          </label>
+          <label class="field">
+            <span>First Name</span>
+            <input type="text" [(ngModel)]="admin.firstName" name="adminFirst" required autocomplete="given-name" />
+          </label>
+          <label class="field">
+            <span>Last Name</span>
+            <input type="text" [(ngModel)]="admin.lastName" name="adminLast" required autocomplete="family-name" />
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <input type="password" [(ngModel)]="admin.password" name="adminPass" required
+                   [attr.minlength]="minPasswordLength" autocomplete="new-password" />
+            <small>Minimum {{ minPasswordLength }} characters.</small>
+          </label>
+          <label class="field">
+            <span>Confirm Password</span>
+            <input type="password" [(ngModel)]="admin.confirmPassword" name="adminPass2" required
+                   autocomplete="new-password" />
+          </label>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="back()">Back</button>
+          <button type="button" class="hms-btn hms-btn--gold" (click)="next()">Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 6: REVIEW -->
+      <div *ngIf="step() === 6" class="step">
+        <h1 id="setup-step-title">Review & Confirm</h1>
+        <p class="lead">Verify the details below. Setup is retry-safe — nothing is created until you confirm.</p>
+
+        <div class="review-grid">
+          <div class="review-section">
+            <h2>Organization</h2>
+            <dl>
+              <div><dt>Type</dt><dd>{{ organization.type }}</dd></div>
+              <div><dt>Code</dt><dd>{{ organization.code }}</dd></div>
+              <div><dt>Name</dt><dd>{{ organization.name }}</dd></div>
+              <div><dt>Country</dt><dd>{{ organization.countryCode }}</dd></div>
+            </dl>
+          </div>
+          <div class="review-section">
+            <h2>Property</h2>
+            <dl>
+              <div><dt>Code</dt><dd>{{ property.code }}</dd></div>
+              <div><dt>Name</dt><dd>{{ property.name }}</dd></div>
+              <div><dt>Time Zone</dt><dd>{{ property.timeZone }}</dd></div>
+              <div><dt>Currency</dt><dd>{{ property.currency }}</dd></div>
+            </dl>
+          </div>
+          <div class="review-section">
+            <h2>Administrator</h2>
+            <dl>
+              <div><dt>Name</dt><dd>{{ admin.firstName }} {{ admin.lastName }}</dd></div>
+              <div><dt>Email</dt><dd>{{ admin.email }}</dd></div>
+              <div><dt>Role</dt><dd>{{ organization.type === 'CHAIN' ? 'Corporate Platform Admin' : 'General Manager' }}</dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="back()">Back</button>
+          <button type="button" class="hms-btn hms-btn--gold" (click)="onConfirm()" [disabled]="isLoading()">
+            {{ isLoading() ? 'Setting up…' : 'Complete Setup' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- ERROR BANNER (shared) -->
+      <div class="setup-error" *ngIf="error()" role="alert">
+        {{ error() }}
+      </div>
+    </section>
+
+    <!-- STEP 7/8: COMPLETE -->
+    <section class="setup-card setup-card--complete" *ngIf="step() === 7" aria-labelledby="setup-complete-title">
+      <div class="complete-check" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <h1 id="setup-complete-title">Setup Complete</h1>
+      <p class="lead">
+        Your organization and first property are ready. Continue to the Setup Center to configure
+        room types, rooms, rates, and staff — or start with your data right away.
+      </p>
+      <div class="step-actions step-actions--center">
+        <button type="button" class="hms-btn hms-btn--gold" (click)="onFinish()">Open Setup Center</button>
+        <button type="button" class="hms-btn hms-btn--ghost" (click)="onGoToDashboard()">Go to Dashboard</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="setup-footer">
+    <span>Step {{ stepDisplay() }} of 7</span>
+  </footer>
+</div>
