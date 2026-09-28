@@ -1,5 +1,6 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
+import { OrganizationModule } from '../organization/organization.module';
 import { SetupController } from './presentation/controllers/setup.controller';
 import { SetupService } from './application/services/setup.service';
 import { SetupStateService } from './application/services/setup-state.service';
@@ -15,6 +16,10 @@ import { SecurityAuditSink } from './infrastructure/security-audit.sink';
  * without running any seed script.
  */
 @Module({
+  // OrganizationModule exports the hotel-group/region/country/property/
+  // building/floor services that SetupService delegates to. IdentityModule is
+  // @Global, so identity services resolve without an explicit import.
+  imports: [OrganizationModule],
   controllers: [SetupController],
   providers: [
     PrismaService,

@@ -100,7 +100,7 @@ export class SetupStateService {
 
     const [credentialedUsers, propertyCount] = await Promise.all([
       this.countCredentialedUsers(),
-      this.prisma.property.count({ where: { deletedAt: null } }),
+      this.safeCount(() => this.prisma.property.count({ where: { deletedAt: null } })),
     ]);
 
     // Derived facts always win over ledger state for these two milestones.
@@ -130,17 +130,24 @@ export class SetupStateService {
       derived = true;
     }
 
-    const hotelGroupId = (await this.prisma.hotelGroup.findFirst({ select: { id: true }, where: { deletedAt: null } }))?.id ?? null;
+    const hotelGroupId = (
+      await this.safeCount(async () => {
+        const g = await this.prisma.hotelGroup.findFirst({ select: { id: true }, where: { deletedAt: null } });
+        return g ? 1 : 0;
+      })
+    )
+      ? (await this.prisma.hotelGroup.findFirst({ select: { id: true }, where: { deletedAt: null } }))!.id
+      : null;
     const propertyId = propertyCount > 0
       ? (await this.prisma.property.findFirst({ select: { id: true }, where: { deletedAt: null } }))?.id ?? null
       : null;
 
     const propertyScope = propertyId ? { propertyId } : { propertyId: '00000000-0000-0000-0000-000000000000' };
     const [roomTypes, rooms, ratePlans, users] = await Promise.all([
-      this.prisma.roomType.count({ where: { ...propertyScope, deletedAt: null } }),
-      this.prisma.room.count({ where: { ...propertyScope, deletedAt: null } }),
-      this.prisma.ratePlan.count({ where: { ...propertyScope, deletedAt: null } }),
-      this.prisma.user.count({ where: { deletedAt: null } }),
+      this.safeCount(() => this.prisma.roomType.count({ where: { ...propertyScope, deletedAt: null } })),
+      this.safeCount(() => this.prisma.room.count({ where: { ...propertyScope, deletedAt: null } })),
+      this.safeCount(() => this.prisma.ratePlan.count({ where: { ...propertyScope, deletedAt: null } })),
+      this.safeCount(() => this.prisma.user.count({ where: { deletedAt: null } })),
     ]);
 
     // Legacy/seeded databases (e.g. the W1 demo deployment) never ran the W2
@@ -174,8 +181,24 @@ export class SetupStateService {
 
   /** Count of ACTIVE users that possess an ACTIVE credential (can actually log in). */
   async countCredentialedUsers(): Promise<number> {
-    return this.prisma.userCredential.count({
-      where: { status: 'ACTIVE', user: { status: 'ACTIVE', deletedAt: null } },
-    });
+    return this.safeCount(() =>
+      this.prisma.userCredential.count({
+        where: { status: 'ACTIVE', user: { status: 'ACTIVE', deletedAt: null } },
+      }),
+    );
+  }
+
+  /**
+   * Derived-on-read must never hard-fail: a partially migrated or legacy
+   * database yields 0 for unavailable tables so setup mode remains reachable
+   * (that is exactly the state the wizard exists to resolve).
+   */
+  private async safeCount(fn: () => Promise<number>): Promise<number> {
+    try {
+      return await fn();
+    } catch (err: any) {
+      this.logger.warn(`setup derived count unavailable: ${String(err?.message ?? err).split('\n')[0]}`);
+      return 0;
+    }
   }
 }
