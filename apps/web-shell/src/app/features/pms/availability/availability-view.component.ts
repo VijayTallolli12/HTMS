@@ -1,14 +1,16 @@
 import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { DailyInventoryDto, StayQuoteResponse } from '@hms/api-contracts';
 import { PmsApiService } from '../services/pms-api.service';
 import { OrganizationService } from '../../../core/services/organization.service';
+import { HmsEmptyComponent } from '../../../shared/components/empty/hms-empty.component';
 
 @Component({
   selector: 'hms-availability-view',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HmsEmptyComponent],
   template: `
     <div class="pms-container">
       <div class="header">
@@ -86,7 +88,12 @@ import { OrganizationService } from '../../../core/services/organization.service
               </tr>
               <tr *ngIf="calendarRecords().length === 0">
                 <td colspan="8" class="empty-text">
-                  No inventory ledger rows found for this date range.
+                  <hms-empty
+                    title="No inventory configured"
+                    desc="The daily inventory ledger is generated from room types. Create room types and rooms to populate availability."
+                    actionLabel="Configure Room Types"
+                    (action)="navigateToRoomTypes()"
+                  ></hms-empty>
                 </td>
               </tr>
             </tbody>
@@ -382,6 +389,11 @@ import { OrganizationService } from '../../../core/services/organization.service
 export class AvailabilityViewComponent implements OnInit {
   private readonly pmsApi = inject(PmsApiService);
   private readonly orgService = inject(OrganizationService);
+  private readonly router = inject(Router);
+
+  navigateToRoomTypes(): void {
+    this.router.navigate(['/pms/room-types']);
+  }
 
   readonly activeProperty = this.orgService.activePropertyContext;
   readonly activeTab = signal<'calendar' | 'quote'>('calendar');

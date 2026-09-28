@@ -242,7 +242,7 @@
       <div class="chart-card">
         <h3 class="chart-title">Occupancy Trend</h3>
         <div class="chart-placeholder" *ngIf="!occupancyTrend()?.data?.length">
-          <p>No data available</p>
+          <p>No occupancy data yet. Occupancy appears once rooms and inventory are configured.</p>
         </div>
         <div class="mini-table" *ngIf="occupancyTrend()?.data?.length">
           <table class="data-table">
@@ -265,7 +265,7 @@
       <div class="chart-card">
         <h3 class="chart-title">ADR Trend</h3>
         <div class="chart-placeholder" *ngIf="!adrTrend()?.data?.length">
-          <p>No data available</p>
+          <p>No ADR data yet. ADR is calculated from reservations — create rate plans and bookings to populate it.</p>
         </div>
         <div class="mini-table" *ngIf="adrTrend()?.data?.length">
           <table class="data-table">
@@ -288,7 +288,7 @@
       <div class="chart-card">
         <h3 class="chart-title">Revenue Trend</h3>
         <div class="chart-placeholder" *ngIf="!revenueTrend()?.data?.length">
-          <p>No data available</p>
+          <p>No revenue data yet. Revenue appears after check-ins and folio activity begin.</p>
         </div>
         <div class="mini-table" *ngIf="revenueTrend()?.data?.length">
           <table class="data-table">

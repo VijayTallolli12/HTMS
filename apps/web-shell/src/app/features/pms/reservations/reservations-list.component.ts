@@ -4,12 +4,13 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { OrganizationService } from '../../../core/services/organization.service';
 import { PmsApiService } from '../services/pms-api.service';
+import { HmsEmptyComponent } from '../../../shared/components/empty/hms-empty.component';
 import { ReservationDto } from '@hms/api-contracts';
 
 @Component({
   selector: 'app-reservations-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, HmsEmptyComponent],
   templateUrl: './reservations-list.component.html',
   styleUrls: ['./reservations-list.component.css'],
 })

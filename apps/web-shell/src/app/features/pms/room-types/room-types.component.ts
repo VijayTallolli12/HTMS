@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { RoomTypeDto, CreateRoomTypeRequest } from '@hms/api-contracts';
 import { PmsApiService } from '../services/pms-api.service';
 import { OrganizationService } from '../../../core/services/organization.service';
+import { HmsEmptyComponent } from '../../../shared/components/empty/hms-empty.component';
 
 @Component({
   selector: 'hms-room-types',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HmsEmptyComponent],
   template: `
     <div class="pms-container">
       <div class="header">
@@ -65,7 +66,12 @@ import { OrganizationService } from '../../../core/services/organization.service
             </tr>
             <tr *ngIf="roomTypes().length === 0">
               <td colspan="7" class="empty-text">
-                No room types found. Create your first room type to begin.
+                <hms-empty
+                  title="No room types configured"
+                  desc="Room types define your accommodation categories. Create your first room type to begin."
+                  actionLabel="Create Room Type"
+                  (action)="openCreateModal()"
+                ></hms-empty>
               </td>
             </tr>
           </tbody>

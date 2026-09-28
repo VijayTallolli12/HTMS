@@ -81,10 +81,12 @@
     </div>
 
     <div class="empty-state" *ngIf="!isLoading() && filteredReservations().length === 0">
-      <p>No reservations matching the current criteria.</p>
-      <button class="btn btn-gold btn-sm" (click)="navigateTo('/pms/reservations/new')">
-        Create Reservation
-      </button>
+      <hms-empty
+        title="No reservations yet"
+        desc="Reservations appear here once guests book. Create your first reservation to get started."
+        actionLabel="Create Reservation"
+        (action)="navigateTo('/pms/reservations/new')"
+      ></hms-empty>
     </div>
 
     <table class="data-table" *ngIf="!isLoading() && filteredReservations().length > 0">
