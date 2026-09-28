@@ -176,7 +176,6 @@ export class SetupService {
       }
       if (existingProperty && assignment.scopeType === 'PROPERTY') {
         scopeData.propertyId = existingProperty.id;
-        scopeData.hotelGroupId = existingGroup?.id ?? null;
         await tx.user.update({
           where: { id: user.id },
           data: { defaultPropertyId: existingProperty.id },

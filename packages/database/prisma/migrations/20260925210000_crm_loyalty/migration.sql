@@ -65,6 +65,7 @@ ALTER TABLE pms_schema.loyalty_memberships ADD CONSTRAINT fk_loyalty_membership_
 CREATE INDEX idx_loyalty_membership_tier ON pms_schema.loyalty_memberships(property_id, tier);
 CREATE INDEX idx_loyalty_membership_active ON pms_schema.loyalty_memberships(property_id, active);
 CREATE UNIQUE INDEX uq_loyalty_membership_guest ON pms_schema.loyalty_memberships(property_id, guest_id);
+CREATE UNIQUE INDEX uq_loyalty_membership_property_id ON pms_schema.loyalty_memberships(property_id, id);
 
 -- Create loyalty_transactions table
 CREATE TABLE pms_schema.loyalty_transactions (

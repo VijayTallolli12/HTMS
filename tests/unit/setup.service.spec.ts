@@ -89,6 +89,46 @@ describe('SetupService — bootstrap & guards (W2 Phase 3)', () => {
     expect(auditSpy).toHaveBeenCalledWith(expect.objectContaining({ action: 'SETUP_ADMIN_CREATED' }));
   });
 
+  it('never sets hotelGroupId on PROPERTY-scoped rows (chk_user_role_scope_valid_combinations regression)', async () => {
+    // Regression: virgin-DB validation exposed a 500 — the PROPERTY-scope row
+    // for INDEPENDENT admins carried hotelGroupId, violating the IAM check
+    // constraint (PROPERTY scope requires hotel_group_id IS NULL).
+    prismaMock.role.findFirst.mockResolvedValue({ id: 'role-gm', code: 'PROPERTY_GM' });
+    prismaMock.hotelGroup.findFirst.mockResolvedValue({ id: 'hg-1', code: 'W2IND' });
+    prismaMock.property.findFirst.mockResolvedValue({ id: 'prop-1', code: 'PROP-1' });
+    prismaMock.user.create.mockResolvedValue({ id: 'u3', email: 'g@h.co' });
+    prismaMock.userRoleScope.create.mockResolvedValue({});
+    prismaMock.userCredential.count.mockResolvedValue(0);
+
+    await service.bootstrapAdmin(
+      { email: 'g@h.co', password: 'Str0ngPassphrase!', firstName: 'G', lastName: 'H', organizationType: 'INDEPENDENT' },
+      ctx,
+    );
+
+    const scopeData = (prismaMock.userRoleScope.create as jest.Mock).mock.calls[0][0].data;
+    expect(scopeData).toEqual(expect.objectContaining({ scopeType: 'PROPERTY', propertyId: 'prop-1' }));
+    expect(Object.keys(scopeData)).not.toContain('hotelGroupId');
+    expect(prismaMock.user.update).toHaveBeenCalledWith({ where: { id: 'u3' }, data: { defaultPropertyId: 'prop-1' } });
+  });
+
+  it('sets hotelGroupId only on GROUP-scoped rows for CHAIN organizations', async () => {
+    prismaMock.role.findFirst.mockResolvedValue({ id: 'role-ca', code: 'CORP_ADMIN' });
+    prismaMock.hotelGroup.findFirst.mockResolvedValue({ id: 'hg-2', code: 'W2CHN' });
+    prismaMock.property.findFirst.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({ id: 'u4', email: 'i@j.co' });
+    prismaMock.userRoleScope.create.mockResolvedValue({});
+    prismaMock.userCredential.count.mockResolvedValue(0);
+
+    await service.bootstrapAdmin(
+      { email: 'i@j.co', password: 'Str0ngPassphrase!', firstName: 'I', lastName: 'J', organizationType: 'CHAIN' },
+      ctx,
+    );
+
+    expect(prismaMock.userRoleScope.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ scopeType: 'GROUP', hotelGroupId: 'hg-2' }),
+    });
+  });
+
   it('assigns CORP_ADMIN @ GROUP for CHAIN organizations', async () => {
     prismaMock.role.findFirst.mockResolvedValue({ id: 'role-ca', code: 'CORP_ADMIN' });
     prismaMock.user.create.mockResolvedValue({ id: 'u2', email: 'c@d.co' });

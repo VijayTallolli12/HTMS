@@ -62,14 +62,21 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (!this.isAuthenticated()) {
+    // /setup is exempt: setupWizardGuard admits unauthenticated visitors only
+    // while the database is virgin (first-run). Forcing /login here would make
+    // the wizard unreachable on a fresh database. location.pathname (not
+    // router.url) is used because router.url is still '/' during bootstrap.
+    if (!this.isAuthenticated() && !location.pathname.startsWith('/setup')) {
       this.router.navigate(['/login']);
       return;
     }
 
-    // Validate session via /auth/me
-    this.authService.validateSession().subscribe(() => {
-      if (!this.propertiesLoaded) {
+    // Validate session via /auth/me. Properties load only when actually
+    // authenticated: firing an unauthenticated /organization/properties call
+    // 401s and the auth interceptor then redirects to /login — which aborted
+    // the in-flight /setup navigation on virgin databases (first-run bug).
+    this.authService.validateSession().subscribe((me) => {
+      if (me && !this.propertiesLoaded) {
         this.loadProperties();
       }
     });
