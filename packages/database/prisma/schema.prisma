@@ -1272,6 +1272,32 @@ model AuditLog {
 
 // End of Audit / Activity Center models
 // ==============================================================================
+model SetupState {
+  id           String   @id
+  hotelGroupId String?  @map("hotel_group_id")
+  propertyId   String?  @map("property_id")
+  // NOT_INITIALIZED | INITIALIZING | ACTIVE
+  state        String   @default("NOT_INITIALIZED")
+  // Json string[] of milestone codes:
+  // PROPERTY_CREATED, ADMIN_CREATED, ROOM_TYPES_CONFIGURED, ROOMS_CONFIGURED,
+  // RATES_CONFIGURED, USERS_CONFIGURED, COMPLETED
+  milestones   Json     @default("[]")
+  lastError    String?  @map("last_error")
+  // Optimistic concurrency guard for concurrent bootstrap protection
+  version      Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([hotelGroupId])
+  @@index([propertyId])
+  @@index([state])
+  @@map("setup_states")
+  @@schema("platform_schema")
+}
+
+// W2: FIRST-RUN SETUP STATE (platform_schema.setup_states).
+// Single-row-per-tenant initialization ledger with NO foreign keys: it must be
+// creatable on a virgin database before any HotelGroup/Property exists.
 model SecurityAuditLog {
   id            String   @id
   timestamp     DateTime @default(now()) @map("timestamp")

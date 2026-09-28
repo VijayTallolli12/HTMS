@@ -25,3 +25,4 @@ export * from './payments/payments.contract';
 export * from './notifications/email.contract';
 export * from './notifications/whatsapp.contract';
 export * from './audit/audit.contract';
+export * from './setup/setup.contract';
