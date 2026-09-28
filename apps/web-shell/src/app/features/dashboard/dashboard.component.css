@@ -309,3 +309,61 @@
     transition: none !important;
   }
 }
+/* ============================================================
+   W2 Setup Mode — replaces fake zero-KPIs with truthful progress
+   ============================================================ */
+.setup-mode-panel {
+  border-inline-start: 3px solid var(--hms-accent, #a08144);
+}
+
+.setup-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+.setup-mode-item {
+  border: 1px solid var(--hms-border-subtle, #e7e4dd);
+  border-radius: 10px;
+  padding: 14px;
+  background: var(--hms-surface-card, #ffffff);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setup-mode-item__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.setup-mode-item__title {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--hms-text-secondary, #5a5f6e);
+}
+
+.setup-mode-item__pill {
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--hms-border-strong, #d5d1c8);
+  color: var(--hms-text-muted, #8a8f9e);
+}
+
+.setup-mode-item__pill.is-ready {
+  background: rgba(47, 133, 90, 0.1);
+  border-color: transparent;
+  color: #2f855a;
+}
+
+.setup-mode-item__count {
+  font-size: 15px;
+  font-weight: 600;
+}

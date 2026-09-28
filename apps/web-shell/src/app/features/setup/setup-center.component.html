@@ -1,0 +1,85 @@
+<div class="center-page">
+  <header class="center-header">
+    <div>
+      <h1>Setup Center</h1>
+      <p class="sub">Configuration status of your property. Return here anytime from Settings.</p>
+    </div>
+    <a routerLink="/dashboard" class="hms-btn hms-btn--ghost">Go to Dashboard</a>
+  </header>
+
+  <div class="center-grid">
+    <!-- Overall progress -->
+    <section class="card card--progress" aria-labelledby="progress-title">
+      <h2 id="progress-title">Overall Setup Progress</h2>
+      <div class="progress-ring-row">
+        <div class="progress-bar" role="progressbar" [attr.aria-valuenow]="progressPercent()"
+             aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar__fill" [style.width.%]="progressPercent()"></div>
+        </div>
+        <span class="progress-value">{{ progressPercent() }}%</span>
+      </div>
+      <ul class="milestones">
+        <li *ngFor="let m of milestonesList()" [class.is-done]="m.done">
+          <span class="tick" aria-hidden="true">
+            <svg *ngIf="m.done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          {{ m.label }}
+        </li>
+      </ul>
+    </section>
+
+    <!-- Configuration areas -->
+    <section class="card" aria-labelledby="areas-title">
+      <h2 id="areas-title">Configuration Areas</h2>
+      <div class="areas">
+        <div class="area" *ngFor="let a of areas()">
+          <div class="area__main">
+            <div class="area__head">
+              <strong>{{ a.title }}</strong>
+              <span class="pill" [class.pill--done]="a.done">{{ a.done ? 'Ready' : 'Pending' }}</span>
+            </div>
+            <p class="area__desc">{{ a.description }}</p>
+            <span class="area__count">{{ a.countLabel }}</span>
+          </div>
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="openRoute(a.route)">
+            {{ a.ctaLabel }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Distribution / OTA readiness (Phase 12) -->
+    <section class="card" aria-labelledby="distribution-title">
+      <h2 id="distribution-title">Distribution</h2>
+      <p class="card-note">Channel readiness. Connecting to OTAs is not yet available.</p>
+      <ul class="channels">
+        <li *ngFor="let ch of distributionChannels">
+          <span class="channel-name">{{ ch.name }}</span>
+          <span class="pill pill--pending">{{ ch.status }}</span>
+          <span class="channel-note">{{ ch.note }}</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Demo data (Phase 13 surface) -->
+    <section class="card" aria-labelledby="demo-title">
+      <h2 id="demo-title">Demo Data</h2>
+      <p class="card-note">
+        Load the Tokyo Grandeur Palace demonstration dataset, refresh it, or remove it. Real
+        customer records are never touched — demo operations are restricted to canonical demo keys.
+      </p>
+      <div class="demo-actions">
+        <button type="button" class="hms-btn hms-btn--gold" (click)="runDemo('load')" [disabled]="!!demoBusy()">
+          {{ demoBusy() === 'load' ? 'Importing…' : 'Load Demo Data' }}
+        </button>
+        <button type="button" class="hms-btn hms-btn--ghost" (click)="runDemo('reset')" [disabled]="!!demoBusy()">
+          {{ demoBusy() === 'reset' ? 'Resetting…' : 'Reset Demo Data' }}
+        </button>
+        <button type="button" class="hms-btn hms-btn--danger" (click)="runDemo('remove')" [disabled]="!!demoBusy()">
+          {{ demoBusy() === 'remove' ? 'Removing…' : 'Remove Demo Data' }}
+        </button>
+      </div>
+      <p class="demo-message" *ngIf="demoMessage()" role="status">{{ demoMessage() }}</p>
+    </section>
+  </div>
+</div>

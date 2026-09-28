@@ -52,6 +52,34 @@
   </hms-alert>
 
   <!-- ===================================================================== -->
+  <!-- W2 SETUP MODE: shown instead of operational KPIs until configuration  -->
+  <!-- is complete. Never shows fake KPIs like 0.0% occupancy or ¥0 ADR.     -->
+  <!-- ===================================================================== -->
+  <section class="hms-panel setup-mode-panel" *ngIf="isSetupMode()">
+    <div class="hms-panel__header">
+      <div>
+        <h2 class="hms-panel__title">Welcome — let's finish setting up</h2>
+        <p class="hms-panel__subtitle">
+          Operational KPIs appear automatically once rooms and rates are configured. This is your
+          live configuration progress.
+        </p>
+      </div>
+      <hms-button variant="gold" (click)="navigateTo('/setup-center')">Open Setup Center</hms-button>
+    </div>
+    <div class="hms-panel__body">
+      <div class="setup-mode-grid">
+        <div class="setup-mode-item" *ngFor="let area of setupAreas()">
+          <div class="setup-mode-item__head">
+            <span class="setup-mode-item__title">{{ area.title }}</span>
+            <span class="setup-mode-item__pill" [class.is-ready]="area.ready">{{ area.ready ? 'Ready' : 'Pending' }}</span>
+          </div>
+          <span class="setup-mode-item__count">{{ area.count }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
   <!-- 1. EXECUTIVE SNAPSHOT -->
   <!-- ===================================================================== -->
   <section class="hms-panel" *ngIf="canViewFinancials() && executiveSnapshotKpis().length > 0">

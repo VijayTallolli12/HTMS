@@ -5,6 +5,7 @@ import { forkJoin, of, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { OrganizationService } from '../../core/services/organization.service';
+import { SetupService } from '../../core/services/setup.service';
 import { PmsApiService } from '../pms/services/pms-api.service';
 import {
   RevenueKpiDto,
@@ -13,6 +14,7 @@ import {
   AdrTrendResponse,
   RevenueTrendResponse,
   PickupAnalysisResponse,
+  SetupStatusDto,
 } from '@hms/api-contracts';
 import {
   HmsKpiStripComponent,
@@ -57,9 +59,27 @@ export interface DashboardStats {
 export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly auth = inject(AuthService);
   private readonly orgService = inject(OrganizationService);
+  private readonly setupService = inject(SetupService);
   private readonly pmsApi = inject(PmsApiService);
   private readonly router = inject(Router);
   private readonly destroy$ = new Subject<void>();
+
+  // ===== W2 Setup Mode (never shows fake operational KPIs) =====
+  readonly setupStatus = signal<SetupStatusDto | null>(null);
+  readonly isSetupMode = computed(() => {
+    const s = this.setupStatus();
+    return !!s && s.state !== 'ACTIVE';
+  });
+  readonly setupAreas = computed(() => {
+    const c = this.setupStatus()?.counts;
+    return [
+      { title: 'Property', ready: (c?.properties ?? 0) > 0, count: (c?.properties ?? 0) > 0 ? 'Configured' : 'Not configured' },
+      { title: 'Room Types', ready: (c?.roomTypes ?? 0) > 0, count: `${c?.roomTypes ?? 0} configured` },
+      { title: 'Rooms', ready: (c?.rooms ?? 0) > 0, count: `${c?.rooms ?? 0} configured` },
+      { title: 'Rate Plans', ready: (c?.ratePlans ?? 0) > 0, count: `${c?.ratePlans ?? 0} configured` },
+      { title: 'Users', ready: (c?.users ?? 0) > 1, count: `${c?.users ?? 0} users` },
+    ];
+  });
 
   readonly activeProperty = this.orgService.activePropertyContext;
   readonly isLoading = signal<boolean>(false);
@@ -372,10 +392,16 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    const prop = this.activeProperty();
-    if (prop) {
-      this.loadDashboardData(prop.id);
-    }
+    // W2: probe setup state first — in setup mode, operational KPI loading is
+    // suppressed entirely (no fake 0-value KPIs are rendered).
+    this.setupService.refreshStatus().subscribe((status) => {
+      this.setupStatus.set(status);
+      if (this.isSetupMode()) return;
+      const prop = this.activeProperty();
+      if (prop) {
+        this.loadDashboardData(prop.id);
+      }
+    });
   }
 
   ngAfterViewInit(): void {
