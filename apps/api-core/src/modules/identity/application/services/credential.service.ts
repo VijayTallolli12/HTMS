@@ -41,7 +41,11 @@ export class CredentialService {
    * - Populates passwordChangedAt
    * - Returns safe DTO strictly excluding passwordHash
    */
-  async createCredential(userId: string, plaintextPassword: string): Promise<UserCredentialDto> {
+  async createCredential(
+    userId: string,
+    plaintextPassword: string,
+    tx?: Pick<PrismaService, 'userCredential'>,
+  ): Promise<UserCredentialDto> {
     if (!userId || typeof userId !== 'string') {
       throw new BadRequestException('User ID must be provided.');
     }
@@ -53,8 +57,9 @@ export class CredentialService {
     const passwordHash = await this.passwordService.hash(plaintextPassword);
     const now = new Date();
 
-    // 3. Persist credential
-    const credential = await this.prisma.userCredential.create({
+    // 3. Persist credential (supports an optional caller transaction so the
+    // credential is created atomically together with the user row, e.g. W2 setup).
+    const credential = await (tx ?? this.prisma).userCredential.create({
       data: {
         id: generateUuidV7(),
         userId,

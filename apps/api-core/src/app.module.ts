@@ -8,6 +8,7 @@ import { PmsModule } from './modules/pms/pms.module';
 import { FnbModule } from './modules/fnb/fnb.module';
 import { SpaModule } from './modules/spa/spa.module';
 import { EventsModule } from './modules/events/events.module';
+import { SetupModule } from './modules/setup/setup.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
@@ -29,6 +30,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
     FnbModule,
     SpaModule,
     EventsModule,
+    SetupModule,
   ],
 })
 export class AppModule implements NestModule {
