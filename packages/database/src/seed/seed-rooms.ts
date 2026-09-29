@@ -39,8 +39,17 @@ export async function seedRooms(propertyId: string, buildings: Array<{ id: strin
   const today = getDateOffset(0);
 
   for (const def of ROOM_DEFS) {
-    const buildingId = buildingMap.get(def.buildingCode)!;
-    const floorId = floorMap.get(`${buildingId}:${def.floorCode}`)!;
+    // Resolve building/floor by canonical code first (Tokyo MAIN/EAST + FL-xx).
+    // Properties whose structure differs (e.g. Middle East demos) fall back to
+    // the property's first building and its lowest-numbered floor so the same
+    // room definitions seed everywhere. Tokyo resolution is unaffected.
+    const buildingId = buildingMap.get(def.buildingCode) ?? buildings[0]?.id;
+    const floorId =
+      (buildingId ? floorMap.get(`${buildingId}:${def.floorCode}`) : undefined) ??
+      (buildingId ? floors.filter((f) => f.buildingId === buildingId).sort((a, b) => a.code.localeCompare(b.code))[0]?.id : undefined);
+    if (!buildingId || !floorId) {
+      throw new Error(`Cannot resolve building/floor for room ${def.roomNumber} (property ${propertyId})`);
+    }
     const roomTypeId = rtMap[def.roomTypeCode];
     let existing = await prisma.room.findFirst({ where: { propertyId, roomNumber: def.roomNumber } });
     if (!existing) {

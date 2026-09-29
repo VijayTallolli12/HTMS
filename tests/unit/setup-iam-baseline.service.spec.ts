@@ -35,6 +35,7 @@ describe('IamBaselineService (W2 Phase 1)', () => {
 
   it('canonical data matches the W1 seed roster exactly (10 roles, no GLOBAL_ADMIN)', () => {
     expect(CANONICAL_SYSTEM_ROLES.map((r) => r.code)).toEqual([
+      'PLATFORM_OWNER',
       'CORP_ADMIN',
       'PROPERTY_GM',
       'FOM',
@@ -46,8 +47,8 @@ describe('IamBaselineService (W2 Phase 1)', () => {
       'FNB_MANAGER',
       'SPA_MANAGER',
     ]);
-    expect(CANONICAL_PERMISSIONS.length).toBe(117);
-    expect(CANONICAL_ROLE_PERMISSIONS).toHaveLength(9);
+    expect(CANONICAL_PERMISSIONS.length).toBe(124);
+    expect(CANONICAL_ROLE_PERMISSIONS).toHaveLength(10);
   });
 
   it('creates missing roles and preserves existing role IDs', async () => {
@@ -68,10 +69,10 @@ describe('IamBaselineService (W2 Phase 1)', () => {
     await service.ensureBaseline();
 
     // PROPERTY_GM reused, not recreated
-    expect(prismaMock.role.create).toHaveBeenCalledTimes(9);
+    expect(prismaMock.role.create).toHaveBeenCalledTimes(10);
     expect(prismaMock.role.create.mock.calls.every((c: any) => c[0].data.code !== 'PROPERTY_GM')).toBe(true);
-    // 117 permissions created on a virgin DB
-    expect(prismaMock.permission.create).toHaveBeenCalledTimes(117);
+    // 124 permissions created on a virgin DB (incl. platform:system_reset + organization.* six)
+    expect(prismaMock.permission.create).toHaveBeenCalledTimes(124);
   });
 
   it('is idempotent: second run creates nothing new', async () => {

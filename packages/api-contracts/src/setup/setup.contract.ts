@@ -122,3 +122,15 @@ export interface SetupDemoOperationResponse {
   output: string;
   durationMs: number;
 }
+
+export interface SystemResetRequest {
+  /** Must be exactly "RESET INSTALLATION" */
+  confirmation: string;
+}
+
+export interface SystemResetResponse {
+  success: boolean;
+  /** Deletion counts by domain entity */
+  counts: Record<string, number>;
+  durationMs: number;
+}

@@ -31,6 +31,29 @@ export async function seedDemo(): Promise<void> {
   console.log(`Timezone: ${property.timeZone}`);
   console.log(`Currency: ${property.currency}\n`);
 
+  // W4: Middle East demo properties under the same group (multi-property demo).
+  const meaProperties = await prisma.property.findMany({
+    where: { code: { in: ['PROP-DXB-001', 'PROP-RUH-001', 'PROP-DOH-001'] }, deletedAt: null },
+  });
+  for (const mea of meaProperties) {
+    console.log(`\n=== Middle East property: ${mea.name} (${mea.code}) [${mea.currency}, ${mea.timeZone}] ===`);
+    console.log('--- Room Types, Rooms, Rate Plans, Guests, Reservations ---');
+    const meaRoomTypeIds = await seedRoomTypes(mea.id);
+    const meaBuildings = await prisma.building.findMany({ where: { propertyId: mea.id, deletedAt: null } });
+    const meaFloors = await prisma.floor.findMany({ where: { buildingId: { in: meaBuildings.map((b) => b.id) }, deletedAt: null } });
+    await seedRooms(mea.id, meaBuildings, meaFloors, meaRoomTypeIds);
+    await seedRatePlans(mea.id, meaRoomTypeIds);
+    const meaGuestIds = await seedGuests(mea.id);
+    await seedReservations(mea.id, meaGuestIds as unknown as Record<string, string>, meaRoomTypeIds, {} as Record<string, string>);
+    await seedFolios(mea.id, meaGuestIds as unknown as Record<string, string>);
+    await seedFnb(mea.id);
+    await seedSpa(mea.id);
+    await seedCrmLoyalty(mea.id);
+  }
+  if (meaProperties.length > 0) {
+    console.log(`\nMiddle East demo properties processed: ${meaProperties.length}/3`);
+  }
+
   console.log('--- Phase 2: Room Types, Rooms, Rate Plans ---');
   const roomTypeIds = await seedRoomTypes(property.id);
   const buildings = await prisma.building.findMany({ where: { propertyId: property.id, deletedAt: null } });
@@ -60,29 +83,45 @@ export async function seedDemo(): Promise<void> {
   await seedCrmLoyalty(property.id);
 
   console.log('\n--- Phase 9: Procurement & Inventory ---');
-  await seedProcurement(property.id);
+  try {
+    await seedProcurement(property.id);
+  } catch (err: any) {
+    // Known migration debt: pms_schema.suppliers / purchase_orders tables are
+    // absent on databases built purely from migrations (demo/remove 500s for
+    // the same reason). Degrade gracefully instead of failing the whole seed.
+    console.warn(`Procurement seed skipped (migration debt): ${String(err?.message ?? err).split('\n')[0]}`);
+  }
 
   console.log('\n--- Phase 10: HR & Payroll ---');
-  await seedHrPayroll(property.id);
+  try {
+    await seedHrPayroll(property.id);
+  } catch (err: any) {
+    console.warn(`HR/payroll seed skipped (migration debt): ${String(err?.message ?? err).split('\n')[0]}`);
+  }
 
   console.log('\n=== HMS Demo Seed - Complete ===\n');
+  // Procurement/HR tables may be absent on migration-only databases (known
+  // migration debt); the summary must not fail because of them.
+  const safeCount = async (fn: () => Promise<number>): Promise<number> => {
+    try { return await fn(); } catch { return -1; }
+  };
   const counts = {
-    roomTypes: await prisma.roomType.count({ where: { propertyId: property.id, deletedAt: null } }),
-    rooms: await prisma.room.count({ where: { propertyId: property.id, deletedAt: null } }),
-    ratePlans: await prisma.ratePlan.count({ where: { propertyId: property.id, deletedAt: null } }),
-    guests: await prisma.guest.count({ where: { propertyId: property.id, deletedAt: null } }),
-    users: await prisma.user.count({ where: { deletedAt: null } }),
-    reservations: await prisma.reservation.count({ where: { propertyId: property.id, deletedAt: null } }),
-    folios: await prisma.folio.count({ where: { propertyId: property.id } }),
-    maintenanceBlocks: await prisma.roomMaintenanceBlock.count({ where: { propertyId: property.id, status: 'ACTIVE' } }),
-    suppliers: await prisma.supplier.count({ where: { propertyId: property.id, deletedAt: null } }),
-    inventoryItems: await prisma.inventoryItem.count({ where: { propertyId: property.id, deletedAt: null } }),
-    purchaseOrders: await prisma.purchaseOrder.count({ where: { propertyId: property.id, deletedAt: null } }),
-    goodsReceipts: await prisma.goodsReceipt.count({ where: { propertyId: property.id, deletedAt: null } }),
-    stockBalances: await prisma.stockBalance.count({ where: { propertyId: property.id, deletedAt: null } }),
-    employees: await prisma.employee.count({ where: { propertyId: property.id, deletedAt: null } }),
-    payrollPeriods: await prisma.payrollPeriod.count({ where: { propertyId: property.id, deletedAt: null } }),
-    payrollRuns: await prisma.payrollRun.count({ where: { propertyId: property.id, deletedAt: null } }),
+    roomTypes: await safeCount(() => prisma.roomType.count({ where: { propertyId: property.id, deletedAt: null } })),
+    rooms: await safeCount(() => prisma.room.count({ where: { propertyId: property.id, deletedAt: null } })),
+    ratePlans: await safeCount(() => prisma.ratePlan.count({ where: { propertyId: property.id, deletedAt: null } })),
+    guests: await safeCount(() => prisma.guest.count({ where: { propertyId: property.id, deletedAt: null } })),
+    users: await safeCount(() => prisma.user.count({ where: { deletedAt: null } })),
+    reservations: await safeCount(() => prisma.reservation.count({ where: { propertyId: property.id, deletedAt: null } })),
+    folios: await safeCount(() => prisma.folio.count({ where: { propertyId: property.id } })),
+    maintenanceBlocks: await safeCount(() => prisma.roomMaintenanceBlock.count({ where: { propertyId: property.id, status: 'ACTIVE' } })),
+    suppliers: await safeCount(() => prisma.supplier.count({ where: { propertyId: property.id, deletedAt: null } })),
+    inventoryItems: await safeCount(() => prisma.inventoryItem.count({ where: { propertyId: property.id, deletedAt: null } })),
+    purchaseOrders: await safeCount(() => prisma.purchaseOrder.count({ where: { propertyId: property.id, deletedAt: null } })),
+    goodsReceipts: await safeCount(() => prisma.goodsReceipt.count({ where: { propertyId: property.id, deletedAt: null } })),
+    stockBalances: await safeCount(() => prisma.stockBalance.count({ where: { propertyId: property.id, deletedAt: null } })),
+    employees: await safeCount(() => prisma.employee.count({ where: { propertyId: property.id, deletedAt: null } })),
+    payrollPeriods: await safeCount(() => prisma.payrollPeriod.count({ where: { propertyId: property.id, deletedAt: null } })),
+    payrollRuns: await safeCount(() => prisma.payrollRun.count({ where: { propertyId: property.id, deletedAt: null } })),
   };
   console.log('Entity Counts:');
   console.log(`  Room Types:         ${counts.roomTypes}`);

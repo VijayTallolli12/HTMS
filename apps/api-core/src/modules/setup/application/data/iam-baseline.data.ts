@@ -19,6 +19,11 @@ export interface PermissionDefinition {
 
 export const CANONICAL_SYSTEM_ROLES: RoleDefinition[] = [
   {
+    "code": "PLATFORM_OWNER",
+    "name": "Platform Owner",
+    "description": "Product owner with system reset capability for new client onboarding"
+  },
+  {
     "code": "CORP_ADMIN",
     "name": "Corporate Platform Admin",
     "description": "Full system configuration, global user provisioning, global audit log access"
@@ -71,6 +76,48 @@ export const CANONICAL_SYSTEM_ROLES: RoleDefinition[] = [
 ];
 
 export const CANONICAL_PERMISSIONS: PermissionDefinition[] = [
+  {
+    "code": "platform:system_reset",
+    "name": "System Reset",
+    "description": "Reset the installation to NOT_INITIALIZED state for new client onboarding",
+    "module": "PLATFORM"
+  },
+  {
+    "code": "organization.group.manage",
+    "name": "Manage Hotel Groups",
+    "description": "Create, update, and delete hotel groups (corporate/platform level)",
+    "module": "ORGANIZATION"
+  },
+  {
+    "code": "organization.region.manage",
+    "name": "Manage Regions",
+    "description": "Create, update, and delete regions within hotel groups",
+    "module": "ORGANIZATION"
+  },
+  {
+    "code": "organization.country.manage",
+    "name": "Manage Countries",
+    "description": "Create, update, and delete countries within regions",
+    "module": "ORGANIZATION"
+  },
+  {
+    "code": "organization.property.manage",
+    "name": "Manage Properties",
+    "description": "Create, update, and delete properties within the authorized organization scope",
+    "module": "ORGANIZATION"
+  },
+  {
+    "code": "organization.building.manage",
+    "name": "Manage Buildings",
+    "description": "Create, update, and delete buildings within authorized properties",
+    "module": "ORGANIZATION"
+  },
+  {
+    "code": "organization.floor.manage",
+    "name": "Manage Floors",
+    "description": "Create, update, and delete floors within authorized buildings",
+    "module": "ORGANIZATION"
+  },
   {
     "code": "front_office.reservation.read",
     "name": "View Reservations",
@@ -777,8 +824,27 @@ export const CANONICAL_PERMISSIONS: PermissionDefinition[] = [
 
 export const CANONICAL_ROLE_PERMISSIONS: Array<{ roleCode: string; permCodes: string[] }> = [
   {
+    "roleCode": "PLATFORM_OWNER",
+    "permCodes": [
+      "platform:system_reset",
+      "platform.audit_log.read",
+      "organization.group.manage",
+      "organization.region.manage",
+      "organization.country.manage",
+      "organization.property.manage",
+      "organization.building.manage",
+      "organization.floor.manage"
+    ]
+  },
+  {
     "roleCode": "CORP_ADMIN",
     "permCodes": [
+      "organization.group.manage",
+      "organization.region.manage",
+      "organization.country.manage",
+      "organization.property.manage",
+      "organization.building.manage",
+      "organization.floor.manage",
       "front_office.reservation.read",
       "front_office.reservation.create",
       "front_office.reservation.cancel",
@@ -961,8 +1027,7 @@ export const CANONICAL_ROLE_PERMISSIONS: Array<{ roleCode: string; permCodes: st
       "revenue.kpi.view",
       "revenue.rate.view",
       "revenue.rate.manage",
-      "revenue.inventory.view",
-      "revenue.inventory.manage",
+      "revenue.inventory.view",      "revenue.inventory.manage",
       "revenue.forecast.view",
       "revenue.pricing.view",
       "revenue.market-rate.view",
@@ -994,7 +1059,9 @@ export const CANONICAL_ROLE_PERMISSIONS: Array<{ roleCode: string; permCodes: st
       "payroll.run.view",
       "payroll.run.process",
       "payroll.run.finalize",
-      "payroll.payslip.view"
+      "payroll.payslip.view",
+      "organization.building.manage",
+      "organization.floor.manage"
     ]
   },
   {

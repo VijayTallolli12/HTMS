@@ -92,6 +92,45 @@
         </svg>
         Menu Catalog
       </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'catalog'"
+        (click)="onCatalogTab()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M11 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        Catalog Manager
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'pricing'"
+        (click)="onPricingTab()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+          <line x1="7" y1="7" x2="7.01" y2="7"></line>
+        </svg>
+        Pricing & Availability
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'outlets'"
+        (click)="onOutletsTab()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+          <path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path>
+          <line x1="9" y1="9" x2="9" y2="9"></line><line x1="9" y1="13" x2="9" y2="13"></line><line x1="9" y1="17" x2="9" y2="17"></line>
+        </svg>
+        Outlets & Categories
+      </button>
     </div>
 
     <!-- Active Property Indicator -->
@@ -511,6 +550,289 @@
       </div>
     </div>
   </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB: CATALOG MANAGER (CRUD on items / variants / modifiers) -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'catalog'" class="tab-content">
+    <div class="menu-catalog-header">
+      <div>
+        <h2 class="section-title">Catalog Manager</h2>
+        <p class="section-desc">Create and maintain menu items, variants, and modifiers for {{ selectedOutlet()?.name }}.</p>
+      </div>
+      <div class="category-filter-bar">
+        <button
+          type="button"
+          class="cat-chip"
+          [class.active]="catalogCategoryFilter() === 'ALL'"
+          (click)="catalogCategoryFilter.set('ALL'); onCatalogSearchChange()"
+        >All</button>
+        <button
+          *ngFor="let cat of catalogCategories()"
+          type="button"
+          class="cat-chip"
+          [class.active]="catalogCategoryFilter() === cat.id"
+          (click)="catalogCategoryFilter.set(cat.id); onCatalogSearchChange()"
+        >{{ cat.name }}</button>
+        <button
+          type="button"
+          class="cat-chip cat-chip--action"
+          *ngIf="hasPermission('fnb.menu.manage')"
+          (click)="openCategoryCreateModal()"
+        >+ New Category</button>
+      </div>
+    </div>
+
+    <div class="catalog-toolbar">
+      <input
+        type="text"
+        class="form-input search-input"
+        placeholder="Search items..."
+        [ngModel]="catalogSearch()"
+        (ngModelChange)="catalogSearch.set($event)"
+        (keyup.enter)="onCatalogSearchChange()"
+      />
+      <button type="button" class="cat-chip" *ngIf="hasPermission('fnb.menu.manage')" (click)="startCreateCatalogItem()">+ New Menu Item</button>
+    </div>
+
+    <hms-loading *ngIf="isLoadingCatalog()" message="Loading catalog..."></hms-loading>
+
+    <div class="data-table-wrapper" *ngIf="!isLoadingCatalog()">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Code</th><th>Name</th><th>Category</th><th>Price</th><th>Availability</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of catalogItems()">
+            <td class="font-mono">{{ item.code }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.categoryName || 'General' }}</td>
+            <td class="font-mono">{{ formatPrice(item.price, item.currency) }}</td>
+            <td><span class="availability-badge" [class.unavailable]="item.availability !== 'AVAILABLE'">{{ item.availability }}</span></td>
+            <td class="actions-cell">
+              <button type="button" class="link-btn" *ngIf="hasPermission('fnb.menu.manage')" (click)="openCatalogItem(item)">Edit</button>
+              <button type="button" class="link-btn danger" *ngIf="hasPermission('fnb.menu.manage')" (click)="deleteCatalogItem(item)">Delete</button>
+            </td>
+          </tr>
+          <tr *ngIf="catalogItems().length === 0">
+            <td colspan="6" class="empty-row">No catalog items found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB: PRICING & AVAILABILITY -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'pricing'" class="tab-content">
+    <div class="menu-catalog-header">
+      <div>
+        <h2 class="section-title">Pricing &amp; Availability</h2>
+        <p class="section-desc">Effective pricing in {{ activeProperty()?.currency }} — property currency, never hardcoded.</p>
+      </div>
+    </div>
+
+    <hms-loading *ngIf="isLoadingPricing()" message="Loading pricing..."></hms-loading>
+
+    <div class="data-table-wrapper" *ngIf="!isLoadingPricing()">
+      <table class="data-table">
+        <thead>
+          <tr><th>Item</th><th>Current Price</th><th>Currency</th><th>Availability</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of pricingItems()">
+            <td>{{ item.name }}</td>
+            <td class="font-mono">{{ formatPrice(item.price, item.currency) }}</td>
+            <td>{{ item.currency }}</td>
+            <td><span class="availability-badge" [class.unavailable]="item.availability !== 'AVAILABLE'">{{ item.availability }}</span></td>
+            <td class="actions-cell">
+              <button type="button" class="link-btn" *ngIf="hasPermission('fnb.pricing.manage')" (click)="openPriceEdit(item)">Edit Price</button>
+              <button type="button" class="link-btn" *ngIf="hasPermission('fnb.availability.manage')" (click)="toggleAvailability(item)">
+                {{ item.availability === 'AVAILABLE' ? "Mark 86'd" : 'Mark Available' }}
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="pricingItems().length === 0"><td colspan="5" class="empty-row">No pricing rows.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB: OUTLETS & CATEGORIES -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!isLoading() && activeTab() === 'outlets'" class="tab-content">
+    <div class="menu-catalog-header">
+      <div>
+        <h2 class="section-title">Outlets &amp; Menu Categories</h2>
+        <p class="section-desc">Restaurant structure for {{ activeProperty()?.name }}.</p>
+      </div>
+    </div>
+
+    <h3 class="subsection-title">Outlets</h3>
+    <div class="outlet-grid">
+      <div *ngFor="let o of outlets()" class="outlet-card">
+        <div class="outlet-card-head">
+          <span class="outlet-name">{{ o.name }}</span>
+          <span class="outlet-code font-mono">{{ o.code }}</span>
+        </div>
+        <p class="outlet-desc">{{ o.description || 'Dining outlet' }}</p>
+        <div class="outlet-meta">
+          <span>Cuisine: {{ o.cuisineType || 'Multi' }}</span>
+          <span class="font-mono">{{ o.currency }}</span>
+        </div>
+        <button type="button" class="link-btn" (click)="selectOutlet(o.id); activeTab.set('menu')">View Menu &rarr;</button>
+      </div>
+    </div>
+
+    <h3 class="subsection-title">Menu Categories</h3>
+    <div class="category-admin-list">
+      <div *ngFor="let cat of catalogCategories()" class="category-admin-row">
+        <span class="cat-order font-mono">{{ cat.displayOrder }}</span>
+        <span class="cat-name">{{ cat.name }}</span>
+        <span class="cat-desc">{{ cat.isActive ? 'Active' : 'Inactive' }}</span>
+        <span class="actions-cell">
+          <button type="button" class="link-btn" *ngIf="hasPermission('fnb.menu.manage')" (click)="openCategoryEditModal(cat)">Edit</button>
+        </span>
+      </div>
+      <p *ngIf="catalogCategories().length === 0" class="empty-row">No categories yet — create the first one.</p>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: MENU CATEGORY CREATE/EDIT -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="showCategoryModal()"
+    [title]="categoryFormMode() === 'create' ? 'New Menu Category' : 'Edit Menu Category'"
+    (closed)="showCategoryModal.set(false)"
+  >
+    <div class="modal-form-body">
+      <div class="form-group">
+        <label class="form-label">Name *</label>
+        <input type="text" class="form-input" [ngModel]="categoryForm().name" (ngModelChange)="setCategoryField('name', $event)" placeholder="e.g. Signature Mains" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Display Order</label>
+        <input type="number" class="form-input" [ngModel]="categoryForm().displayOrder" (ngModelChange)="setCategoryField('displayOrder', $event)" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="showCategoryModal.set(false)">Cancel</button>
+        <button type="button" class="btn-primary" [disabled]="isSubmitting() || !categoryForm().name" (click)="saveCategory()">
+          {{ isSubmitting() ? 'Saving...' : 'Save Category' }}
+        </button>
+      </div>
+    </div>
+  </hms-modal>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: MENU ITEM CREATE/EDIT (+ variants and modifier groups when editing) -->
+  <!-- ========================================================================= -->
+  <hms-modal
+    *ngIf="showCatalogItemDrawer()"
+    [title]="catalogFormMode() === 'create' ? 'New Menu Item' : 'Edit Menu Item'"
+    (closed)="closeCatalogItemDrawer()"
+  >
+    <div class="modal-form-body">
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Name *</label>
+          <input type="text" class="form-input" [ngModel]="catalogForm().name" (ngModelChange)="setCatalogField('name', $event)" />
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Category *</label>
+          <select class="form-select" [ngModel]="itemFormCategoryId()" (ngModelChange)="itemFormCategoryId.set($event)">
+            <option *ngFor="let cat of catalogCategories()" [value]="cat.id">{{ cat.name }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <input type="text" class="form-input" [ngModel]="catalogForm().description" (ngModelChange)="setCatalogField('description', $event)" />
+      </div>
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Base Price ({{ activeProperty()?.currency }}) *</label>
+          <input type="number" class="form-input" [ngModel]="catalogForm().price" (ngModelChange)="setCatalogField('price', $event)" />
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Display Order</label>
+          <input type="number" class="form-input" [ngModel]="catalogForm().displayOrder" (ngModelChange)="setCatalogField('displayOrder', $event)" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Availability</label>
+        <select class="form-select" [ngModel]="catalogForm().availability" (ngModelChange)="setCatalogField('availability', $event)">
+          <option value="AVAILABLE">Available</option>
+          <option value="OUT_OF_STOCK">Out of stock</option>
+          <option value="SEASONAL">Seasonal</option>
+        </select>
+      </div>
+
+      <!-- Variants & modifier groups (edit mode only, real item detail) -->
+      <div *ngIf="catalogFormMode() === 'edit' && catalogSelectedItem()" class="subentity-block">
+        <h4 class="subsection-title">Variants</h4>
+        <div class="subentity-row" *ngFor="let v of catalogSelectedItem()!.variants">
+          <span class="subentity-name">{{ v.name }}</span>
+          <span class="font-mono">{{ formatPrice(v.price, v.currency) }}</span>
+          <button type="button" class="link-btn danger" *ngIf="hasPermission('fnb.catalog.manage')" (click)="deleteVariant(v.id)">Remove</button>
+        </div>
+        <div class="subentity-add" *ngIf="hasPermission('fnb.catalog.manage')">
+          <input type="text" class="form-input" placeholder="Variant name (e.g. Half Portion)" [ngModel]="variantDraft().name" (ngModelChange)="setVariantField('name', $event)" />
+          <input type="number" class="form-input" placeholder="Price modifier" [ngModel]="variantDraft().priceModifier" (ngModelChange)="setVariantField('priceModifier', $event)" />
+          <button type="button" class="btn-secondary" [disabled]="!variantDraft().name" (click)="addVariant()">Add Variant</button>
+        </div>
+
+        <h4 class="subsection-title">Modifier Groups</h4>
+        <div class="subentity-row" *ngFor="let g of catalogSelectedItem()!.modifierGroups">
+          <span class="subentity-name">{{ g.name }} <span class="muted">(min {{ g.minSelections ?? 0 }} / max {{ g.maxSelections ?? 'n/a' }})</span></span>
+          <button type="button" class="link-btn danger" *ngIf="hasPermission('fnb.catalog.manage')" (click)="deleteModifierGroup(g.id)">Remove</button>
+          <div class="subentity-nested">
+            <div class="subentity-row" *ngFor="let m of g.modifiers">
+              <span class="subentity-name">{{ m.name }}</span>
+              <span class="font-mono">+{{ formatPrice(m.priceAdjustment, m.currency) }}</span>
+              <button type="button" class="link-btn danger" *ngIf="hasPermission('fnb.catalog.manage')" (click)="deleteModifier(g.id, m.id)">Remove</button>
+            </div>
+            <div class="subentity-add" *ngIf="hasPermission('fnb.catalog.manage')">
+              <input type="text" class="form-input" placeholder="Modifier name" [ngModel]="modifierDraft().name" (ngModelChange)="setModifierField('name', $event)" />
+              <input type="number" class="form-input" placeholder="Price modifier" [ngModel]="modifierDraft().priceModifier" (ngModelChange)="setModifierField('priceModifier', $event)" />
+              <button type="button" class="btn-secondary" [disabled]="!modifierDraft().name" (click)="addModifier(g.id)">Add Modifier</button>
+            </div>
+          </div>
+        </div>
+        <div class="subentity-add" *ngIf="hasPermission('fnb.catalog.manage')">
+          <input type="text" class="form-input" placeholder="Group name (e.g. Extras)" [ngModel]="modifierGroupDraft().name" (ngModelChange)="setModifierGroupField('name', $event)" />
+          <button type="button" class="btn-secondary" [disabled]="!modifierGroupDraft().name" (click)="addModifierGroup()">Add Group</button>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeCatalogItemDrawer()">Cancel</button>
+        <button type="button" class="btn-primary" [disabled]="isSubmitting() || !catalogForm().name" (click)="saveCatalogItem()">
+          {{ isSubmitting() ? 'Saving...' : (catalogFormMode() === 'create' ? 'Create Item' : 'Save Changes') }}
+        </button>
+      </div>
+    </div>
+  </hms-modal>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: PRICE EDIT -->
+  <!-- ========================================================================= -->
+  <hms-modal *ngIf="showPriceEditDrawer()" title="Edit Price" (closed)="showPriceEditDrawer.set(false)">
+    <div class="modal-form-body">
+      <div class="form-group">
+        <label class="form-label">New Price ({{ activeProperty()?.currency }})</label>
+        <input type="number" class="form-input" [ngModel]="priceEditForm().price" (ngModelChange)="setPriceEdit($event)" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="showPriceEditDrawer.set(false)">Cancel</button>
+        <button type="button" class="btn-primary" [disabled]="isSubmitting()" (click)="savePriceEdit()">Save Price</button>
+      </div>
+    </div>
+  </hms-modal>
 
   <!-- ========================================================================= -->
   <!-- MODAL: OPEN TABLE -->

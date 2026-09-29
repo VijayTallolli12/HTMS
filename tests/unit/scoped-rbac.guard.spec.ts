@@ -107,6 +107,38 @@ describe('ScopedRbacGuard (Unit)', () => {
       expect(result).toBe(true);
     });
 
+    it('should enforce @RequirePermissions when composed with @Authenticated() (W3 system reset)', async () => {
+      reflector.getAllAndOverride.mockImplementation((key) => {
+        if (key === IS_AUTHENTICATED_ONLY_KEY) return true;
+        if (key === PERMISSIONS_KEY) return ['platform:system_reset'];
+        return undefined;
+      });
+      (authzService.hasAllPermissions as jest.Mock).mockResolvedValue(false);
+
+      const ctx = makeMockContext({ securityContext: mockBaseSecurityContext });
+
+      await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
+      expect(authzService.hasAllPermissions).toHaveBeenCalledWith(
+        mockBaseSecurityContext,
+        ['platform:system_reset'],
+        expect.anything(),
+      );
+    });
+
+    it('should allow @Authenticated() + @RequirePermissions when permission is granted', async () => {
+      reflector.getAllAndOverride.mockImplementation((key) => {
+        if (key === IS_AUTHENTICATED_ONLY_KEY) return true;
+        if (key === PERMISSIONS_KEY) return ['platform:system_reset'];
+        return undefined;
+      });
+      (authzService.hasAllPermissions as jest.Mock).mockResolvedValue(true);
+
+      const ctx = makeMockContext({ securityContext: mockBaseSecurityContext });
+      const result = await guard.canActivate(ctx);
+
+      expect(result).toBe(true);
+    });
+
     it('should DENY BY DEFAULT if endpoint lacks @Public, @Authenticated, @RequirePermissions, or @RequireRoles', async () => {
       reflector.getAllAndOverride.mockReturnValue(undefined);
 

@@ -142,6 +142,16 @@ export class SpaWorkspaceComponent implements OnInit {
   showServiceModal = signal<boolean>(false);
   showCategoryModal = signal<boolean>(false);
 
+  // W4: Team & Rooms CRUD
+  showTherapistModal = signal<boolean>(false);
+  therapistForm: { name?: string; specialty?: string; phone?: string; email?: string } = {};
+  showSpaRoomModal = signal<boolean>(false);
+  spaRoomForm: { name?: string; roomType?: string } = {};
+
+  // W4: Addon management (per service, inside the service editor)
+  serviceAddons = signal<SpaServiceAddonDto[]>([]);
+  addonDraft: { code?: string; name?: string; priceAdjustment?: number } = {};
+
   // Service Modal State
   editingService: SpaServiceDto | null = null;
   serviceForm: Partial<CreateSpaServiceDto> = {};
@@ -209,6 +219,10 @@ export class SpaWorkspaceComponent implements OnInit {
   // -------------------------------------------------------------
   // Data Loading
   // -------------------------------------------------------------
+  /** Narrow reloaders assigned in loadAllSpaData (W4 CRUD callbacks). */
+  loadTeam: (propertyId: string) => void = () => {};
+  loadRooms: (propertyId: string) => void = () => {};
+
   loadAllSpaData(propertyId: string): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
@@ -228,6 +242,10 @@ export class SpaWorkspaceComponent implements OnInit {
     this.spaApi.getRooms(propertyId).subscribe({
       next: (res) => this.rooms.set(res.data || []),
     });
+
+    // Expose narrow reload helpers used by the W4 CRUD modals.
+    this.loadTeam = (pid: string) => this.spaApi.getTherapists(pid).subscribe({ next: (res) => this.therapists.set(res.data || []) });
+    this.loadRooms = (pid: string) => this.spaApi.getRooms(pid).subscribe({ next: (res) => this.rooms.set(res.data || []) });
 
     this.spaApi.getInHouseGuests(propertyId).subscribe({
       next: (res) => this.inHouseGuests.set(res.data || []),
@@ -361,6 +379,7 @@ export class SpaWorkspaceComponent implements OnInit {
   openServiceModal(service?: SpaServiceDto): void {
     if (service) {
       this.editingService = service;
+      this.loadServiceAddons(service.id);
       this.serviceForm = {
         categoryId: service.categoryId ?? undefined,
         code: service.code,
@@ -398,6 +417,104 @@ export class SpaWorkspaceComponent implements OnInit {
     this.showServiceModal.set(false);
     this.editingService = null;
     this.serviceForm = {};
+    this.serviceAddons.set([]);
+    this.addonDraft = {};
+  }
+
+  // ================================================================
+  // W4: Therapist & Treatment Room CRUD
+  // ================================================================
+  openTherapistModal(): void {
+    this.therapistForm = {};
+    this.showTherapistModal.set(true);
+  }
+
+  saveTherapist(): void {
+    const prop = this.activeProperty();
+    if (!prop || !this.therapistForm.name?.trim()) return;
+    this.isSubmitting.set(true);
+    this.spaApi.createTherapist(prop.id, { name: this.therapistForm.name, specialty: this.therapistForm.specialty, phone: this.therapistForm.phone, email: this.therapistForm.email } as CreateSpaTherapistDto).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.showTherapistModal.set(false);
+        this.therapistForm = {};
+        this.successMessage.set('Therapist added');
+        this.loadTeam(prop.id);
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.errorMessage.set(err?.error?.message || 'Failed to add therapist');
+      },
+    });
+  }
+
+  openSpaRoomModal(): void {
+    this.spaRoomForm = {};
+    this.showSpaRoomModal.set(true);
+  }
+
+  saveSpaRoom(): void {
+    const prop = this.activeProperty();
+    if (!prop || !this.spaRoomForm.name?.trim()) return;
+    this.isSubmitting.set(true);
+    this.spaApi.createRoom(prop.id, { name: this.spaRoomForm.name, roomType: this.spaRoomForm.roomType as never } as CreateSpaRoomDto).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.showSpaRoomModal.set(false);
+        this.spaRoomForm = {};
+        this.successMessage.set('Treatment room added');
+        this.loadRooms(prop.id);
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.errorMessage.set(err?.error?.message || 'Failed to add treatment room');
+      },
+    });
+  }
+
+  // ================================================================
+  // W4: Service addons management (loaded when editing a service)
+  // ================================================================
+  loadServiceAddons(serviceId: string): void {
+    const prop = this.activeProperty();
+    if (!prop) return;
+    this.spaApi.getAddons(prop.id, serviceId).subscribe({
+      next: (res) => this.serviceAddons.set(res.data || []),
+      error: () => this.serviceAddons.set([]),
+    });
+  }
+
+  addServiceAddon(): void {
+    const prop = this.activeProperty();
+    const service = this.editingService;
+    if (!prop || !service || !this.addonDraft.name?.trim()) return;
+    this.spaApi.createAddon(prop.id, service.id, {
+      serviceId: service.id,
+      code: this.addonDraft.code || `ADD-${Date.now()}`,
+      name: this.addonDraft.name,
+      priceAdjustment: this.addonDraft.priceAdjustment ?? 0,
+      currency: prop.currency,
+    } as CreateSpaServiceAddonDto).subscribe({
+      next: () => {
+        this.addonDraft = {};
+        this.successMessage.set('Add-on added');
+        this.loadServiceAddons(service.id);
+      },
+      error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to add add-on'),
+    });
+  }
+
+  removeServiceAddon(addonId: string): void {
+    const prop = this.activeProperty();
+    const service = this.editingService;
+    if (!prop || !service) return;
+    this.spaApi.deleteAddon(prop.id, service.id, addonId).subscribe({
+      next: () => {
+        this.successMessage.set('Add-on removed');
+        this.loadServiceAddons(service.id);
+      },
+      error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to remove add-on'),
+    });
   }
 
   validateServiceForm(): boolean {

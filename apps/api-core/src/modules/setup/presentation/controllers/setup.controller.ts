@@ -19,13 +19,16 @@ import {
   SetupPropertyResponse,
   SetupCompleteResponse,
   SetupDemoOperationResponse,
+  SystemResetRequest,
+  SystemResetResponse,
 } from '@hms/api-contracts';
-import { Public, Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
+import { Public, Authenticated, RequirePermissions } from '../../../identity/presentation/decorators/authz.decorators';
 import { CurrentSecurityContext } from '../../../identity/presentation/decorators/authz.decorators';
 import { SecurityContext } from '@hms/api-contracts';
 import { SetupService } from '../../application/services/setup.service';
 import { SetupStateService } from '../../application/services/setup-state.service';
 import { DemoDataService } from '../../application/services/demo-data.service';
+import { SystemResetService } from '../../application/services/system-reset.service';
 import { BootstrapAdminDto, SetupOrganizationDto, SetupPropertyDto } from '../dto/setup.dto';
 
 function extractIp(req: Request): string {
@@ -46,6 +49,7 @@ export class SetupController {
     private readonly setupService: SetupService,
     private readonly setupStateService: SetupStateService,
     private readonly demoDataService: DemoDataService,
+    private readonly systemResetService: SystemResetService,
   ) {}
 
   @Public()
@@ -184,6 +188,41 @@ export class SetupController {
       userAgent: req.headers['user-agent'] as string | undefined,
     });
     return createApiResponse(data, req);
+  }
+
+  // ===========================================================================
+  // System Reset (Product Owner Only)
+  // ===========================================================================
+
+  @Authenticated()
+  @RequirePermissions('platform:system_reset')
+  @Post('system/reset')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reset installation to NOT_INITIALIZED (Product Owner only, audited)' })
+  @ApiResponse({ status: 200, description: 'Installation reset completed' })
+  @ApiResponse({ status: 400, description: 'Invalid confirmation phrase' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions (requires platform:system_reset)' })
+  async systemReset(
+    @Body() dto: SystemResetRequest,
+    @CurrentSecurityContext() securityContext: SecurityContext,
+    @Req() req: Request,
+  ): Promise<ApiSuccessResponse<SystemResetResponse>> {
+    const data = await this.systemResetService.reset(
+      {
+        userId: securityContext.userId,
+        ip: extractIp(req),
+        correlationId: (req as any).correlationId,
+        userAgent: req.headers['user-agent'] as string | undefined,
+      },
+      dto.confirmation,
+    );
+
+    return createApiResponse({
+      success: true,
+      counts: data,
+      durationMs: 0, // duration is recorded in audit
+    }, req);
   }
 
   private async assertAdmin(securityContext: SecurityContext): Promise<void> {

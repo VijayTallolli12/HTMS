@@ -2,6 +2,12 @@ import { getPrismaClient } from '../client';
 import { generateUuidV7 } from '@hms/shared';
 import { Prisma } from '@prisma/client';
 
+
+async function getPropertyCurrency(prisma: { property: { findUnique: Function } }, propertyId: string): Promise<string> {
+  const prop = await prisma.property.findUnique({ where: { id: propertyId }, select: { currency: true } });
+  return prop?.currency ?? 'USD';
+}
+
 export async function seedFnb(propertyId: string): Promise<{ outletId: string }> {
   const prisma = getPrismaClient();
   console.log('Seeding F&B / Restaurant baseline...');
@@ -212,7 +218,7 @@ export async function seedFnb(propertyId: string): Promise<{ outletId: string }>
           name: item.name,
           description: item.description,
           price: item.price,
-          currency: 'JPY',
+          currency: await getPropertyCurrency(prisma, propertyId),
           displayOrder: item.displayOrder,
           isActive: true,
         },

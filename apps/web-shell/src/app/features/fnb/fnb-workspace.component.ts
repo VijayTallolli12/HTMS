@@ -173,6 +173,45 @@ export class FnbWorkspaceComponent implements OnInit {
   isLoadingOutletDetail = signal<boolean>(false);
   outletDetail = signal<any>(null);
 
+  // W4: Category CRUD modal state
+  showCategoryModal = signal<boolean>(false);
+  categoryFormMode = signal<'create' | 'edit'>('create');
+  categoryEditingId = signal<string | null>(null);
+  categoryForm = signal<{ name?: string; description?: string; displayOrder?: number }>({});
+
+  // W4: item create needs an explicit category selection
+  itemFormCategoryId = signal<string>('');
+
+  // W4: template-safe field setters (Angular templates cannot use spread)
+  setCategoryField(field: 'name' | 'description' | 'displayOrder', value: unknown): void {
+    this.categoryForm.set({ ...this.categoryForm(), [field]: value } as { name?: string; description?: string; displayOrder?: number });
+  }
+
+  setCatalogField(field: string, value: unknown): void {
+    this.catalogForm.set({ ...this.catalogForm(), [field]: value } as UpdateMenuItemDto);
+  }
+
+  setVariantField(field: 'name' | 'priceModifier', value: unknown): void {
+    this.variantDraft.set({ ...this.variantDraft(), [field]: value });
+  }
+
+  setModifierGroupField(field: 'name' | 'minSelections' | 'maxSelections', value: unknown): void {
+    this.modifierGroupDraft.set({ ...this.modifierGroupDraft(), [field]: value });
+  }
+
+  setModifierField(field: 'name' | 'priceModifier', value: unknown): void {
+    this.modifierDraft.set({ ...this.modifierDraft(), [field]: value });
+  }
+
+  setPriceEdit(value: unknown): void {
+    this.priceEditForm.set({ price: Number(value) || 0 });
+  }
+
+  // W4: variant / modifier drafts (real sub-entity CRUD)
+  variantDraft = signal<{ name?: string; priceModifier?: number }>({});
+  modifierGroupDraft = signal<{ name?: string; minSelections?: number; maxSelections?: number }>({});
+  modifierDraft = signal<{ name?: string; priceModifier?: number }>({});
+
   // Permission helpers
   hasPermission(perm: string): boolean {
     return this.authService.hasPermission(perm);
@@ -713,8 +752,222 @@ export class FnbWorkspaceComponent implements OnInit {
     const outletId = this.selectedOutletId();
     if (!propertyId || !outletId) return;
 
-    // Note: Delete endpoint would need to be added to API
-    this.errorMessage.set('Delete not yet implemented');
+    // Soft-delete via isActive=false (domain rules keep orders referential).
+    this.fnbApi.updateMenuItem(propertyId, outletId, item.id, { isActive: false } as UpdateMenuItemDto).subscribe({
+      next: () => {
+        this.successMessage.set(`Menu item "${item.name}" archived.`);
+        this.loadCatalog(propertyId, outletId, this.catalogPage());
+      },
+      error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to archive menu item'),
+    });
+  }
+
+  // ================================================================
+  // W4: Category CRUD (create / edit via modal)
+  // ================================================================
+  openCategoryCreateModal(): void {
+    this.categoryFormMode.set('create');
+    this.categoryEditingId.set(null);
+    this.categoryForm.set({ displayOrder: (this.catalogCategories().length || 0) + 1 });
+    this.showCategoryModal.set(true);
+  }
+
+  openCategoryEditModal(cat: MenuCategoryDto): void {
+    this.categoryFormMode.set('edit');
+    this.categoryEditingId.set(cat.id);
+    this.categoryForm.set({ name: cat.name, displayOrder: cat.displayOrder });
+    this.showCategoryModal.set(true);
+  }
+
+  saveCategory(): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (!propertyId || !outletId) return;
+    const form = this.categoryForm();
+    if (!form.name) return;
+
+    this.isSubmitting.set(true);
+    const call = this.categoryFormMode() === 'create'
+      ? this.fnbApi.createCategory(propertyId, outletId, { name: form.name, description: form.description, displayOrder: form.displayOrder } as never)
+      : this.fnbApi.updateCategory(propertyId, outletId, this.categoryEditingId()!, { name: form.name, description: form.description, displayOrder: form.displayOrder } as never);
+
+    call.subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.showCategoryModal.set(false);
+        this.successMessage.set('Menu category saved');
+        this.loadCatalogCategories(propertyId, outletId);
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.errorMessage.set(err?.error?.message || 'Failed to save category');
+      },
+    });
+  }
+
+  // ================================================================
+  // W4: Variants & modifier groups (sub-entity CRUD on item detail)
+  // ================================================================
+  addVariant(): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    const item = this.catalogSelectedItem();
+    const draft = this.variantDraft();
+    if (!propertyId || !outletId || !item || !draft.name) return;
+
+    this.fnbApi.createVariant(propertyId, outletId, item.id, { menuItemId: item.id, code: `VAR-${Date.now()}`, name: draft.name, price: draft.priceModifier ?? 0 } as CreateMenuItemVariantDto).subscribe({
+      next: () => {
+        this.variantDraft.set({});
+        this.successMessage.set('Variant added');
+        this.refreshItemDetail(item.id);
+      },
+      error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to add variant'),
+    });
+  }
+
+  deleteVariant(variantId: string): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    const item = this.catalogSelectedItem();
+    if (!propertyId || !outletId || !item) return;
+
+    this.fnbApi.deleteVariant(propertyId, outletId, item.id, variantId).subscribe({
+      next: () => {
+        this.successMessage.set('Variant removed');
+        this.refreshItemDetail(item.id);
+      },
+      error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to remove variant'),
+    });
+  }
+
+  addModifierGroup(): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    const item = this.catalogSelectedItem();
+    const draft = this.modifierGroupDraft();
+    if (!propertyId || !outletId || !item || !draft.name) return;
+
+    this.fnbApi.createModifierGroup(propertyId, outletId, item.id, { menuItemId: item.id, name: draft.name } as CreateModifierGroupDto).subscribe({
+      next: () => {
+        this.modifierGroupDraft.set({});
+        this.successMessage.set('Modifier group added');
+        this.refreshItemDetail(item.id);
+      },
+      error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to add modifier group'),
+    });
+  }
+
+  deleteModifierGroup(groupId: string): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    const item = this.catalogSelectedItem();
+    if (!propertyId || !outletId || !item) return;
+
+    this.fnbApi.deleteModifierGroup(propertyId, outletId, item.id, groupId).subscribe({
+      next: () => {
+        this.successMessage.set('Modifier group removed');
+        this.refreshItemDetail(item.id);
+      },
+      error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to remove modifier group'),
+    });
+  }
+
+  addModifier(groupId: string): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    const item = this.catalogSelectedItem();
+    const draft = this.modifierDraft();
+    if (!propertyId || !outletId || !item || !draft.name) return;
+
+    this.fnbApi.createModifier(propertyId, outletId, item.id, groupId, { modifierGroupId: groupId, name: draft.name, priceAdjustment: draft.priceModifier ?? 0 } as CreateModifierDto).subscribe({
+      next: () => {
+        this.modifierDraft.set({});
+        this.successMessage.set('Modifier added');
+        this.refreshItemDetail(item.id);
+      },
+      error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to add modifier'),
+    });
+  }
+
+  deleteModifier(groupId: string, modifierId: string): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    const item = this.catalogSelectedItem();
+    if (!propertyId || !outletId || !item) return;
+
+    this.fnbApi.deleteModifier(propertyId, outletId, item.id, groupId, modifierId).subscribe({
+      next: () => {
+        this.successMessage.set('Modifier removed');
+        this.refreshItemDetail(item.id);
+      },
+      error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to remove modifier'),
+    });
+  }
+
+  refreshItemDetail(itemId: string): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (!propertyId || !outletId) return;
+    this.fnbApi.getMenuItemDetail(propertyId, outletId, itemId).subscribe({
+      next: (res) => this.catalogSelectedItem.set(res.data),
+      error: () => this.errorMessage.set('Failed to refresh item detail'),
+    });
+  }
+
+  // ================================================================
+  // W4: Pricing drawer + availability toggle + tab entry loaders
+  // ================================================================
+  toggleAvailability(item: MenuItemPriceDto): void {
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (!propertyId || !outletId) return;
+    const next: MenuItemAvailability = item.availability === 'AVAILABLE' ? 'UNAVAILABLE' : 'AVAILABLE';
+    this.fnbApi.updateMenuItemAvailability(propertyId, outletId, item.id, { availability: next }).subscribe({
+      next: () => {
+        this.successMessage.set(`"${item.name}" is now ${next === 'AVAILABLE' ? 'available' : '86\'d'}`);
+        this.loadPricing(propertyId, outletId, this.pricingPage());
+      },
+      error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to update availability'),
+    });
+  }
+
+  onCatalogTab(): void {
+    this.activeTab.set('catalog');
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (propertyId && outletId) {
+      this.loadCatalog(propertyId, outletId, 1);
+      this.loadCatalogCategories(propertyId, outletId);
+    }
+  }
+
+  onPricingTab(): void {
+    this.activeTab.set('pricing');
+    const propertyId = this.activeProperty()?.id;
+    const outletId = this.selectedOutletId();
+    if (propertyId && outletId) {
+      this.loadPricing(propertyId, outletId, 1);
+    }
+  }
+
+  onOutletsTab(): void {
+    this.activeTab.set('outlets');
+    const propertyId = this.activeProperty()?.id;
+    if (propertyId) {
+      this.loadOutlets(propertyId);
+      const outletId = this.selectedOutletId();
+      if (outletId) this.loadCatalogCategories(propertyId, outletId);
+    }
+  }
+
+  selectOutlet(outletId: string): void {
+    this.selectedOutletId.set(outletId);
+    const propertyId = this.activeProperty()?.id;
+    if (propertyId) {
+      this.loadMenu(propertyId, outletId);
+      this.loadCatalog(propertyId, outletId, 1);
+      this.loadCatalogCategories(propertyId, outletId);
+    }
   }
 
   onCatalogSearchChange(): void {

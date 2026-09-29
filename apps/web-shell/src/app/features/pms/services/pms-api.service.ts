@@ -20,6 +20,7 @@ import {
   RoomStatusDto,
   UpdateRoomStatusRequest,
   QueryRoomStatusDto,
+  OccupancyBoard,
   RoomStatusLogDto,
   AssignRoomDto,
   UnassignRoomDto,
@@ -306,6 +307,13 @@ export class PmsApiService {
   // ==========================================
   // ROOM OPERATIONS (T06)
   // ==========================================
+  /** Occupancy board: rich per-room cards (guest/stay/folio/F&B/spa). */
+  getOccupancyBoard(propertyId: string) {
+    return this.http.get<ApiSuccessResponse<OccupancyBoard>>(
+      `${this.pmsUrl(propertyId)}/room-operations/board`,
+    );
+  }
+
   getRoomOperationsRooms(propertyId: string, query?: QueryRoomStatusDto) {
     const params: string[] = [];
     if (query?.buildingId) params.push(`buildingId=${query.buildingId}`);

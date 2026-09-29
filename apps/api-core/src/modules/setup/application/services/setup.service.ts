@@ -561,8 +561,15 @@ export class SetupService {
   }
 
   private async linkAdminToGroup(hotelGroupId: string): Promise<void> {
+    // Platform-level users (GLOBAL scope, e.g. PLATFORM_OWNER) must never be
+    // linked into a client organization: they survive installation resets and
+    // would otherwise pin a deleted hotel group via FK RESTRICT.
     const bootstrapUser = await this.prisma.user.findFirst({
-      where: { deletedAt: null, memberships: { none: { hotelGroupId } } },
+      where: {
+        deletedAt: null,
+        memberships: { none: { hotelGroupId } },
+        roleScopes: { none: { scopeType: 'GLOBAL' } },
+      },
       orderBy: { createdAt: 'asc' },
     });
     if (bootstrapUser) {

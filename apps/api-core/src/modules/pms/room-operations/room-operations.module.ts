@@ -4,6 +4,7 @@ import { RoomOperationsController } from './controllers/room-operations.controll
 import { RoomStatusService } from './services/room-status.service';
 import { RoomStatusReconciliationService } from './services/room-status-reconciliation.service';
 import { RoomMaintenanceService } from './services/room-maintenance.service';
+import { RoomOccupancyBoardService } from './services/room-occupancy-board.service';
 import { InventoryService } from '../inventory/services/inventory.service';
 import { AtsCalculatorService } from '../inventory/services/ats-calculator.service';
 import { PropertyBusinessDateService } from '../common/services/property-business-date.service';
@@ -17,6 +18,7 @@ import { CLOCK_TOKEN } from '../common/contracts/clock.interface';
     RoomStatusService,
     RoomStatusReconciliationService,
     RoomMaintenanceService,
+    RoomOccupancyBoardService,
     InventoryService,
     AtsCalculatorService,
     PropertyBusinessDateService,

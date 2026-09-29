@@ -19,6 +19,12 @@ const BASE_RATES: Record<string, Record<string, number>> = {
   ADV: { STD: 20000, DLX: 38000, EXC: 60000, SUI: 120000 },
 };
 
+
+async function getPropertyCurrency(prisma: { property: { findUnique: Function } }, propertyId: string): Promise<string> {
+  const prop = await prisma.property.findUnique({ where: { id: propertyId }, select: { currency: true } });
+  return prop?.currency ?? 'USD';
+}
+
 export async function seedRatePlans(propertyId: string, roomTypeIds: { stdId: string; dlxId: string; excId: string; suiId: string }): Promise<RatePlanIds> {
   const prisma = getPrismaClient();
   console.log('Seeding rate plans...');
@@ -30,7 +36,7 @@ export async function seedRatePlans(propertyId: string, roomTypeIds: { stdId: st
   for (const rp of RATE_PLANS) {
     let existing = await prisma.ratePlan.findFirst({ where: { propertyId, code: rp.code } });
     if (!existing) {
-      existing = await prisma.ratePlan.create({ data: { id: generateUuidV7(), propertyId, code: rp.code, name: rp.name, currency: 'JPY', mealPlanCode: rp.mealPlanCode, pricingModel: rp.pricingModel, minStayDays: rp.minStayDays, maxStayDays: rp.maxStayDays, validFrom, validTo, cancellationPolicy: rp.cancellationPolicy, isActive: true } });
+      existing = await prisma.ratePlan.create({ data: { id: generateUuidV7(), propertyId, code: rp.code, name: rp.name, currency: await getPropertyCurrency(prisma, propertyId), mealPlanCode: rp.mealPlanCode, pricingModel: rp.pricingModel, minStayDays: rp.minStayDays, maxStayDays: rp.maxStayDays, validFrom, validTo, cancellationPolicy: rp.cancellationPolicy, isActive: true } });
       console.log(`  Created RatePlan: ${rp.name} (${rp.code})`);
     } else { console.log(`  RatePlan exists: ${rp.name} (${rp.code})`); }
     result[rp.code] = existing.id;

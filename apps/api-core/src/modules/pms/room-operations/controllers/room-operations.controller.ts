@@ -15,6 +15,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Request } from 'express';
 import { RoomStatusService } from '../services/room-status.service';
 import { RoomMaintenanceService } from '../services/room-maintenance.service';
+import { RoomOccupancyBoardService } from '../services/room-occupancy-board.service';
 import { UpdateRoomStatusDto } from '../dto/update-room-status.dto';
 import { CreateMaintenanceBlockDto } from '../dto/create-maintenance-block.dto';
 import { CancelMaintenanceBlockDto } from '../dto/cancel-maintenance-block.dto';
@@ -43,7 +44,20 @@ export class RoomOperationsController {
   constructor(
     private readonly roomStatusService: RoomStatusService,
     private readonly roomMaintenanceService: RoomMaintenanceService,
+    private readonly occupancyBoardService: RoomOccupancyBoardService,
   ) {}
+
+  @Get('board')
+  @RequirePermissions('room_operations.status.read')
+  @ApiOperation({ summary: 'Occupancy board: per-room cards with real guest/stay/folio/F&B/spa data' })
+  @ApiResponse({ status: 200, description: 'Occupancy board returned successfully' })
+  async getOccupancyBoard(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<import('../services/room-occupancy-board.service').OccupancyBoardDto>> {
+    const data = await this.occupancyBoardService.getBoard(propertyId);
+    return createApiResponse(data, req);
+  }
 
   @Get('rooms')
   @RequirePermissions('room_operations.status.read')

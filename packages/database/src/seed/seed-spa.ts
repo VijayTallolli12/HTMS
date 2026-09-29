@@ -2,6 +2,12 @@ import { getPrismaClient } from '../client';
 import { generateUuidV7 } from '@hms/shared';
 import { Prisma } from '@prisma/client';
 
+
+async function getPropertyCurrency(prisma: { property: { findUnique: Function } }, propertyId: string): Promise<string> {
+  const prop = await prisma.property.findUnique({ where: { id: propertyId }, select: { currency: true } });
+  return prop?.currency ?? 'USD';
+}
+
 export async function seedSpa(propertyId: string): Promise<void> {
   const prisma = getPrismaClient();
   console.log('Seeding Spa Operations baseline...');
@@ -71,7 +77,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'MASSAGE',
       durationMinutes: 90,
       price: new Prisma.Decimal(18000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       code: 'SPA-DEEP',
@@ -80,7 +86,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'MASSAGE',
       durationMinutes: 60,
       price: new Prisma.Decimal(15000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       code: 'SPA-SWEDISH',
@@ -89,7 +95,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'MASSAGE',
       durationMinutes: 60,
       price: new Prisma.Decimal(14000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       code: 'SPA-HOTSTONE',
@@ -98,7 +104,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'MASSAGE',
       durationMinutes: 75,
       price: new Prisma.Decimal(17000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       code: 'SPA-AROMA',
@@ -107,7 +113,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'MASSAGE',
       durationMinutes: 60,
       price: new Prisma.Decimal(14000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       code: 'SPA-FACIAL',
@@ -116,7 +122,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'FACIAL',
       durationMinutes: 45,
       price: new Prisma.Decimal(12000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       code: 'SPA-FACIAL-DLX',
@@ -125,7 +131,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'FACIAL',
       durationMinutes: 60,
       price: new Prisma.Decimal(18000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       code: 'SPA-SCRUB',
@@ -134,7 +140,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'BODY',
       durationMinutes: 45,
       price: new Prisma.Decimal(13000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       code: 'SPA-WRAP',
@@ -143,7 +149,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'BODY',
       durationMinutes: 60,
       price: new Prisma.Decimal(16000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       code: 'SPA-MANI',
@@ -152,7 +158,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'BEAUTY',
       durationMinutes: 45,
       price: new Prisma.Decimal(8000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       code: 'SPA-PEDI',
@@ -161,7 +167,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'BEAUTY',
       durationMinutes: 60,
       price: new Prisma.Decimal(10000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       code: 'SPA-COUPLE',
@@ -170,7 +176,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       categoryCode: 'WELLNESS',
       durationMinutes: 120,
       price: new Prisma.Decimal(32000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
   ];
 
@@ -208,7 +214,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       name: 'Hot Stone Enhancement',
       description: 'Add heated basalt stones to any massage',
       priceAdjustment: new Prisma.Decimal(3000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       serviceCode: 'SPA-FACIAL',
@@ -216,7 +222,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       name: 'LED Light Therapy',
       description: 'Red/blue LED therapy for collagen stimulation',
       priceAdjustment: new Prisma.Decimal(4000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
     {
       serviceCode: 'SPA-SCRUB',
@@ -224,7 +230,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
       name: 'Aromatherapy Upgrade',
       description: 'Custom essential oil blend for scrub',
       priceAdjustment: new Prisma.Decimal(2000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     },
   ];
 
@@ -373,7 +379,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
         endTime: end1,
         durationMinutes: 90,
         price: new Prisma.Decimal(18000),
-        currency: 'JPY',
+        currency: await getPropertyCurrency(prisma, propertyId),
         status: 'COMPLETED',
         guestName: checkedInRes?.guest ? `${checkedInRes.guest.firstName} ${checkedInRes.guest.lastName}` : 'Daniel Craig',
         roomNumber: checkedInRes?.assignedRoom?.roomNumber || '104',
@@ -401,7 +407,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
         endTime: end2,
         durationMinutes: 60,
         price: new Prisma.Decimal(14000),
-        currency: 'JPY',
+        currency: await getPropertyCurrency(prisma, propertyId),
         status: 'CONFIRMED',
         guestName: 'Elena Rostova',
         guestPhone: '+81 90-1234-5678',
@@ -424,7 +430,7 @@ export async function seedSpa(propertyId: string): Promise<void> {
         endTime: end3,
         durationMinutes: 120,
         price: new Prisma.Decimal(32000),
-        currency: 'JPY',
+        currency: await getPropertyCurrency(prisma, propertyId),
         status: 'SCHEDULED',
         guestName: 'Marcus & Jessica Vance',
         guestPhone: '+1 415-555-8822',

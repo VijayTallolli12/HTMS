@@ -1,0 +1,127 @@
+<div class="owner-reset-container">
+  <header class="owner-reset-header">
+    <h1>Reset Installation</h1>
+    <p class="subtitle">Product Owner: System Reset Control</p>
+  </header>
+
+  <div class="owner-reset-content">
+    <!-- Installation Summary -->
+    <section class="summary-section">
+      <h2>Current Installation Summary</h2>
+      <div class="summary-grid" *ngIf="!isLoading() && status()">
+        <div class="summary-item">
+          <span class="summary-label">Properties</span>
+          <span class="summary-value">{{ installationSummary().propertyCount }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Users</span>
+          <span class="summary-value">{{ installationSummary().userCount }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Rooms</span>
+          <span class="summary-value">{{ installationSummary().roomCount }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Setup State</span>
+          <span class="summary-value state-badge" [class]="'state-' + status()?.state?.toLowerCase()">
+            {{ status()?.state }}
+          </span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Progress</span>
+          <span class="summary-value">{{ status()?.progress }}%</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Milestones</span>
+          <span class="summary-value">{{ status()?.milestones?.length ?? 0 }} / 7</span>
+        </div>
+      </div>
+      <div class="loading-placeholder" *ngIf="isLoading()">
+        Loading installation data...
+      </div>
+    </section>
+
+    <!-- Warning Section -->
+    <section class="warning-section">
+      <div class="warning-box">
+        <h3>Irreversible Operation</h3>
+        <p>
+          This will <strong>permanently remove</strong> the current hotel configuration and all operational data
+          and return this installation to the initial setup state (<code>NOT_INITIALIZED</code>).
+        </p>
+        <ul class="warning-list">
+          <li>All properties, buildings, floors, and rooms will be deleted</li>
+          <li>All room types, rate plans, and daily rates will be deleted</li>
+          <li>All reservations, folios, payments, and guests will be deleted</li>
+          <li>All housekeeping, maintenance, F&B, spa, and events data will be deleted</li>
+          <li>All CRM, loyalty, procurement, HR, and payroll data will be deleted</li>
+          <li>All integrations and channel configurations will be deleted</li>
+          <li>All installation users and their sessions will be invalidated</li>
+          <li>Setup wizard will become accessible for a new client onboarding</li>
+        </ul>
+        <p class="preserved-note">
+          <strong>Preserved:</strong> Platform IAM baseline (roles, permissions), migration history,
+          system configuration, and platform-level users with global scope (PLATFORM_OWNER).
+        </p>
+      </div>
+    </section>
+
+    <!-- Confirmation Section -->
+    <section class="confirmation-section" *ngIf="!resetSuccess()">
+      <h3>Confirmation Required</h3>
+      <p>To proceed, type the exact phrase below:</p>
+
+      <div class="confirmation-phrase">
+        <code>{{ REQUIRED_CONFIRMATION }}</code>
+      </div>
+
+      <div class="input-group">
+        <label for="confirmation-input">Type confirmation phrase:</label>
+        <input
+          id="confirmation-input"
+          type="text"
+          [(ngModel)]="confirmationInput"
+          (ngModelChange)="onConfirmationChange($event)"
+          [disabled]="isResetting() || resetSuccess()"
+          placeholder="RESET INSTALLATION"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div class="input-hint" *ngIf="confirmationInput() && confirmationInput() !== REQUIRED_CONFIRMATION">
+          Phrase does not match. Must be exactly: {{ REQUIRED_CONFIRMATION }}
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button
+          class="btn btn-primary btn-reset"
+          [disabled]="!canReset()"
+          (click)="onReset()"
+        >
+          <span *ngIf="isResetting()">Resetting...</span>
+          <span *ngIf="!isResetting()">Reset Installation</span>
+        </button>
+      </div>
+
+      <div class="error-message" *ngIf="resetError()">
+        {{ resetError() }}
+      </div>
+    </section>
+
+    <!-- Success Section -->
+    <section class="success-section" *ngIf="resetSuccess()">
+      <div class="success-box">
+        <h3>Reset Completed</h3>
+        <p>The installation has been reset to <code>NOT_INITIALIZED</code>.</p>
+        <p>All installation data has been removed. The setup wizard is now accessible.</p>
+        <div class="deletion-summary" *ngIf="status()">
+          <h4>Deletion Summary</h4>
+          <p>See audit log for detailed counts by domain.</p>
+        </div>
+        <button class="btn btn-secondary" (click)="navigateToSetup()">
+          Open Setup Wizard
+        </button>
+      </div>
+    </section>
+  </div>
+</div>

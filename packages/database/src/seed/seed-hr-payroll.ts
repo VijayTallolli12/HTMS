@@ -24,6 +24,12 @@ enum PayrollRunStatus {
   FINALIZED = 'FINALIZED',
 }
 
+
+async function getPropertyCurrency(prisma: { property: { findUnique: Function } }, propertyId: string): Promise<string> {
+  const prop = await prisma.property.findUnique({ where: { id: propertyId }, select: { currency: true } });
+  return prop?.currency ?? 'USD';
+}
+
 export async function seedHrPayroll(propertyId: string): Promise<void> {
   const prisma = getPrismaClient();
   console.log('Seeding HR & Payroll demo data...');
@@ -166,7 +172,7 @@ async function seedCompensations(prisma: any, propertyId: string, employees: any
           housingAllowance: new Prisma.Decimal(comp.housing),
           transportAllowance: new Prisma.Decimal(comp.transport),
           otherAllowance: new Prisma.Decimal(comp.other),
-          currency: 'JPY',
+          currency: await getPropertyCurrency(prisma, propertyId),
         },
       });
     }
@@ -264,7 +270,7 @@ async function seedPayrollRun(prisma: any, propertyId: string, periodId: string,
       gross,
       deductions,
       net,
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
     });
   }
 

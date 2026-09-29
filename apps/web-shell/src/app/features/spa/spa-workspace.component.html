@@ -476,7 +476,10 @@
     <div class="team-layout">
       <!-- Therapists Column -->
       <div class="team-column">
-        <h2 class="column-title">Licensed Spa Therapists</h2>
+        <div class="column-head">
+          <h2 class="column-title">Licensed Spa Therapists</h2>
+          <button type="button" class="link-btn" *ngIf="hasPermission('spa.service.manage')" (click)="openTherapistModal()">+ Add Therapist</button>
+        </div>
         <div class="roster-list">
           <div *ngFor="let th of therapists()" class="roster-card">
             <div class="roster-avatar">{{ th.name.slice(0, 1) }}</div>
@@ -494,7 +497,10 @@
 
       <!-- Suites Column -->
       <div class="team-column">
-        <h2 class="column-title">Treatment Suites</h2>
+        <div class="column-head">
+          <h2 class="column-title">Treatment Suites</h2>
+          <button type="button" class="link-btn" *ngIf="hasPermission('spa.service.manage')" (click)="openSpaRoomModal()">+ Add Room</button>
+        </div>
         <div class="roster-list">
           <div *ngFor="let rm of rooms()" class="roster-card">
             <div class="roster-avatar room-avatar">
@@ -904,6 +910,46 @@
         />
         <small class="form-hint">Optional: Restrict this service to specific room types</small>
       </div>
+
+      <!-- Add-Ons (edit mode only) -->
+      <div class="addon-section" *ngIf="editingService && hasPermission('spa.catalog.manage')">
+        <label class="form-label">Add-Ons</label>
+        <div class="addon-list" *ngIf="serviceAddons().length > 0">
+          <div class="addon-row" *ngFor="let a of serviceAddons()">
+            <span class="addon-name">{{ a.name }}</span>
+            <span class="font-mono addon-price">{{ formatPrice(a.priceAdjustment, a.currency) }}</span>
+            <button
+              type="button"
+              class="addon-remove"
+              (click)="removeServiceAddon(a.id)"
+              title="Remove add-on"
+            >&times;</button>
+          </div>
+        </div>
+        <p class="form-hint" *ngIf="serviceAddons().length === 0">No add-ons configured for this service yet.</p>
+        <div class="addon-add-row">
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="addonDraft.name"
+            placeholder="Add-on name (e.g. Aromatherapy Oil)"
+            maxlength="100"
+          />
+          <input
+            type="number"
+            class="form-input addon-price-input"
+            [(ngModel)]="addonDraft.priceAdjustment"
+            placeholder="Price adj."
+            min="0"
+            step="100"
+          />
+          <hms-button
+            variant="outline"
+            [disabled]="isSubmitting() || !addonDraft.name"
+            (click)="addServiceAddon()"
+          >+ Add</hms-button>
+        </div>
+      </div>
     </div>
 
     <div hmsModalFooter>
@@ -1048,6 +1094,63 @@
         <span *ngIf="!isSubmitting()">Update Price</span>
         <span *ngIf="isSubmitting()">Updating...</span>
       </hms-button>
+    </div>
+  </hms-modal>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD THERAPIST (W4) -->
+  <!-- ========================================================================= -->
+  <hms-modal *ngIf="showTherapistModal()" title="Add Spa Therapist" (closed)="showTherapistModal.set(false)">
+    <div class="modal-form-body">
+      <div class="form-group">
+        <label class="form-label">Name *</label>
+        <input type="text" class="form-input" [(ngModel)]="therapistForm.name" placeholder="e.g. Amina Al Farsi" maxlength="100" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Specialty</label>
+        <input type="text" class="form-input" [(ngModel)]="therapistForm.specialty" placeholder="e.g. Deep Tissue & Hammam Rituals" />
+      </div>
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">Phone</label>
+          <input type="text" class="form-input" [(ngModel)]="therapistForm.phone" />
+        </div>
+        <div class="form-group half">
+          <label class="form-label">Email</label>
+          <input type="text" class="form-input" [(ngModel)]="therapistForm.email" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <hms-button variant="outline" (click)="showTherapistModal.set(false)">Cancel</hms-button>
+        <hms-button variant="gold" [disabled]="isSubmitting() || !therapistForm.name" (click)="saveTherapist()">Add Therapist</hms-button>
+      </div>
+    </div>
+  </hms-modal>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD TREATMENT ROOM (W4) -->
+  <!-- ========================================================================= -->
+  <hms-modal *ngIf="showSpaRoomModal()" title="Add Treatment Suite" (closed)="showSpaRoomModal.set(false)">
+    <div class="modal-form-body">
+      <div class="form-group">
+        <label class="form-label">Suite Name *</label>
+        <input type="text" class="form-input" [(ngModel)]="spaRoomForm.name" placeholder="e.g. Hammam Suite 3" maxlength="100" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Room Type</label>
+        <select class="form-select" [(ngModel)]="spaRoomForm.roomType">
+          <option value="">-- Default --</option>
+          <option value="SINGLE">Single</option>
+          <option value="DOUBLE">Double</option>
+          <option value="COUPLE">Couple</option>
+          <option value="HAMMAM">Hammam</option>
+          <option value="VIP">VIP Suite</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <hms-button variant="outline" (click)="showSpaRoomModal.set(false)">Cancel</hms-button>
+        <hms-button variant="gold" [disabled]="isSubmitting() || !spaRoomForm.name" (click)="saveSpaRoom()">Add Suite</hms-button>
+      </div>
     </div>
   </hms-modal>
 </div>

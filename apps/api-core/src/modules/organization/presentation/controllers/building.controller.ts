@@ -19,7 +19,7 @@ import { CreateBuildingDto } from '../dto/create-building.dto';
 import { UpdateBuildingDto } from '../dto/update-building.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { BuildingDto, ApiSuccessResponse } from '@hms/api-contracts';
-import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
+import { Authenticated, RequirePermissions } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Buildings')
 @Controller('v1/organization/buildings')
@@ -54,6 +54,7 @@ export class BuildingController {
   }
 
   @Post()
+  @RequirePermissions('organization.building.manage')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new building under a property' })
   @ApiResponse({ status: 201, description: 'Building created successfully' })
@@ -70,6 +71,7 @@ export class BuildingController {
   }
 
   @Patch(':id')
+  @RequirePermissions('organization.building.manage')
   @ApiOperation({ summary: 'Update a building' })
   @ApiResponse({ status: 200, description: 'Building updated successfully' })
   @ApiResponse({ status: 404, description: 'Building not found' })
@@ -83,6 +85,7 @@ export class BuildingController {
   }
 
   @Delete(':id')
+  @RequirePermissions('organization.building.manage')
   @ApiOperation({ summary: 'Soft-delete a building' })
   @ApiResponse({ status: 200, description: 'Building soft-deleted successfully' })
   @ApiResponse({ status: 404, description: 'Building not found' })

@@ -963,3 +963,97 @@
     min-width: 100%;
   }
 }
+
+/* ===== W4: Team tab column headers + link actions ===== */
+.column-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.column-head .column-title {
+  margin: 0;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--gold-accent, #cba135);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  letter-spacing: 0.02em;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* ===== W4: Service add-ons editor (inside service modal) ===== */
+.addon-section {
+  border-top: 1px solid var(--surface-border);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+.addon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.addon-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  padding: 0.45rem 0.75rem;
+}
+
+.addon-name {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.addon-price {
+  font-size: 0.8rem;
+  color: var(--gold-accent, #cba135);
+  font-weight: 600;
+}
+
+.addon-remove {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.addon-add-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.addon-add-row .form-input {
+  flex: 1;
+}
+
+.addon-price-input {
+  flex: 0 0 110px !important;
+}

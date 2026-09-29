@@ -51,6 +51,7 @@
         [occupancyLabel]="room.effective?.occupancyStatus || room.occupancyStatus"
         [serviceStatus]="room.effective?.serviceStatus || room.serviceStatus"
         [ready]="room.effective?.isCheckInReady"
+        [detail]="boardCardDetail(room)"
         (click)="openRoomCommand(room)"
       ></hms-room-card>
     </div>

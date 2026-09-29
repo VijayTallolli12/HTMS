@@ -19,7 +19,7 @@ import { CreatePropertyDto } from '../dto/create-property.dto';
 import { UpdatePropertyDto } from '../dto/update-property.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { PropertyDto, ApiSuccessResponse } from '@hms/api-contracts';
-import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
+import { Authenticated, RequirePermissions } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Properties')
 @Controller('v1/organization/properties')
@@ -61,6 +61,7 @@ export class PropertyController {
   }
 
   @Post()
+  @RequirePermissions('organization.property.manage')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new hotel/resort property' })
   @ApiResponse({ status: 201, description: 'Property created successfully' })
@@ -78,6 +79,7 @@ export class PropertyController {
   }
 
   @Patch(':id')
+  @RequirePermissions('organization.property.manage')
   @ApiOperation({ summary: 'Update a property' })
   @ApiResponse({ status: 200, description: 'Property updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid timezone or currency' })
@@ -92,6 +94,7 @@ export class PropertyController {
   }
 
   @Delete(':id')
+  @RequirePermissions('organization.property.manage')
   @ApiOperation({ summary: 'Soft-delete a property' })
   @ApiResponse({ status: 200, description: 'Property soft-deleted successfully' })
   @ApiResponse({ status: 404, description: 'Property not found' })

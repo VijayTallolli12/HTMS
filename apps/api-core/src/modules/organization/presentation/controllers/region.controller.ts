@@ -19,7 +19,7 @@ import { CreateRegionDto } from '../dto/create-region.dto';
 import { UpdateRegionDto } from '../dto/update-region.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { RegionDto, ApiSuccessResponse } from '@hms/api-contracts';
-import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
+import { Authenticated, RequirePermissions } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Regions')
 @Controller('v1/organization/regions')
@@ -58,6 +58,7 @@ export class RegionController {
   }
 
   @Post()
+  @RequirePermissions('organization.region.manage')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new region under a hotel group' })
   @ApiResponse({ status: 201, description: 'Region created successfully' })
@@ -74,6 +75,7 @@ export class RegionController {
   }
 
   @Patch(':id')
+  @RequirePermissions('organization.region.manage')
   @ApiOperation({ summary: 'Update a region' })
   @ApiResponse({ status: 200, description: 'Region updated successfully' })
   @ApiResponse({ status: 404, description: 'Region not found' })
@@ -87,6 +89,7 @@ export class RegionController {
   }
 
   @Delete(':id')
+  @RequirePermissions('organization.region.manage')
   @ApiOperation({ summary: 'Soft-delete a region' })
   @ApiResponse({ status: 200, description: 'Region soft-deleted successfully' })
   @ApiResponse({ status: 404, description: 'Region not found' })

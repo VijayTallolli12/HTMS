@@ -17,7 +17,10 @@ import {
   RoomStatusDto,
   HousekeepingStatus,
   FloorDto,
+  OccupancyBoard,
+  OccupancyRoomCard,
 } from '@hms/api-contracts';
+import { RoomCardDetail } from '../../../shared/components/room-card/hms-room-card.component';
 
 @Component({
   selector: 'app-room-operations',
@@ -38,6 +41,10 @@ export class RoomOperationsComponent implements OnInit {
   readonly rooms = signal<RoomStatusDto[]>([]);
   readonly filteredRooms = signal<RoomStatusDto[]>([]);
   readonly floors = signal<FloorDto[]>([]);
+
+  /** Rich occupancy cards from the board API (real guest/stay/folio/F&B/spa data). */
+  readonly board = signal<OccupancyBoard | null>(null);
+  readonly boardCards = signal<Map<string, OccupancyRoomCard>>(new Map());
 
   selectedStatusFilter = signal<string>('ALL');
   selectedFloorId = signal<string>('ALL');
@@ -68,6 +75,19 @@ export class RoomOperationsComponent implements OnInit {
   loadRoomOperations(propertyId: string): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
+
+    // Occupancy board powers the rich cards; room status list powers filters.
+    this.pmsApi.getOccupancyBoard(propertyId).subscribe({
+      next: (res) => {
+        this.board.set(res.data);
+        const map = new Map<string, OccupancyRoomCard>();
+        for (const card of res.data.rooms) map.set(card.roomId, card);
+        this.boardCards.set(map);
+      },
+      error: () => {
+        // Board is an enhancement; the status list alone still renders cards.
+      },
+    });
 
     this.pmsApi.getRoomOperationsRooms(propertyId).subscribe({
       next: (res) => {
@@ -146,6 +166,49 @@ export class RoomOperationsComponent implements OnInit {
     this.successMessage.set(null);
   }
 
+  /** Rich board data for a room, used by the enhanced room card. */
+  boardCardFor(roomId: string): OccupancyRoomCard | null {
+    return this.boardCards().get(roomId) ?? null;
+  }
+
+  /** Maps a board card to the shared room card detail shape. */
+  boardCardDetail(room: RoomStatusDto): RoomCardDetail | null {
+    const card = this.boardCardFor(room.roomId);
+    if (!card) return null;
+    return {
+      roomTypeName: card.roomType.name,
+      bedConfiguration: this.bedLabelFor(card),
+      guestName: card.guest?.name ?? null,
+      isLoyaltyMember: card.guest?.isLoyaltyMember ?? false,
+      stay: card.stay ? { confirmationNumber: card.stay.confirmationNumber, arrivalDate: card.stay.arrivalDate, departureDate: card.stay.departureDate } : null,
+      folioBalance: card.folio?.balance ?? null,
+      folioCurrency: card.folio?.currency ?? null,
+      fnbOrders: card.fnb?.orders ?? 0,
+      fnbTotal: card.fnb?.total ?? null,
+      spaBookings: card.spa?.bookings ?? 0,
+      spaUpcoming: card.spa?.upcoming ?? 0,
+      maintenanceType: card.maintenance?.type ?? null,
+      maintenanceReason: card.maintenance?.reason ?? null,
+      currency: card.folio?.currency ?? card.fnb?.currency ?? card.spa?.currency ?? null,
+    };
+  }
+
+  bedLabelFor(card: OccupancyRoomCard | null): string | null {
+    if (!card) return null;
+    const bed = card.roomType.bedConfiguration as {
+      primary?: string;
+      quantity?: number;
+      secondary?: string;
+      secondaryQty?: number;
+    } | null;
+    if (!bed?.primary) return null;
+    const primary = `${bed.quantity && bed.quantity > 1 ? `${bed.quantity}x ` : ''}${humanize(bed.primary)}`;
+    const secondary = bed.secondary
+      ? ` + ${bed.secondaryQty && bed.secondaryQty > 1 ? `${bed.secondaryQty}x ` : ''}${humanize(bed.secondary)}`
+      : '';
+    return primary + secondary;
+  }
+
   closeRoomCommand(): void {
     this.selectedRoom.set(null);
   }
@@ -179,6 +242,19 @@ export class RoomOperationsComponent implements OnInit {
           this.successMessage.set(
             `Room ${updatedRoom.roomNumber} housekeeping status changed to ${newStatus}.`,
           );
+          // Refresh board so cards reflect the change.
+          const prop2 = this.activeProperty();
+          if (prop2) {
+            this.pmsApi.getOccupancyBoard(prop2.id).subscribe({
+              next: (res2) => {
+                this.board.set(res2.data);
+                const map = new Map<string, OccupancyRoomCard>();
+                for (const card of res2.data.rooms) map.set(card.roomId, card);
+                this.boardCards.set(map);
+              },
+              error: () => {},
+            });
+          }
         },
         error: (err) => {
           this.isUpdating.set(false);
@@ -188,4 +264,12 @@ export class RoomOperationsComponent implements OnInit {
         },
       });
   }
+}
+
+function humanize(value: string): string {
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(' ');
 }

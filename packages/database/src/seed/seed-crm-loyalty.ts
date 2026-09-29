@@ -259,8 +259,11 @@ async function upsertLoyaltyMembership(
       data,
     });
   } else {
-    const count = await prisma.loyaltyMembership.count({ where: { propertyId } });
-    const membershipNumber = `${prefix}-${String(count + 1).padStart(6, '0')}`;
+    // membership_number is GLOBALLY unique, so a per-property count collides
+    // across properties. Derive a deterministic number from the last 8 chars
+    // of the guest id (stable across re-runs, unique per guest, collision-free).
+    const guestSuffix = guestId.replace(/-/g, '').slice(-8).toUpperCase();
+    const membershipNumber = `${prefix}-${guestSuffix}`;
 
     membership = await prisma.loyaltyMembership.create({
       data: {

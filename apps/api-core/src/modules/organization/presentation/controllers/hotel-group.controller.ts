@@ -19,7 +19,7 @@ import { CreateHotelGroupDto } from '../dto/create-hotel-group.dto';
 import { UpdateHotelGroupDto } from '../dto/update-hotel-group.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { HotelGroupDto, ApiSuccessResponse } from '@hms/api-contracts';
-import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
+import { Authenticated, RequirePermissions } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Hotel Groups')
 @Controller('v1/organization/groups')
@@ -52,6 +52,7 @@ export class HotelGroupController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @RequirePermissions('organization.group.manage')
   @ApiOperation({ summary: 'Create a new hotel group' })
   @ApiResponse({ status: 201, description: 'Hotel group created successfully' })
   @ApiResponse({ status: 409, description: 'Hotel group code already exists' })
@@ -66,6 +67,7 @@ export class HotelGroupController {
   }
 
   @Patch(':id')
+  @RequirePermissions('organization.group.manage')
   @ApiOperation({ summary: 'Update a hotel group' })
   @ApiResponse({ status: 200, description: 'Hotel group updated successfully' })
   @ApiResponse({ status: 404, description: 'Hotel group not found' })
@@ -79,6 +81,7 @@ export class HotelGroupController {
   }
 
   @Delete(':id')
+  @RequirePermissions('organization.group.manage')
   @ApiOperation({ summary: 'Soft-delete a hotel group' })
   @ApiResponse({ status: 200, description: 'Hotel group soft-deleted successfully' })
   @ApiResponse({ status: 404, description: 'Hotel group not found' })

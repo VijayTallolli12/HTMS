@@ -19,7 +19,7 @@ import { CreateFloorDto } from '../dto/create-floor.dto';
 import { UpdateFloorDto } from '../dto/update-floor.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { FloorDto, ApiSuccessResponse } from '@hms/api-contracts';
-import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
+import { Authenticated, RequirePermissions } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Floors')
 @Controller('v1/organization/floors')
@@ -54,6 +54,7 @@ export class FloorController {
   }
 
   @Post()
+  @RequirePermissions('organization.floor.manage')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new floor under a building' })
   @ApiResponse({ status: 201, description: 'Floor created successfully' })
@@ -70,6 +71,7 @@ export class FloorController {
   }
 
   @Patch(':id')
+  @RequirePermissions('organization.floor.manage')
   @ApiOperation({ summary: 'Update a floor' })
   @ApiResponse({ status: 200, description: 'Floor updated successfully' })
   @ApiResponse({ status: 404, description: 'Floor not found' })
@@ -83,6 +85,7 @@ export class FloorController {
   }
 
   @Delete(':id')
+  @RequirePermissions('organization.floor.manage')
   @ApiOperation({ summary: 'Soft-delete a floor' })
   @ApiResponse({ status: 200, description: 'Floor soft-deleted successfully' })
   @ApiResponse({ status: 404, description: 'Floor not found' })

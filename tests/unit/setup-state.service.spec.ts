@@ -46,6 +46,18 @@ describe('SetupStateService (W2 Phase 2)', () => {
     expect(status.bootstrapEligible).toBe(false);
   });
 
+  it('excludes GLOBAL-scope (platform-level) users from the credentialed count (W3 reset preserves owner)', async () => {
+    prismaMock.setupState.findFirst.mockResolvedValue(null);
+    prismaMock.userCredential.count.mockClear();
+    prismaMock.userCredential.count.mockResolvedValue(1);
+
+    const status = await service.getStatus();
+    expect(status.bootstrapEligible).toBe(false);
+
+    const whereArg = prismaMock.userCredential.count.mock.calls[0][0];
+    expect(whereArg.where.user.roleScopes).toEqual({ none: { scopeType: 'GLOBAL' } });
+  });
+
   it('derived-on-read heals a stale ledger missing ADMIN_CREATED', async () => {
     prismaMock.setupState.findFirst.mockResolvedValue({
       id: rowId,

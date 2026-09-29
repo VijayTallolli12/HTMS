@@ -2,6 +2,12 @@ import { getPrismaClient } from '../client';
 import { generateUuidV7 } from '@hms/shared';
 import { Prisma } from '@prisma/client';
 
+
+async function getPropertyCurrency(prisma: { property: { findUnique: Function } }, propertyId: string): Promise<string> {
+  const prop = await prisma.property.findUnique({ where: { id: propertyId }, select: { currency: true } });
+  return prop?.currency ?? 'USD';
+}
+
 export async function seedEvents(propertyId: string): Promise<void> {
   const prisma = getPrismaClient();
   console.log('Seeding Events & Banquets baseline...');
@@ -61,7 +67,7 @@ export async function seedEvents(propertyId: string): Promise<void> {
       name: 'Wedding Reception',
       description: '5-course gourmet banquet, champagne toast, floral centerpieces, bridal suite access, and dedicated butler service.',
       pricePerGuest: new Prisma.Decimal(15000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
       minGuests: 50,
     },
     {
@@ -69,7 +75,7 @@ export async function seedEvents(propertyId: string): Promise<void> {
       name: 'Corporate Conference',
       description: 'Full-day meeting package with morning & afternoon tea breaks, executive buffet lunch, and full audiovisual support.',
       pricePerGuest: new Prisma.Decimal(8000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
       minGuests: 20,
     },
     {
@@ -77,7 +83,7 @@ export async function seedEvents(propertyId: string): Promise<void> {
       name: 'Executive Meeting',
       description: 'Half-day boardroom package, artisanal coffee service, light executive lunch, and high-speed conference AV.',
       pricePerGuest: new Prisma.Decimal(5000),
-      currency: 'JPY',
+      currency: await getPropertyCurrency(prisma, propertyId),
       minGuests: 5,
     },
   ];
@@ -265,7 +271,7 @@ export async function seedEvents(propertyId: string): Promise<void> {
           endTime: b.endTime,
           expectedGuests: b.expectedGuests,
           estimatedAmount: b.estimatedAmount,
-          currency: 'JPY',
+          currency: await getPropertyCurrency(prisma, propertyId),
           status: b.status,
           notes: b.notes,
           roomNumber: b.roomNumber,

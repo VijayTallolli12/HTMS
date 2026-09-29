@@ -13,6 +13,8 @@ import {
   SetupPropertyResponse,
   SetupCompleteResponse,
   SetupDemoOperationResponse,
+  SystemResetRequest,
+  SystemResetResponse,
 } from '@hms/api-contracts';
 import { AuthService } from './auth.service';
 
@@ -105,6 +107,13 @@ export class SetupService {
   demoRemove(): Observable<SetupDemoOperationResponse> {
     return this.http
       .post<ApiSuccessResponse<SetupDemoOperationResponse>>(`${this.baseUrl}/demo/remove`, {})
+      .pipe(map((r) => r.data));
+  }
+
+  systemReset(confirmation: string): Observable<SystemResetResponse> {
+    const dto: SystemResetRequest = { confirmation };
+    return this.http
+      .post<ApiSuccessResponse<SystemResetResponse>>(`${this.baseUrl}/system/reset`, dto)
       .pipe(map((r) => r.data));
   }
 

@@ -39,6 +39,12 @@ const FOLIOS: FolioDef[] = [
   },
 ];
 
+
+async function getPropertyCurrency(prisma: { property: { findUnique: Function } }, propertyId: string): Promise<string> {
+  const prop = await prisma.property.findUnique({ where: { id: propertyId }, select: { currency: true } });
+  return prop?.currency ?? 'USD';
+}
+
 export async function seedFolios(propertyId: string, guestIds: Record<string, string>): Promise<void> {
   const prisma = getPrismaClient();
   console.log('Seeding folios...');
@@ -56,7 +62,7 @@ export async function seedFolios(propertyId: string, guestIds: Record<string, st
     const balance = totalCharges - totalPayments;
 
     const folio = await prisma.folio.create({
-      data: { id: generateUuidV7(), tenantId: propertyId, propertyId, reservationId: reservation.id, guestId, folioNumber: def.folioNumber, status: def.status, currency: 'JPY', balance, idempotencyKey: `seed-folio-${def.folioNumber}-${Date.now()}`, createdBy: 'SYSTEM_SEED' },
+      data: { id: generateUuidV7(), tenantId: propertyId, propertyId, reservationId: reservation.id, guestId, folioNumber: def.folioNumber, status: def.status, currency: await getPropertyCurrency(prisma, propertyId), balance, idempotencyKey: `seed-folio-${def.folioNumber}-${Date.now()}`, createdBy: 'SYSTEM_SEED' },
     });
     console.log(`  Created Folio: ${def.folioNumber} [balance: ${balance}]`);
 
@@ -69,7 +75,7 @@ export async function seedFolios(propertyId: string, guestIds: Record<string, st
 
     for (const pay of def.payments) {
       await prisma.payment.create({
-        data: { id: generateUuidV7(), tenantId: propertyId, propertyId, folioId: folio.id, amount: pay.amount, currency: 'JPY', paymentMethod: pay.paymentMethod, referenceNumber: pay.referenceNumber, status: 'COMPLETED', idempotencyKey: `seed-pay-${def.folioNumber}-${pay.paymentMethod}-${pay.daysOffset}-${pay.hoursOffset}`, payloadHash: generateUuidV7(), processedAt: getTimestampOffset(pay.daysOffset, pay.hoursOffset), processedBy: 'SYSTEM_SEED' },
+        data: { id: generateUuidV7(), tenantId: propertyId, propertyId, folioId: folio.id, amount: pay.amount, currency: await getPropertyCurrency(prisma, propertyId), paymentMethod: pay.paymentMethod, referenceNumber: pay.referenceNumber, status: 'COMPLETED', idempotencyKey: `seed-pay-${def.folioNumber}-${pay.paymentMethod}-${pay.daysOffset}-${pay.hoursOffset}`, payloadHash: generateUuidV7(), processedAt: getTimestampOffset(pay.daysOffset, pay.hoursOffset), processedBy: 'SYSTEM_SEED' },
       });
     }
     if (def.payments.length > 0) { console.log(`  Created ${def.payments.length} Payments`); }

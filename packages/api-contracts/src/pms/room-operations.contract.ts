@@ -144,3 +144,35 @@ export interface QueryMaintenanceBlocksDto {
   page?: number;
   limit?: number;
 }
+
+// ============================================================================
+// Occupancy Board (W4) — rich per-room cards built from real domain data.
+// Every field is sourced from actual reservations/guests/folios/F&B/spa
+// records; amounts are always in the property currency.
+// ============================================================================
+
+export interface OccupancyRoomCard {
+  roomId: string;
+  roomNumber: string;
+  floorId: string;
+  status: 'OCCUPIED' | 'VACANT' | 'DIRTY' | 'CLEAN' | 'INSPECTED' | 'OUT_OF_ORDER' | 'OUT_OF_SERVICE';
+  occupancyStatus: string;
+  housekeepingStatus: string;
+  serviceStatus: string;
+  housekeepingTaskActive: string | null;
+  maintenance: { type: string; reason: string | null; endDate: string } | null;
+  roomType: { id: string; code: string; name: string; bedConfiguration: Record<string, unknown> | null };
+  guest: { name: string; isLoyaltyMember: boolean } | null;
+  stay: { confirmationNumber: string; arrivalDate: string; departureDate: string } | null;
+  folio: { balance: number; currency: string; status: string } | null;
+  fnb: { orders: number; total: number; currency: string; hasActiveOrder: boolean } | null;
+  spa: { bookings: number; total: number; currency: string; upcoming: number } | null;
+}
+
+export interface OccupancyBoard {
+  businessDate: string;
+  currency: string;
+  timeZone: string;
+  summary: { total: number; occupied: number; vacant: number; dirty: number; outOfOrder: number };
+  rooms: OccupancyRoomCard[];
+}

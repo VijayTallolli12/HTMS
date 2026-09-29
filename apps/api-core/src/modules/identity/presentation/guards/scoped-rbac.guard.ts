@@ -59,16 +59,13 @@ export class ScopedRbacGuard implements CanActivate {
       return true;
     }
 
-    // 3. Check @Authenticated()
+    // 3. Retrieve metadata FIRST so @Authenticated() composes with stricter authorization
+    //    metadata instead of bypassing it (e.g. @Authenticated() + @RequirePermissions(...)).
     const isAuthenticatedOnly = this.reflector.getAllAndOverride<boolean>(
       IS_AUTHENTICATED_ONLY_KEY,
       [handler, targetClass],
     );
-    if (isAuthenticatedOnly) {
-      return true;
-    }
 
-    // 4. Retrieve metadata
     const requiredPermissions = this.reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [
       handler,
       targetClass,
@@ -89,6 +86,17 @@ export class ScopedRbacGuard implements CanActivate {
       REQUIRE_PROPERTY_CONTEXT_KEY,
       [handler, targetClass],
     );
+
+    // 3b. @Authenticated() grants access ONLY when no stricter authorization metadata is present.
+    if (
+      isAuthenticatedOnly &&
+      !requiredPermissions &&
+      !requiredAnyPermissions &&
+      !requiredRoles &&
+      !requiredScopeLevels
+    ) {
+      return true;
+    }
 
     // 5. DENY BY DEFAULT
     // If none of @Public, @Authenticated, @RequirePermissions, @RequireAnyPermission, @RequireRoles is present:

@@ -40,6 +40,7 @@ export const SETUP_AUDIT_ACTIONS = {
   DEMO_DATA_IMPORTED: 'DEMO_DATA_IMPORTED',
   DEMO_DATA_RESET: 'DEMO_DATA_RESET',
   DEMO_DATA_REMOVED: 'DEMO_DATA_REMOVED',
+  SYSTEM_INSTALLATION_RESET: 'SYSTEM_INSTALLATION_RESET',
 } as const;
 
 /** Canonical demo-org keys owned by the Tokyo Grandeur Palace seed. */

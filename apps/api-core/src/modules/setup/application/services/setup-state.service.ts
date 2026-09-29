@@ -179,11 +179,23 @@ export class SetupStateService {
     };
   }
 
-  /** Count of ACTIVE users that possess an ACTIVE credential (can actually log in). */
+  /**
+   * Count of ACTIVE installation users that possess an ACTIVE credential (can actually log in).
+   * Platform-level users holding a GLOBAL-scope role (e.g. PLATFORM_OWNER) are EXCLUDED:
+   * they are preserved across an installation reset and must never block the
+   * first-admin bootstrap of the next client.
+   */
   async countCredentialedUsers(): Promise<number> {
     return this.safeCount(() =>
       this.prisma.userCredential.count({
-        where: { status: 'ACTIVE', user: { status: 'ACTIVE', deletedAt: null } },
+        where: {
+          status: 'ACTIVE',
+          user: {
+            status: 'ACTIVE',
+            deletedAt: null,
+            roleScopes: { none: { scopeType: 'GLOBAL' } },
+          },
+        },
       }),
     );
   }

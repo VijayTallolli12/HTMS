@@ -19,7 +19,7 @@ import { CreateCountryDto } from '../dto/create-country.dto';
 import { UpdateCountryDto } from '../dto/update-country.dto';
 import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { CountryDto, ApiSuccessResponse } from '@hms/api-contracts';
-import { Authenticated } from '../../../identity/presentation/decorators/authz.decorators';
+import { Authenticated, RequirePermissions } from '../../../identity/presentation/decorators/authz.decorators';
 
 @ApiTags('Organization - Countries')
 @Controller('v1/organization/countries')
@@ -54,6 +54,7 @@ export class CountryController {
   }
 
   @Post()
+  @RequirePermissions('organization.country.manage')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new country under a region' })
   @ApiResponse({ status: 201, description: 'Country created successfully' })
@@ -70,6 +71,7 @@ export class CountryController {
   }
 
   @Patch(':id')
+  @RequirePermissions('organization.country.manage')
   @ApiOperation({ summary: 'Update a country' })
   @ApiResponse({ status: 200, description: 'Country updated successfully' })
   @ApiResponse({ status: 404, description: 'Country not found' })
@@ -83,6 +85,7 @@ export class CountryController {
   }
 
   @Delete(':id')
+  @RequirePermissions('organization.country.manage')
   @ApiOperation({ summary: 'Soft-delete a country' })
   @ApiResponse({ status: 200, description: 'Country soft-deleted successfully' })
   @ApiResponse({ status: 404, description: 'Country not found' })

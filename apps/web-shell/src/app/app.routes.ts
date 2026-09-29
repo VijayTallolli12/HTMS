@@ -29,6 +29,13 @@ export const routes: Routes = [
     title: 'Setup Center',
   },
   {
+    path: 'owner/system-reset',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/owner/owner-system-reset.component').then((m) => m.OwnerSystemResetComponent),
+    title: 'System Reset',
+  },
+  {
     path: 'dashboard',
     loadComponent: () =>
       import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),

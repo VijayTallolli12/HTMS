@@ -91,6 +91,20 @@ export class FnbApiService {
     );
   }
 
+  createCategory(propertyId: string, outletId: string, dto: { name: string; description?: string; displayOrder?: number }) {
+    return this.http.post<ApiSuccessResponse<MenuCategoryDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/categories`,
+      dto,
+    );
+  }
+
+  updateCategory(propertyId: string, outletId: string, categoryId: string, dto: { name?: string; description?: string; displayOrder?: number }) {
+    return this.http.patch<ApiSuccessResponse<MenuCategoryDto>>(
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/categories/${categoryId}`,
+      dto,
+    );
+  }
+
   getItems(propertyId: string, outletId: string, categoryId?: string) {
     const url = categoryId
       ? `${this.fnbUrl(propertyId)}/outlets/${outletId}/items?categoryId=${categoryId}`

@@ -6,6 +6,7 @@ import { SetupService } from './application/services/setup.service';
 import { SetupStateService } from './application/services/setup-state.service';
 import { IamBaselineService } from './application/services/iam-baseline.service';
 import { DemoDataService } from './application/services/demo-data.service';
+import { SystemResetService } from './application/services/system-reset.service';
 import { SecurityAuditSink } from './infrastructure/security-audit.sink';
 
 /**
@@ -27,6 +28,7 @@ import { SecurityAuditSink } from './infrastructure/security-audit.sink';
     SetupStateService,
     IamBaselineService,
     DemoDataService,
+    SystemResetService,
     SecurityAuditSink,
   ],
   exports: [SetupStateService],

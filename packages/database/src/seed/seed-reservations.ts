@@ -41,6 +41,12 @@ const RESERVATIONS: ReservationDef[] = [
   { confirmationNumber: 'DEMO-006', guestKey: 'guestJames', roomTypeKey: 'STD', ratePlanKey: 'BAR', arrivalDaysOffset: -1, departureDaysOffset: 0, adultsCount: 1, childrenCount: 0, status: 'CHECKED_IN', assignedRoomKey: 'room001', assignedDaysOffset: -1, checkInAt: true, totalAmount: 25000, resultKey: 'r6_departure' },
 ];
 
+
+async function getPropertyCurrency(prisma: { property: { findUnique: Function } }, propertyId: string): Promise<string> {
+  const prop = await prisma.property.findUnique({ where: { id: propertyId }, select: { currency: true } });
+  return prop?.currency ?? 'USD';
+}
+
 export async function seedReservations(
   propertyId: string, guestIds: Record<string, string>,
   roomTypeIds: { stdId: string; dlxId: string; excId: string; suiId: string },
@@ -62,18 +68,31 @@ export async function seedReservations(
       const guestId = guestIds[def.guestKey];
       const roomTypeId = roomTypeMap[def.roomTypeKey];
       const ratePlanId = ratePlanMap[def.ratePlanKey];
-      const assignedRoomId = def.assignedRoomKey ? roomIds[def.assignedRoomKey] : null;
+      // Resolve the assigned room: prefer the explicit room-id map (Tokyo seed),
+      // otherwise fall back to a deterministic room-number lookup so the same
+      // reservation definitions work for the Middle East demo properties.
+      let assignedRoomId: string | null = null;
+      if (def.assignedRoomKey) {
+        assignedRoomId = roomIds[def.assignedRoomKey] ?? null;
+        if (!assignedRoomId) {
+          const digits = def.assignedRoomKey.replace(/^room/, '');
+          const room =
+            (await prisma.room.findFirst({ where: { propertyId, roomNumber: digits } })) ??
+            (await prisma.room.findFirst({ where: { propertyId, roomNumber: String(parseInt(digits, 10)) } }));
+          assignedRoomId = room?.id ?? null;
+        }
+      }
       const nights = def.departureDaysOffset - def.arrivalDaysOffset;
       const perNightRate = Math.round(def.totalAmount / nights);
 
       existing = await prisma.reservation.create({
-        data: { id: generateUuidV7(), propertyId, confirmationNumber: def.confirmationNumber, status: def.status, guestId, roomTypeId, ratePlanId, arrivalDate, departureDate, adultsCount: def.adultsCount, childrenCount: def.childrenCount, totalAmount: def.totalAmount, currency: 'JPY', assignedRoomId, assignedAt: assignedRoomId ? getDateOffset(def.assignedDaysOffset) : null, assignedBy: assignedRoomId ? 'SYSTEM_SEED' : null, checkInAt: def.checkInAt ? getDateOffset(def.arrivalDaysOffset) : null, checkedInBy: def.checkInAt ? 'SYSTEM_SEED' : null },
+        data: { id: generateUuidV7(), propertyId, confirmationNumber: def.confirmationNumber, status: def.status, guestId, roomTypeId, ratePlanId, arrivalDate, departureDate, adultsCount: def.adultsCount, childrenCount: def.childrenCount, totalAmount: def.totalAmount, currency: await getPropertyCurrency(prisma, propertyId), assignedRoomId, assignedAt: assignedRoomId ? getDateOffset(def.assignedDaysOffset) : null, assignedBy: assignedRoomId ? 'SYSTEM_SEED' : null, checkInAt: def.checkInAt ? getDateOffset(def.arrivalDaysOffset) : null, checkedInBy: def.checkInAt ? 'SYSTEM_SEED' : null },
       });
       console.log(`  Created Reservation: ${def.confirmationNumber} [${def.status}]`);
 
       const rateNightData: Array<{ id: string; propertyId: string; reservationId: string; businessDate: Date; baseRateAmount: number; totalAmount: number; currency: string }> = [];
       for (let night = 0; night < nights; night++) {
-        rateNightData.push({ id: generateUuidV7(), propertyId, reservationId: existing.id, businessDate: getDateOffset(def.arrivalDaysOffset + night), baseRateAmount: perNightRate, totalAmount: perNightRate, currency: 'JPY' });
+        rateNightData.push({ id: generateUuidV7(), propertyId, reservationId: existing.id, businessDate: getDateOffset(def.arrivalDaysOffset + night), baseRateAmount: perNightRate, totalAmount: perNightRate, currency: await getPropertyCurrency(prisma, propertyId) });
       }
       if (rateNightData.length > 0) { await prisma.reservationRateNight.createMany({ data: rateNightData }); }
 
@@ -104,7 +123,7 @@ export async function seedReservations(
         await prisma.reservationRateNight.deleteMany({ where: { reservationId: existing.id } });
         const rateNightData: Array<{ id: string; propertyId: string; reservationId: string; businessDate: Date; baseRateAmount: number; totalAmount: number; currency: string }> = [];
         for (let night = 0; night < nights; night++) {
-          rateNightData.push({ id: generateUuidV7(), propertyId, reservationId: existing.id, businessDate: getDateOffset(def.arrivalDaysOffset + night), baseRateAmount: perNightRate, totalAmount: perNightRate, currency: 'JPY' });
+          rateNightData.push({ id: generateUuidV7(), propertyId, reservationId: existing.id, businessDate: getDateOffset(def.arrivalDaysOffset + night), baseRateAmount: perNightRate, totalAmount: perNightRate, currency: await getPropertyCurrency(prisma, propertyId) });
         }
         if (rateNightData.length > 0) { await prisma.reservationRateNight.createMany({ data: rateNightData }); }
         await prisma.reservation.update({
