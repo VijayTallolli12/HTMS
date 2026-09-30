@@ -3,6 +3,12 @@ import { permissionGuard } from '../../core/guards/permission.guard';
 
 export const PMS_ROUTES: Routes = [
   {
+    path: 'channel-manager',
+    canActivate: [permissionGuard('channel:read')],
+    loadComponent: () => import('./channel-manager/channel-manager.component').then((m) => m.ChannelManagerComponent),
+    title: 'Channel Manager (DEMO)',
+  },
+  {
     path: 'channels',
     canActivate: [permissionGuard('channel:read')],
     loadComponent: () => import('./channel-manager/channel-manager.component').then((m) => m.ChannelManagerComponent),

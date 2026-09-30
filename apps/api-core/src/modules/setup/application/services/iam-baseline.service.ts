@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../common/database/prisma.service';
+import { AuthorizationCacheService } from '../../../identity/application/services/authorization-cache.service';
 import { generateUuidV7 } from '@hms/shared';
 import {
   CANONICAL_SYSTEM_ROLES,
@@ -24,7 +25,10 @@ import {
 export class IamBaselineService {
   private readonly logger = new Logger(IamBaselineService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authorizationCache: AuthorizationCacheService,
+  ) {}
 
   async ensureBaseline(): Promise<void> {
     const roleMap = new Map<string, string>();
@@ -72,6 +76,9 @@ export class IamBaselineService {
     }
 
     // Insert only missing role-permission mappings (preserve existing IDs).
+    // Bump only affected role versions so cached contexts rehydrate after a
+    // baseline repair instead of retaining stale permissions for their TTL.
+    const changedRoleIds = new Set<string>();
     for (const assignment of CANONICAL_ROLE_PERMISSIONS) {
       const roleId = roleMap.get(assignment.roleCode);
       if (!roleId) continue;
@@ -89,8 +96,11 @@ export class IamBaselineService {
         await this.prisma.rolePermission.create({
           data: { id: generateUuidV7(), roleId, permissionId: permId },
         });
+        changedRoleIds.add(roleId);
       }
     }
+
+    await Promise.all(Array.from(changedRoleIds, (roleId) => this.authorizationCache.invalidateRole(roleId)));
   }
 
   async countSystemRoles(): Promise<number> {

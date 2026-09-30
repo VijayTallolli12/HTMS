@@ -257,7 +257,7 @@ import { AuthService } from '../../core/services/auth.service';
         <div class="hms-sidebar__section" *ngIf="hasPermission('channel:read')">
           <div class="hms-sidebar__section-title" *ngIf="!isCollapsed">Distribution</div>
           <a
-            routerLink="/pms/channels"
+            routerLink="/pms/channel-manager"
             routerLinkActive="hms-sidebar__item--active"
             class="hms-sidebar__item"
             (click)="onItemClick()"
