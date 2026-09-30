@@ -38,6 +38,13 @@ export const routes: Routes = [
     title: 'Payment Gateways',
   },
   {
+    path: 'admin/users',
+    canActivate: [authGuard, permissionGuard('user.manage.read')],
+    loadComponent: () =>
+      import('./features/admin/users/user-management.component').then((m) => m.UserManagementComponent),
+    title: 'User Management',
+  },
+  {
     path: 'owner/system-reset',
     canActivate: [authGuard],
     loadComponent: () =>

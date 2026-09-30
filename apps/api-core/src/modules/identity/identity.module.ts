@@ -13,6 +13,9 @@ import { BREACHED_PASSWORD_CHECKER } from './application/interfaces/breached-pas
 import { LocalBreachedPasswordChecker } from './infrastructure/services/local-breached-password-checker';
 import { AuthController } from './presentation/controllers/auth.controller';
 import { JwksController } from './presentation/controllers/jwks.controller';
+import { UserManagementController } from './presentation/controllers/user-management.controller';
+import { UserManagementService } from './application/services/user-management.service';
+import { SecurityAuditSink } from '../setup/infrastructure/security-audit.sink';
 
 import { APP_GUARD } from '@nestjs/core';
 import { HierarchyValidationService } from './application/services/hierarchy-validation.service';
@@ -23,7 +26,7 @@ import { ScopedRbacGuard } from './presentation/guards/scoped-rbac.guard';
 
 @Global()
 @Module({
-  controllers: [AuthController, JwksController],
+  controllers: [AuthController, JwksController, UserManagementController],
   providers: [
     PrismaService,
     RedisService,
@@ -43,6 +46,8 @@ import { ScopedRbacGuard } from './presentation/guards/scoped-rbac.guard';
     HierarchyValidationService,
     AuthorizationCacheService,
     AuthorizationService,
+    SecurityAuditSink,
+    UserManagementService,
     JwtAuthGuard,
     ScopedRbacGuard,
     {

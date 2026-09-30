@@ -1,0 +1,394 @@
+<div class="user-admin-page">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">ADMINISTRATION · STAFF &amp; SECURITY</p>
+      <h1>User Management</h1>
+      <p class="subtitle">Provision staff identities, assign operational roles, and manage property authorization scopes.</p>
+    </div>
+    <div class="hero-actions" *ngIf="canWrite">
+      <button type="button" class="btn btn-primary" (click)="openCreateModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add Staff User
+      </button>
+    </div>
+  </header>
+
+  <div class="alert alert-error" *ngIf="errorMessage()" role="alert">
+    {{ errorMessage() }}
+  </div>
+  <div class="alert alert-success" *ngIf="successMessage()" role="status">
+    {{ successMessage() }}
+  </div>
+
+  <!-- Filter Toolbar -->
+  <section class="toolbar-card">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        type="text"
+        placeholder="Search staff by name or email…"
+        [(ngModel)]="searchTerm"
+        (keyup.enter)="onFilterChange()"
+        (blur)="onFilterChange()"
+      />
+    </div>
+
+    <div class="filter-controls">
+      <div class="select-wrapper">
+        <label for="roleFilterSelect" class="sr-only">Filter by Role</label>
+        <select id="roleFilterSelect" [(ngModel)]="roleFilter" (change)="onFilterChange()">
+          <option value="">All Roles</option>
+          <option *ngFor="let role of availableRoles()" [value]="role.code">
+            {{ role.name }} ({{ role.code }})
+          </option>
+        </select>
+      </div>
+
+      <div class="select-wrapper">
+        <label for="propertyFilterSelect" class="sr-only">Filter by Property</label>
+        <select id="propertyFilterSelect" [(ngModel)]="propertyFilter" (change)="onFilterChange()">
+          <option value="">All Properties</option>
+          <option *ngFor="let prop of accessibleProperties()" [value]="prop.id">
+            {{ prop.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="select-wrapper">
+        <label for="statusFilterSelect" class="sr-only">Filter by Status</label>
+        <select id="statusFilterSelect" [(ngModel)]="statusFilter" (change)="onFilterChange()">
+          <option value="">All Statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- User Table Section -->
+  <section class="table-card">
+    <div class="table-meta">
+      <span class="user-count">{{ totalUsers() }} Staff Accounts Found</span>
+      <span class="scope-indicator" *ngIf="isCorporateAdmin">Organization Authority: Full Corporate Portfolio</span>
+      <span class="scope-indicator" *ngIf="!isCorporateAdmin">Property Authority: Assigned Operational Units</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Assigned Properties</th>
+            <th>Status</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="isLoading()">
+            <td colspan="6" class="table-state-cell">
+              <div class="spinner"></div>
+              <span>Loading staff directory…</span>
+            </td>
+          </tr>
+          <tr *ngIf="!isLoading() && users().length === 0">
+            <td colspan="6" class="table-state-cell">
+              <p class="empty-title">No staff users found</p>
+              <p class="empty-subtitle">Try adjusting your search criteria or add a new staff member.</p>
+            </td>
+          </tr>
+          <tr *ngFor="let user of users()">
+            <td>
+              <div class="user-cell">
+                <div class="avatar">
+                  {{ user.firstName[0] || 'U' }}{{ user.lastName[0] || '' }}
+                </div>
+                <div class="name-box">
+                  <span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
+                  <span class="user-phone" *ngIf="user.phone">{{ user.phone }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="user-email">{{ user.email }}</span>
+            </td>
+            <td>
+              <span class="role-badge" [ngClass]="getRoleBadgeClass(user.role?.code)">
+                {{ user.role?.name || user.role?.code || 'No Role' }}
+              </span>
+            </td>
+            <td>
+              <div class="property-chips">
+                <span class="property-chip" *ngFor="let prop of user.assignedProperties">
+                  {{ prop.name }}
+                </span>
+                <span class="property-chip empty-chip" *ngIf="user.assignedProperties.length === 0">
+                  Global / Portfolio
+                </span>
+              </div>
+            </td>
+            <td>
+              <span class="status-pill" [class.status-active]="user.status === 'ACTIVE'" [class.status-inactive]="user.status !== 'ACTIVE'">
+                <span class="status-dot"></span>
+                {{ user.status }}
+              </span>
+            </td>
+            <td class="text-right">
+              <div class="action-buttons" *ngIf="canWrite">
+                <button type="button" class="btn-icon-action" (click)="openEditModal(user)" title="Edit user">
+                  Edit
+                </button>
+                <button type="button" class="btn-icon-action" (click)="openAssignModal(user)" title="Assign properties">
+                  Scopes
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon-action"
+                  [class.text-danger]="user.status === 'ACTIVE'"
+                  (click)="toggleUserStatus(user)"
+                  [title]="user.status === 'ACTIVE' ? 'Deactivate user' : 'Activate user'"
+                >
+                  {{ user.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Create User Modal -->
+  <div class="modal-backdrop" *ngIf="isCreateModalOpen" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>Add New Staff Member</h2>
+          <p class="modal-subtitle">Provision account and assign operational property scopes.</p>
+        </div>
+        <button type="button" class="modal-close" (click)="closeModal()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="createFirstName">First Name *</label>
+            <input id="createFirstName" type="text" [(ngModel)]="formFirstName" placeholder="e.g. Kenji" />
+          </div>
+
+          <div class="form-group">
+            <label for="createLastName">Last Name *</label>
+            <input id="createLastName" type="text" [(ngModel)]="formLastName" placeholder="e.g. Sato" />
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="createEmail">Email Address *</label>
+            <input id="createEmail" type="email" [(ngModel)]="formEmail" placeholder="e.g. kenji.sato@enterprise-hms.com" />
+          </div>
+
+          <div class="form-group">
+            <label for="createPhone">Phone (Optional)</label>
+            <input id="createPhone" type="text" [(ngModel)]="formPhone" placeholder="e.g. +81-90-5555-0100" />
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="createRole">Operational Role *</label>
+            <select id="createRole" [(ngModel)]="formRoleCode">
+              <option *ngFor="let role of availableRoles()" [value]="role.code">
+                {{ role.name }} ({{ role.code }})
+              </option>
+            </select>
+            <p class="field-hint">Defines granted permissions and workspace capabilities.</p>
+          </div>
+
+          <div class="form-group">
+            <label for="createStatus">Account Status</label>
+            <select id="createStatus" [(ngModel)]="formStatus">
+              <option value="ACTIVE">Active (Can Sign In)</option>
+              <option value="INACTIVE">Inactive (Disabled)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="createPassword">Initial Password (Optional)</label>
+          <input
+            id="createPassword"
+            type="password"
+            [(ngModel)]="formInitialPassword"
+            placeholder="Leave empty for auto-generated secure credential"
+          />
+          <p class="field-hint">Minimum 8 characters. Uses Argon2id password hashing.</p>
+        </div>
+
+        <div class="form-group">
+          <label>Authorized Properties (At least one required) *</label>
+          <div class="property-checkbox-list">
+            <label
+              class="property-checkbox-item"
+              *ngFor="let prop of accessibleProperties()"
+              [class.checked]="isPropertySelected(prop.id)"
+            >
+              <input
+                type="checkbox"
+                [checked]="isPropertySelected(prop.id)"
+                (change)="togglePropertySelection(prop.id)"
+              />
+              <span class="prop-checkbox-label">
+                <strong>{{ prop.name }}</strong>
+                <small *ngIf="prop.city">{{ prop.city }}</small>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="isSaving()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" (click)="saveCreateUser()" [disabled]="isSaving()">
+          {{ isSaving() ? 'Provisioning…' : 'Create User' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal-backdrop" *ngIf="isEditModalOpen" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>Edit Staff Account</h2>
+          <p class="modal-subtitle">{{ selectedUser()?.email }}</p>
+        </div>
+        <button type="button" class="modal-close" (click)="closeModal()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="editFirstName">First Name *</label>
+            <input id="editFirstName" type="text" [(ngModel)]="formFirstName" />
+          </div>
+
+          <div class="form-group">
+            <label for="editLastName">Last Name *</label>
+            <input id="editLastName" type="text" [(ngModel)]="formLastName" />
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="editPhone">Phone Number</label>
+            <input id="editPhone" type="text" [(ngModel)]="formPhone" />
+          </div>
+
+          <div class="form-group">
+            <label for="editStatus">Status</label>
+            <select id="editStatus" [(ngModel)]="formStatus">
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editRole">Operational Role</label>
+          <select id="editRole" [(ngModel)]="formRoleCode">
+            <option *ngFor="let role of availableRoles()" [value]="role.code">
+              {{ role.name }} ({{ role.code }})
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Assigned Properties *</label>
+          <div class="property-checkbox-list">
+            <label
+              class="property-checkbox-item"
+              *ngFor="let prop of accessibleProperties()"
+              [class.checked]="isPropertySelected(prop.id)"
+            >
+              <input
+                type="checkbox"
+                [checked]="isPropertySelected(prop.id)"
+                (change)="togglePropertySelection(prop.id)"
+              />
+              <span class="prop-checkbox-label">
+                <strong>{{ prop.name }}</strong>
+                <small *ngIf="prop.city">{{ prop.city }}</small>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="isSaving()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" (click)="saveEditUser()" [disabled]="isSaving()">
+          {{ isSaving() ? 'Saving…' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign Scopes Only Modal -->
+  <div class="modal-backdrop" *ngIf="isAssignModalOpen" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>Manage Property Scopes</h2>
+          <p class="modal-subtitle">{{ selectedUser()?.firstName }} {{ selectedUser()?.lastName }} ({{ selectedUser()?.email }})</p>
+        </div>
+        <button type="button" class="modal-close" (click)="closeModal()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="info-note">
+          Users assigned to multiple properties can switch between them using the top navigation property selector.
+        </p>
+        <div class="property-checkbox-list">
+          <label
+            class="property-checkbox-item"
+            *ngFor="let prop of accessibleProperties()"
+            [class.checked]="isPropertySelected(prop.id)"
+          >
+            <input
+              type="checkbox"
+              [checked]="isPropertySelected(prop.id)"
+              (change)="togglePropertySelection(prop.id)"
+            />
+            <span class="prop-checkbox-label">
+              <strong>{{ prop.name }}</strong>
+              <small>{{ prop.city || prop.code }}</small>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="isSaving()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" (click)="savePropertyAssignments()" [disabled]="isSaving()">
+          {{ isSaving() ? 'Saving…' : 'Update Scopes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

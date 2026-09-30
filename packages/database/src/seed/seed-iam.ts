@@ -361,6 +361,18 @@ export async function seedIamBaseline() {
       description: 'Inspect immutable system security and activity audit records',
       module: 'PLATFORM',
     },
+    {
+      code: 'user.manage.read',
+      name: 'View Users & Property Scopes',
+      description: 'List and view staff user accounts and their assigned property scopes',
+      module: 'PLATFORM',
+    },
+    {
+      code: 'user.manage.write',
+      name: 'Manage Users & Property Scopes',
+      description: 'Create, update, assign properties, and activate/deactivate staff user accounts',
+      module: 'PLATFORM',
+    },
     // ── Engineering / Maintenance ─────────────────────────────────────
     {
       code: 'engineering.asset.view',
@@ -969,6 +981,8 @@ export async function seedIamBaseline() {
         'payroll.run.process',
         'payroll.run.finalize',
         'payroll.payslip.view',
+        'user.manage.read',
+        'user.manage.write',
         ...allChannelPermissions,
         ...allPaymentGatewayPermissions,
       ],

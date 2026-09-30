@@ -359,6 +359,18 @@ export const CANONICAL_PERMISSIONS: PermissionDefinition[] = [
     "module": "PLATFORM"
   },
   {
+    "code": "user.manage.read",
+    "name": "View Users & Property Scopes",
+    "description": "List and view staff user accounts and their assigned property scopes",
+    "module": "PLATFORM"
+  },
+  {
+    "code": "user.manage.write",
+    "name": "Manage Users & Property Scopes",
+    "description": "Create, update, assign properties, and activate/deactivate staff user accounts",
+    "module": "PLATFORM"
+  },
+  {
     "code": "engineering.asset.view",
     "name": "View Assets",
     "description": "View equipment, appliances, and facility asset records",
@@ -1037,7 +1049,9 @@ export const CANONICAL_ROLE_PERMISSIONS: Array<{ roleCode: string; permCodes: st
       "payment:update",
       "payment:delete",
       "payment:refund",
-      "payment:webhook"
+      "payment:webhook",
+      "user.manage.read",
+      "user.manage.write"
     ]
   },
   {
@@ -1159,7 +1173,9 @@ export const CANONICAL_ROLE_PERMISSIONS: Array<{ roleCode: string; permCodes: st
       "payment:update",
       "payment:delete",
       "payment:refund",
-      "payment:webhook"
+      "payment:webhook",
+      "user.manage.read",
+      "user.manage.write"
     ]
   },
   {

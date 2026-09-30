@@ -125,9 +125,36 @@ export class HmsLayoutComponent implements OnInit {
     this.orgService.getProperties().subscribe({
       next: (res) => {
         const list = res.data || [];
-        this.properties.set(list);
-        if (!this.activeProperty() && list.length > 0) {
-          this.orgService.setActiveProperty(list[0]);
+        const isCorporateOrGlobal =
+          this.authService.hasRole('CORP_ADMIN') ||
+          this.authService.hasRole('PLATFORM_OWNER') ||
+          this.authService.roleScopes().some((s) => s.scopeType === 'GLOBAL' || s.scopeType === 'GROUP');
+
+        let displayList = list;
+        if (!isCorporateOrGlobal) {
+          const authorizedIds = Array.from(
+            new Set(
+              this.authService
+                .roleScopes()
+                .filter((s) => s.scopeType === 'PROPERTY' && s.propertyId)
+                .map((s) => s.propertyId as string),
+            ),
+          );
+          if (authorizedIds.length > 0) {
+            displayList = list.filter((p) => authorizedIds.includes(p.id));
+          }
+        }
+
+        this.properties.set(displayList);
+
+        const current = this.activeProperty();
+        if (!current || !displayList.some((p) => p.id === current.id)) {
+          const defaultId = this.currentUser()?.defaultPropertyId;
+          const match =
+            (defaultId ? displayList.find((p) => p.id === defaultId) : null) ||
+            displayList[0] ||
+            null;
+          this.orgService.setActiveProperty(match);
         }
       },
       error: () => {},

@@ -221,3 +221,90 @@ export interface LogoutResponse {
   success: boolean;
   message: string;
 }
+
+// ============================================================================
+// User Management & Property Assignment Contracts
+// ============================================================================
+
+export interface AssignedPropertyDto {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface ManagedUserSummaryDto {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  status: string;
+  role: UserRoleSummaryDto | null;
+  assignedProperties: AssignedPropertyDto[];
+  defaultPropertyId: string | null;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ManagedUserScopeDto {
+  id: string;
+  roleId: string;
+  roleCode: string;
+  roleName: string;
+  scopeType: string;
+  propertyId: string | null;
+  propertyName: string | null;
+  hotelGroupId: string | null;
+}
+
+export interface ManagedUserDetailDto extends ManagedUserSummaryDto {
+  scopes: ManagedUserScopeDto[];
+}
+
+export interface CreateUserRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  roleCode: string;
+  propertyIds: string[];
+  status?: 'ACTIVE' | 'INACTIVE';
+  initialPassword?: string;
+}
+
+export interface UpdateUserRequest {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  roleCode?: string;
+  propertyIds?: string[];
+  status?: 'ACTIVE' | 'INACTIVE';
+}
+
+export interface AssignUserPropertiesRequest {
+  propertyIds: string[];
+  roleCode?: string;
+}
+
+export interface UpdateUserStatusRequest {
+  status: 'ACTIVE' | 'INACTIVE';
+}
+
+export interface AccessiblePropertyDto {
+  id: string;
+  code: string;
+  name: string;
+  city?: string | null;
+  hotelGroupId: string;
+}
+
+/**
+ * Response for provisioning a new user. When the administrator did not supply
+ * an initial password, the backend generates a policy-compliant one and returns
+ * it exactly once via `provisionedPassword` so it can be handed to the user
+ * securely. Password hashes are never exposed.
+ */
+export interface CreateUserResponse extends ManagedUserDetailDto {
+  provisionedPassword?: string;
+}
