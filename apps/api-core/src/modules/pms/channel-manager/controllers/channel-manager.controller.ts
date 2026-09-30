@@ -9,19 +9,22 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
+import { ApiSuccessResponse } from '@hms/api-contracts';
+import { createApiResponse } from '../../../../common/utils/api-response.util';
 import { ScopedRbacGuard } from '../../../identity/presentation/guards/scoped-rbac.guard';
-import { RequirePermissions } from '../../../identity/presentation/decorators/authz.decorators';
+import { RequirePermissions, RequirePropertyContext } from '../../../identity/presentation/decorators/authz.decorators';
 import { ChannelManagerService } from '../services/channel-manager.service';
 import {
   ChannelConfigDto,
   ChannelSyncLogDto,
-  ChannelProvider,
-  ChannelSyncType,
-  ChannelSyncStatus,
   ReconciliationReportDto,
+  ChannelAvailabilityRateSyncResult,
+  InboundChannelReservationResult,
 } from '@hms/api-contracts';
 import {
   CreateChannelConfigDto,
@@ -29,12 +32,14 @@ import {
   ChannelSyncLogQueryDto,
   GenerateReconciliationDto,
   SimulateInboundReservationDto,
+  DemoAvailabilityRateSyncDto,
 } from '../dto/channel-manager.dto';
 
 @ApiTags('PMS - Channel Manager')
 @ApiBearerAuth()
 @Controller('properties/:propertyId/channels')
 @UseGuards(ScopedRbacGuard)
+@RequirePropertyContext()
 export class ChannelManagerController {
   constructor(private readonly channelManagerService: ChannelManagerService) {}
 
@@ -44,13 +49,14 @@ export class ChannelManagerController {
 
   @Get()
   @RequirePermissions('channel:read')
-  @ApiOperation({ summary: 'List all channel configurations for a property' })
+  @ApiOperation({ summary: 'List explicitly labelled DEMO channel configurations for a property' })
   @ApiQuery({ name: 'enabledOnly', required: false, type: Boolean })
   async findChannelConfigs(
     @Param('propertyId') propertyId: string,
     @Query('enabledOnly') enabledOnly?: boolean,
-  ): Promise<ChannelConfigDto[]> {
-    return this.channelManagerService.findChannelConfigs(propertyId, enabledOnly);
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ChannelConfigDto[]>> {
+    return createApiResponse(await this.channelManagerService.findChannelConfigs(propertyId, enabledOnly), req);
   }
 
   @Get(':id')
@@ -59,35 +65,38 @@ export class ChannelManagerController {
   async findChannelConfigById(
     @Param('propertyId') propertyId: string,
     @Param('id') id: string,
-  ): Promise<ChannelConfigDto> {
-    return this.channelManagerService.findChannelConfigById(propertyId, id);
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ChannelConfigDto>> {
+    return createApiResponse(await this.channelManagerService.findChannelConfigById(propertyId, id), req);
   }
 
   @Post()
   @RequirePermissions('channel:create')
-  @ApiOperation({ summary: 'Create a new channel configuration' })
+  @ApiOperation({ summary: 'Create an explicitly labelled DEMO channel configuration' })
   async createChannelConfig(
     @Param('propertyId') propertyId: string,
     @Body() dto: CreateChannelConfigDto,
-  ): Promise<ChannelConfigDto> {
-    return this.channelManagerService.createChannelConfig(propertyId, dto);
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ChannelConfigDto>> {
+    return createApiResponse(await this.channelManagerService.createChannelConfig(propertyId, dto), req);
   }
 
   @Patch(':id')
   @RequirePermissions('channel:update')
-  @ApiOperation({ summary: 'Update channel configuration' })
+  @ApiOperation({ summary: 'Update DEMO channel configuration' })
   async updateChannelConfig(
     @Param('propertyId') propertyId: string,
     @Param('id') id: string,
     @Body() dto: UpdateChannelConfigDto,
-  ): Promise<ChannelConfigDto> {
-    return this.channelManagerService.updateChannelConfig(propertyId, id, dto);
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ChannelConfigDto>> {
+    return createApiResponse(await this.channelManagerService.updateChannelConfig(propertyId, id, dto), req);
   }
 
   @Delete(':id')
   @RequirePermissions('channel:delete')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete channel configuration' })
+  @ApiOperation({ summary: 'Remove DEMO channel configuration' })
   async deleteChannelConfig(
     @Param('propertyId') propertyId: string,
     @Param('id') id: string,
@@ -96,33 +105,47 @@ export class ChannelManagerController {
   }
 
   // ============================================================================
-  // INBOUND RESERVATION PROCESSING (OTA → PMS)
+  // INBOUND RESERVATION PROCESSING (DEMO fixture → PMS)
   // ============================================================================
 
   @Post(':id/reservations/inbound')
   @RequirePermissions('channel:sync')
-  @ApiOperation({ summary: 'Process inbound reservation from OTA (demo/webhook simulation)' })
+  @ApiOperation({ summary: 'Ingest a DEMO reservation fixture into the PMS' })
   async processInboundReservation(
     @Param('propertyId') propertyId: string,
     @Param('id') channelConfigId: string,
     @Body() dto: SimulateInboundReservationDto,
-  ): Promise<{ reservationId: string; isNew: boolean; pmsReservationId?: string }> {
-    return this.channelManagerService.processInboundReservation(propertyId, channelConfigId, dto);
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<InboundChannelReservationResult>> {
+    return createApiResponse(await this.channelManagerService.processInboundReservation(propertyId, channelConfigId, dto), req);
   }
 
   // ============================================================================
-  // OUTBOUND AVAILABILITY / RATE SYNC (PMS → OTA)
+  // OUTBOUND AVAILABILITY / RATE SYNC (PMS → DEMO adapter)
   // ============================================================================
 
   @Post(':id/sync/availability-rates')
   @RequirePermissions('channel:sync')
-  @ApiOperation({ summary: 'Push availability and rates to OTA (demo simulation)' })
+  @ApiOperation({ summary: 'Build PMS-sourced availability and rate data for the DEMO adapter' })
   async syncAvailabilityRates(
     @Param('propertyId') propertyId: string,
     @Param('id') channelConfigId: string,
-    @Body() dto: { availability: any[]; rates: any[] },
-  ): Promise<{ processed: number; failed: number }> {
-    return this.channelManagerService.syncAvailabilityRates(propertyId, channelConfigId, dto.availability, dto.rates);
+    @Body() dto: DemoAvailabilityRateSyncDto,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ChannelAvailabilityRateSyncResult>> {
+    return createApiResponse(await this.channelManagerService.syncAvailabilityRates(propertyId, channelConfigId, dto), req);
+  }
+
+  @Post(':id/sync-logs/:syncLogId/retry')
+  @RequirePermissions('channel:sync')
+  @ApiOperation({ summary: 'Retry a failed DEMO availability or rate synchronization' })
+  async retrySync(
+    @Param('propertyId') propertyId: string,
+    @Param('id') channelConfigId: string,
+    @Param('syncLogId') syncLogId: string,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ChannelSyncLogDto>> {
+    return createApiResponse(await this.channelManagerService.retrySync(propertyId, channelConfigId, syncLogId), req);
   }
 
   // ============================================================================
@@ -136,8 +159,9 @@ export class ChannelManagerController {
     @Param('propertyId') propertyId: string,
     @Param('id') channelConfigId: string,
     @Query() query: ChannelSyncLogQueryDto,
-  ): Promise<ChannelSyncLogDto[]> {
-    return this.channelManagerService.findSyncLogs(propertyId, { ...query, channelConfigId });
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ChannelSyncLogDto[]>> {
+    return createApiResponse(await this.channelManagerService.findSyncLogs(propertyId, { ...query, channelConfigId }), req);
   }
 
   // ============================================================================
@@ -151,7 +175,8 @@ export class ChannelManagerController {
     @Param('propertyId') propertyId: string,
     @Param('id') channelConfigId: string,
     @Body() dto: GenerateReconciliationDto,
-  ): Promise<ReconciliationReportDto> {
-    return this.channelManagerService.generateReconciliation(propertyId, channelConfigId, dto);
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<ReconciliationReportDto>> {
+    return createApiResponse(await this.channelManagerService.generateReconciliation(propertyId, channelConfigId, dto), req);
   }
 }

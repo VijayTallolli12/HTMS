@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
   IsIn,
   IsNotEmpty,
   IsNumber,
@@ -9,28 +10,28 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   MaxLength,
   Min,
-  ValidateNested,
 } from 'class-validator';
-import { ChannelProvider, ChannelSyncType, ChannelSyncStatus, OtaReservationStatus } from '@hms/api-contracts';
+import { ChannelProvider, ChannelSyncType, ChannelSyncStatus } from '@hms/api-contracts';
 
 // ==========================================
 // CHANNEL CONFIGURATION
 // ==========================================
 
 export class CreateChannelConfigDto {
-  @ApiProperty({ enum: ['BOOKING_COM', 'AIRBNB', 'EXPEDIA', 'DEMO'], description: 'Channel provider' })
-  @IsIn(['BOOKING_COM', 'AIRBNB', 'EXPEDIA', 'DEMO'])
+  @ApiProperty({ enum: ['DEMO'], description: 'DEMO only; provider connections are simulated' })
+  @IsIn(['DEMO'], { message: 'This demo build only supports the DEMO provider' })
   provider!: ChannelProvider;
 
-  @ApiProperty({ example: 'Booking.com Channel', description: 'Human-readable name' })
+  @ApiProperty({ example: 'DEMO Channel', description: 'Human-readable name for the simulated DEMO channel' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   name!: string;
 
-  @ApiProperty({ description: 'Provider-specific configuration (credentials, property mapping, etc.)' })
+  @ApiProperty({ description: 'DEMO-only configuration with local property, room, and rate mappings; no credentials' })
   @IsObject()
   configuration!: Record<string, any>;
 
@@ -47,7 +48,7 @@ export class UpdateChannelConfigDto {
   @MaxLength(100)
   name?: string;
 
-  @ApiPropertyOptional({ description: 'Provider configuration' })
+  @ApiPropertyOptional({ description: 'DEMO-only configuration for the local simulated adapter; no provider credentials' })
   @IsOptional()
   @IsObject()
   configuration?: Record<string, any>;
@@ -78,9 +79,9 @@ export class ChannelSyncLogQueryDto {
   @IsIn(['RESERVATION_INBOUND', 'RESERVATION_OUTBOUND', 'AVAILABILITY', 'RATE', 'RECONCILIATION'])
   syncType?: ChannelSyncType;
 
-  @ApiPropertyOptional({ enum: ['SUCCESS', 'FAILED', 'PARTIAL'], description: 'Sync status filter' })
+  @ApiPropertyOptional({ enum: ['PENDING', 'SUCCESS', 'FAILED', 'PARTIAL'], description: 'Sync status filter' })
   @IsOptional()
-  @IsIn(['SUCCESS', 'FAILED', 'PARTIAL'])
+  @IsIn(['PENDING', 'SUCCESS', 'FAILED', 'PARTIAL'])
   status?: ChannelSyncStatus;
 
   @ApiPropertyOptional({ description: 'Start date filter (ISO format)' })
@@ -112,6 +113,12 @@ export class ChannelSyncLogQueryDto {
 // RECONCILIATION
 // ==========================================
 
+export class RetryChannelSyncDto {
+  @ApiProperty({ description: 'Failed sync log UUID to retry' })
+  @IsUUID()
+  syncLogId!: string;
+}
+
 export class GenerateReconciliationDto {
   @ApiProperty({ description: 'Period start (ISO date)' })
   @IsString()
@@ -126,12 +133,32 @@ export class GenerateReconciliationDto {
 // OTA RESERVATION (for webhook simulation)
 // ==========================================
 
+export class DemoAvailabilityRateSyncDto {
+  @ApiProperty({ example: '2026-11-01' })
+  @IsDateString()
+  startDate!: string;
+
+  @ApiProperty({ example: '2026-11-07' })
+  @IsDateString()
+  endDate!: string;
+
+  @ApiPropertyOptional({ description: 'Demo-only scenario: make the first attempt fail transiently, then verify retry succeeds' })
+  @IsOptional()
+  @IsBoolean()
+  simulateTransientFailure?: boolean;
+
+  @ApiPropertyOptional({ description: 'Demo-only scenario: keep failing through automatic attempts to demonstrate manual retry' })
+  @IsOptional()
+  @IsBoolean()
+  simulatePermanentFailure?: boolean;
+}
+
 export class SimulateInboundReservationDto {
-  @ApiProperty({ enum: ['BOOKING_COM', 'AIRBNB', 'EXPEDIA', 'DEMO'] })
-  @IsIn(['BOOKING_COM', 'AIRBNB', 'EXPEDIA', 'DEMO'])
+  @ApiProperty({ enum: ['DEMO'], description: 'DEMO fixture only; live webhooks are disabled' })
+  @IsIn(['DEMO'], { message: 'This endpoint accepts DEMO fixtures only' })
   provider!: ChannelProvider;
 
-  @ApiProperty({ description: 'Raw OTA reservation payload' })
+  @ApiProperty({ description: 'Raw reservation payload for the explicitly simulated DEMO adapter' })
   @IsObject()
   payload!: Record<string, any>;
 }

@@ -7,7 +7,28 @@ export type ChannelProvider = 'BOOKING_COM' | 'AIRBNB' | 'EXPEDIA' | 'DEMO';
 
 export type ChannelSyncType = 'RESERVATION_INBOUND' | 'RESERVATION_OUTBOUND' | 'AVAILABILITY' | 'RATE' | 'RECONCILIATION';
 
-export type ChannelSyncStatus = 'SUCCESS' | 'FAILED' | 'PARTIAL';
+export type ChannelSyncStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'PARTIAL';
+
+export type ChannelConnectionState = 'NOT_CONFIGURED' | 'DEMO_CONNECTED' | 'DISABLED';
+
+export interface ChannelRoomMapping {
+  roomTypeId: string;
+  externalRoomTypeCode: string;
+}
+
+export interface ChannelRateMapping {
+  ratePlanId: string;
+  externalRatePlanCode: string;
+}
+
+/** Configuration for the explicitly simulated DEMO adapter. Never contains provider credentials. */
+export interface DemoChannelConfiguration {
+  demoOnly: true;
+  connectionState: ChannelConnectionState;
+  externalPropertyId: string;
+  roomMappings: ChannelRoomMapping[];
+  rateMappings: ChannelRateMapping[];
+}
 
 export type ReservationSyncStatus = 'NEW' | 'CONFIRMED' | 'MODIFIED' | 'CANCELLED' | 'ERROR';
 
@@ -23,7 +44,9 @@ export interface ChannelConfigDto {
   provider: ChannelProvider;
   name: string;
   enabled: boolean;
-  configuration: Record<string, any>;
+  demoOnly: true;
+  connectionState: ChannelConnectionState;
+  configuration: DemoChannelConfiguration;
   fieldMapping: Record<string, string>;
   lastSyncAt: string | null;
   lastError: string | null;
@@ -127,10 +150,43 @@ export interface ChannelSyncLogDto {
   status: ChannelSyncStatus;
   recordsProcessed: number;
   recordsFailed: number;
+  attemptCount: number;
+  retryOfId: string | null;
   errorMessage: string | null;
   correlationId: string | null;
   startedAt: string;
   completedAt: string | null;
+}
+
+export interface ChannelAvailabilityRateSyncDto {
+  startDate: string;
+  endDate: string;
+  /** Test-only transient failure switch; the DEMO adapter fails once, then succeeds on retry. */
+  simulateTransientFailure?: boolean;
+  /** Force both automatic attempts to fail so the UI can demonstrate manual retry. */
+  simulatePermanentFailure?: boolean;
+}
+
+export interface ChannelAvailabilityRateSyncResult {
+  demoOnly: true;
+  processed: number;
+  failed: number;
+  attempts: number;
+  availabilityProcessed: number;
+  ratesProcessed: number;
+}
+
+export interface SimulateInboundReservationDto {
+  provider: 'DEMO';
+  payload: Record<string, any>;
+}
+
+export interface InboundChannelReservationResult {
+  demoOnly: true;
+  reservationId: string;
+  confirmationNumber: string;
+  isNew: boolean;
+  pmsReservationId: string;
 }
 
 export interface ChannelSyncLogQueryDto {
@@ -167,11 +223,19 @@ export interface ReconciliationReportDto {
 // ==========================================
 
 export interface ChannelAdapter {
-  provider: ChannelProvider;
+  provider: 'DEMO';
+  readonly demoOnly: true;
   normalizeInbound(rawData: any): OtaReservationDto;
   buildOutbound(reservation: any): any;
   buildAvailabilityPayload(data: ChannelAvailabilityDto[]): any;
   buildRatePayload(data: ChannelRateDto[]): any;
+  simulateAvailabilityRateDelivery(
+    availabilityPayload: any,
+    ratePayload: any,
+    attempt: number,
+    simulateTransientFailure?: boolean,
+    simulatePermanentFailure?: boolean,
+  ): Promise<{ processed: number; failed: number }>;
   parseResponse(response: any): { success: boolean; externalId?: string; error?: string };
   getHealthCheckPayload(): any;
 }

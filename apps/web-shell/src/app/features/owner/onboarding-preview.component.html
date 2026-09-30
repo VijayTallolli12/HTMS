@@ -1,0 +1,377 @@
+<div class="setup-shell preview-shell">
+  <header class="setup-header">
+    <div class="setup-brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="brand-mark" aria-hidden="true">
+        <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Enterprise HMS</span>
+    </div>
+    <div class="setup-progress" role="progressbar" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100">
+      <div class="setup-progress__bar" [style.width.%]="progressPercent()"></div>
+    </div>
+  </header>
+
+  <!-- PREVIEW BANNER (always visible) -->
+  <div class="preview-banner" role="status">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" class="preview-banner__icon">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+    <div class="preview-banner__text">
+      <strong>ONBOARDING PREVIEW MODE</strong>
+      <span>Safe demonstration — no changes will be saved to the HMS.</span>
+    </div>
+  </div>
+
+  <main class="setup-main">
+    <section class="setup-card" aria-labelledby="preview-step-title" *ngIf="step() <= 6">
+      <!-- STEP 0: WELCOME -->
+      <div *ngIf="step() === 0" class="step step-welcome">
+        <h1 id="preview-step-title">Welcome to the Onboarding Preview</h1>
+        <p class="lead">
+          This walkthrough demonstrates the full hotel onboarding experience — the same flow a new
+          client sees on first launch — using sample data held only in this browser tab.
+        </p>
+        <ul class="welcome-list">
+          <li><span class="num">1</span> Choose a scenario: Independent Hotel or Hotel Chain</li>
+          <li><span class="num">2</span> Fill in the organization, property, and configuration</li>
+          <li><span class="num">3</span> Review and complete the preview — nothing is persisted</li>
+        </ul>
+        <p class="note">
+          Nothing you enter here reaches the server. Refreshing the page discards the preview.
+          The real onboarding flow at <code>/setup</code> is untouched.
+        </p>
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--gold" (click)="preview.next()">Begin Preview</button>
+          <a routerLink="/dashboard" class="hms-btn hms-btn--ghost">Exit Preview</a>
+        </div>
+      </div>
+
+      <!-- STEP 1: ORGANIZATION TYPE / SCENARIO -->
+      <div *ngIf="step() === 1" class="step">
+        <h1 id="preview-step-title">Which scenario would you like to demonstrate?</h1>
+        <p class="lead">Both follow the same real onboarding structure. Pick the one that matches the demo audience.</p>
+
+        <div class="choice-grid" role="radiogroup" aria-label="Scenario">
+          <button
+            type="button"
+            class="choice-card"
+            [class.is-selected]="preview.state().scenario === 'INDEPENDENT'"
+            (click)="chooseScenario('INDEPENDENT')"
+            role="radio"
+            [attr.aria-checked]="preview.state().scenario === 'INDEPENDENT'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <strong>Independent Hotel</strong>
+            <span>A single property operating under its own name.</span>
+          </button>
+          <button
+            type="button"
+            class="choice-card"
+            [class.is-selected]="preview.state().scenario === 'CHAIN'"
+            (click)="chooseScenario('CHAIN')"
+            role="radio"
+            [attr.aria-checked]="preview.state().scenario === 'CHAIN'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <strong>Hotel Chain</strong>
+            <span>Group with regions, countries, and multiple properties.</span>
+          </button>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="backWizard()">Back</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: ORGANIZATION DETAILS -->
+      <div *ngIf="step() === 2" class="step">
+        <h1 id="preview-step-title">Organization Details</h1>
+        <p class="lead">
+          {{ preview.state().scenario === 'INDEPENDENT'
+            ? 'A single-hotel organization with its own region and country.'
+            : 'A group with a region and country. More regions can be added in the real flow.' }}
+        </p>
+
+        <div class="form-grid">
+          <label class="field span-2">
+            <span>Organization Code</span>
+            <input type="text" [(ngModel)]="preview.state().orgCode" name="orgCode"
+                   placeholder="HG-AURORA" autocomplete="off" maxlength="32" />
+          </label>
+          <label class="field span-2">
+            <span>Organization Name</span>
+            <input type="text" [(ngModel)]="preview.state().orgName" name="orgName"
+                   placeholder="Aurora Hospitality" autocomplete="organization" maxlength="128" />
+          </label>
+          <label class="field">
+            <span>Region</span>
+            <input type="text" [(ngModel)]="preview.state().regionName" name="regionName"
+                   placeholder="Emirates Region" maxlength="128" />
+          </label>
+          <label class="field">
+            <span>Country</span>
+            <select [(ngModel)]="preview.state().countryName" name="countryName">
+              <option *ngFor="let c of countries" [value]="c.name">{{ c.name }}</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="backWizard()">Back</button>
+          <button type="button" class="hms-btn hms-btn--gold" (click)="continueWizard()" [disabled]="!canContinue()">Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: PROPERTY DETAILS -->
+      <div *ngIf="step() === 3" class="step">
+        <h1 id="preview-step-title">Property Details</h1>
+        <p class="lead">The hotel or resort this onboarding would create in the real flow.</p>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>Property Code</span>
+            <input type="text" [(ngModel)]="preview.state().propertyCode" name="propCode"
+                   placeholder="PROP-AUH-001" autocomplete="off" maxlength="32" />
+          </label>
+          <label class="field">
+            <span>Property Name</span>
+            <input type="text" [(ngModel)]="preview.state().propertyName" name="propName"
+                   placeholder="Aurora Grand Hotel" autocomplete="off" maxlength="128" />
+          </label>
+          <label class="field span-2">
+            <span>Address <em>(optional)</em></span>
+            <input type="text" [(ngModel)]="preview.state().address" name="address" maxlength="255" />
+          </label>
+          <label class="field">
+            <span>City</span>
+            <input type="text" [(ngModel)]="preview.state().city" name="city" maxlength="100" />
+          </label>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="backWizard()">Back</button>
+          <button type="button" class="hms-btn hms-btn--gold" (click)="continueWizard()" [disabled]="!canContinue()">Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: PROPERTY CONFIGURATION -->
+      <div *ngIf="step() === 4" class="step">
+        <h1 id="preview-step-title">Property Configuration</h1>
+        <p class="lead">Time zone, currency, and the physical structure of the property.</p>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>Time Zone</span>
+            <input type="text" [(ngModel)]="preview.state().timeZone" name="timeZone"
+                   list="preview-tz-list" placeholder="Asia/Dubai" />
+            <datalist id="preview-tz-list">
+              <option *ngFor="let tz of timezones" [value]="tz"></option>
+            </datalist>
+          </label>
+          <label class="field">
+            <span>Currency (ISO 4217)</span>
+            <select [(ngModel)]="preview.state().currency" name="currency">
+              <option *ngFor="let cur of currencies" [value]="cur">{{ cur }}</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Building</span>
+            <input type="text" [(ngModel)]="preview.state().buildingName" name="building"
+                   placeholder="Main Wing" maxlength="128" />
+          </label>
+          <label class="field">
+            <span>Floors</span>
+            <input type="number" [(ngModel)]="preview.state().floorCount" name="floors"
+                   min="1" max="60" />
+          </label>
+        </div>
+
+        <div class="roomtypes-block">
+          <div class="roomtypes-head">
+            <span>Room Types &amp; Bed Configurations</span>
+            <div class="roomtypes-head__actions">
+              <button type="button" class="hms-btn hms-btn--ghost hms-btn--sm" (click)="loadSampleConfiguration()">Load Sample</button>
+              <button type="button" class="hms-btn hms-btn--ghost hms-btn--sm" (click)="addRoomType()">+ Add Room Type</button>
+            </div>
+          </div>
+
+          <div class="roomtype-row" *ngFor="let rt of roomTypeRows(); let i = index">
+            <input type="text" [value]="rt.code" (input)="updateRoomType(i, { code: $any($event.target).value })" placeholder="Code" maxlength="10" aria-label="Room type code" />
+            <input type="text" [value]="rt.name" (input)="updateRoomType(i, { name: $any($event.target).value })" placeholder="Name" maxlength="60" aria-label="Room type name" />
+            <input type="text" [value]="rt.beds" (input)="updateRoomType(i, { beds: $any($event.target).value })" placeholder="Beds" maxlength="30" aria-label="Bed configuration" />
+            <input type="number" [value]="rt.bedCount" (input)="updateRoomType(i, { bedCount: +$any($event.target).value })" min="1" max="8" aria-label="Bed count" />
+            <input type="number" [value]="rt.roomsCount" (input)="updateRoomType(i, { roomsCount: +$any($event.target).value })" min="0" max="500" aria-label="Rooms of this type" />
+            <button type="button" class="roomtype-remove" (click)="removeRoomType(i)" [attr.aria-label]="'Remove ' + (rt.code || 'room type')">&times;</button>
+          </div>
+
+          <p class="roomtypes-empty" *ngIf="roomTypeRows().length === 0">
+            No room types yet — add rows or load the sample configuration.
+          </p>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="backWizard()">Back</button>
+          <button type="button" class="hms-btn hms-btn--gold" (click)="continueWizard()" [disabled]="!canContinue()">Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: FIRST ADMINISTRATOR -->
+      <div *ngIf="step() === 5" class="step">
+        <h1 id="preview-step-title">First Administrator</h1>
+        <p class="lead">
+          In the real flow this account would be created with
+          {{ preview.state().scenario === 'CHAIN' ? 'Corporate Platform Admin (group-wide)' : 'General Manager (property-wide)' }}
+          privileges. Nothing is created here.
+        </p>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>First Name</span>
+            <input type="text" [(ngModel)]="preview.state().adminFirstName" name="adminFirst" autocomplete="given-name" />
+          </label>
+          <label class="field">
+            <span>Last Name</span>
+            <input type="text" [(ngModel)]="preview.state().adminLastName" name="adminLast" autocomplete="family-name" />
+          </label>
+          <label class="field span-2">
+            <span>Email</span>
+            <input type="email" [(ngModel)]="preview.state().adminEmail" name="adminEmail" autocomplete="username" placeholder="admin@yourhotel.com" />
+          </label>
+          <label class="field span-2">
+            <span>Role (demonstrated)</span>
+            <input type="text" [value]="preview.state().adminRole" name="adminRole" disabled />
+          </label>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="backWizard()">Back</button>
+          <button type="button" class="hms-btn hms-btn--gold" (click)="continueWizard()" [disabled]="!canContinue()">Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 6: REVIEW -->
+      <div *ngIf="step() === 6" class="step">
+        <h1 id="preview-step-title">Review</h1>
+        <p class="lead">A summary of what the real onboarding would create. All values shown are preview-only.</p>
+
+        <div class="review-grid">
+          <div class="review-section">
+            <h2>Organization</h2>
+            <dl>
+              <div><dt>Type</dt><dd>{{ preview.state().scenario === 'CHAIN' ? 'Hotel Chain' : 'Independent Hotel' }}</dd></div>
+              <div><dt>Code</dt><dd>{{ preview.state().orgCode }}</dd></div>
+              <div><dt>Name</dt><dd>{{ preview.state().orgName }}</dd></div>
+              <div><dt>Region</dt><dd>{{ preview.state().regionName }}</dd></div>
+              <div><dt>Country</dt><dd>{{ preview.state().countryName }}</dd></div>
+            </dl>
+          </div>
+          <div class="review-section">
+            <h2>Property</h2>
+            <dl>
+              <div><dt>Code</dt><dd>{{ preview.state().propertyCode }}</dd></div>
+              <div><dt>Name</dt><dd>{{ preview.state().propertyName }}</dd></div>
+              <div><dt>City</dt><dd>{{ preview.state().city || '—' }}</dd></div>
+              <div><dt>Address</dt><dd>{{ preview.state().address || '—' }}</dd></div>
+            </dl>
+          </div>
+          <div class="review-section">
+            <h2>Property Settings</h2>
+            <dl>
+              <div><dt>Currency</dt><dd>{{ preview.state().currency }}</dd></div>
+              <div><dt>Time Zone</dt><dd>{{ preview.state().timeZone }}</dd></div>
+              <div><dt>Building</dt><dd>{{ preview.state().buildingName }}</dd></div>
+              <div><dt>Floors</dt><dd>{{ preview.state().floorCount }}</dd></div>
+            </dl>
+          </div>
+          <div class="review-section">
+            <h2>Configuration</h2>
+            <dl>
+              <div><dt>Room Types</dt><dd>{{ roomTypeRows().length }}</dd></div>
+              <div><dt>Total Rooms</dt><dd>{{ totalRooms() }}</dd></div>
+            </dl>
+            <table class="review-roomtypes" *ngIf="roomTypeRows().length > 0">
+              <thead><tr><th>Code</th><th>Name</th><th>Beds</th><th>Rooms</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let rt of roomTypeRows()">
+                  <td>{{ rt.code }}</td><td>{{ rt.name }}</td><td>{{ rt.beds }}</td><td>{{ rt.roomsCount }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="review-section">
+            <h2>Administrator</h2>
+            <dl>
+              <div><dt>Name</dt><dd>{{ preview.state().adminFirstName }} {{ preview.state().adminLastName }}</dd></div>
+              <div><dt>Email</dt><dd>{{ preview.state().adminEmail }}</dd></div>
+              <div><dt>Role</dt><dd>{{ preview.state().adminRole }}</dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="hms-btn hms-btn--ghost" (click)="backWizard()">Back</button>
+          <button type="button" class="hms-btn hms-btn--gold" (click)="completePreview()">Complete Preview</button>
+        </div>
+      </div>
+
+      <!-- VALIDATION NOTE -->
+      <div class="setup-error" *ngIf="step() >= 2 && step() <= 5 && !canContinue()" role="status">
+        Fill in the highlighted-required fields above to continue.
+      </div>
+    </section>
+
+    <!-- STEP 7: COMPLETE -->
+    <section class="setup-card setup-card--complete" *ngIf="step() === 7" aria-labelledby="preview-complete-title">
+      <div class="complete-check" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <h1 id="preview-complete-title">Setup Preview Complete</h1>
+      <p class="lead">The full onboarding journey was demonstrated end to end.</p>
+
+      <ul class="preview-checklist">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Organization configured
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Property configured
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Property settings configured
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Administrator configured
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Setup reviewed
+        </li>
+      </ul>
+
+      <p class="preview-safety-note">
+        No changes were made to your HMS database.
+      </p>
+
+      <div class="step-actions step-actions--center">
+        <button type="button" class="hms-btn hms-btn--gold" (click)="restartPreview()">Start Preview Again</button>
+        <button type="button" class="hms-btn hms-btn--ghost" (click)="returnToHms()">Return to HMS</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="setup-footer">
+    <span>Step {{ stepDisplay() }} of 7</span>
+    <span class="preview-footer-tag">Preview — nothing is saved</span>
+  </footer>
+</div>

@@ -165,7 +165,9 @@ payrollLines              PayrollLine[]
     paymentIntents            PaymentIntent[]
     paymentGatewayTransactions PaymentGatewayTransaction[]
     paymentWebhooks           PaymentWebhook[]
-    emailProviderConfigs      EmailProviderConfig[]
+  paymentGatewayOperations PaymentGatewayOperation[]
+  paymentAdjustments       PaymentAdjustment[]
+  emailProviderConfigs      EmailProviderConfig[]
     emailTemplates            EmailTemplate[]
     emails                    Email[]
     emailWebhooks             EmailWebhook[]
@@ -561,12 +563,12 @@ model IntegrationSyncLog {
   propertyId      String   @map("property_id")
   syncType        String   @map("sync_type") // MANUAL | SCHEDULED | WEBHOOK
   status          String   @map("status") // SUCCESS | FAILED | PARTIAL
-  recordsProcessed Int     @default(0) @map("records_processed")
-  recordsFailed   Int      @default(0) @map("records_failed")
-  errorMessage    String?  @map("error_message")
-  correlationId   String?  @map("correlation_id")
-  startedAt       DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
-  completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
+  recordsProcessed Int       @default(0) @map("records_processed")
+  recordsFailed    Int       @default(0) @map("records_failed")
+  errorMessage     String?   @map("error_message")
+  correlationId    String?   @map("correlation_id")
+  startedAt        DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz(6)
 
   integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   property    Property    @relation(fields: [propertyId], references: [id], onDelete: Restrict)
@@ -604,6 +606,7 @@ enum ChannelSyncType {
 }
 
 enum ChannelSyncStatus {
+  PENDING
   SUCCESS
   FAILED
   PARTIAL
@@ -646,6 +649,9 @@ model ChannelSyncLog {
   recordsFailed    Int             @default(0) @map("records_failed")
   errorMessage     String?         @map("error_message")
   correlationId    String?         @map("correlation_id")
+  attemptCount     Int             @default(1) @map("attempt_count")
+  retryOfId        String?         @map("retry_of_id")
+  requestPayload   Json?           @map("request_payload")
   startedAt        DateTime        @default(now()) @map("started_at") @db.Timestamptz(6)
   completedAt      DateTime?       @map("completed_at") @db.Timestamptz(6)
 
@@ -655,6 +661,7 @@ model ChannelSyncLog {
   @@unique([channelConfigId, id], name: "uq_channel_sync_log_config_id")
   @@index([channelConfigId, startedAt], name: "idx_channel_sync_log_config_started")
   @@index([propertyId, startedAt], name: "idx_channel_sync_log_property_started")
+  @@index([channelConfigId, retryOfId], name: "idx_channel_sync_log_retry_of")
   @@map("channel_sync_logs")
   @@schema("platform_schema")
 }
@@ -670,6 +677,22 @@ enum PaymentProviderType {
   ADYEN
   SQUARE
   DEMO
+  AMAZON_PAYMENT_SERVICES
+  TELR
+  NETWORK_INTERNATIONAL
+  TAP
+  PAYTABS
+  CHECKOUT_COM
+  HYPERPAY
+  MOYASAR
+  GEIDEA
+  BENEFIT
+  PAYPAL
+  RAZORPAY
+  CASHFREE
+  PAYU
+  GMO_PAYMENT_GATEWAY
+  SB_PAYMENT_SERVICE
 
   @@schema("platform_schema")
 }
@@ -711,9 +734,14 @@ model PaymentProviderConfig {
   propertyId           String              @map("property_id")
   provider             PaymentProviderType @map("provider")
   name                 String              @db.VarChar(100)
-  enabled              Boolean             @default(true)
+  enabled              Boolean             @default(false)
   configuration        Json                @default("{}")
   supportedCurrencies  String[]            @default(["JPY", "USD", "EUR"]) @map("supported_currencies")
+  environment          String              @default("SANDBOX") @db.VarChar(16)
+  priority             Int                 @default(100)
+  isPrimary            Boolean             @default(false) @map("is_primary")
+  enabledPaymentMethods String[]            @default([]) @map("enabled_payment_methods")
+  integrationStatus    String              @default("CONFIGURED") @map("integration_status") @db.VarChar(32)
   lastSyncAt           DateTime?           @map("last_sync_at") @db.Timestamptz(6)
   lastError            String?             @map("last_error")
   version              Int                 @default(0)
@@ -725,6 +753,7 @@ model PaymentProviderConfig {
   paymentIntents               PaymentIntent[]
   paymentGatewayTransactions   PaymentGatewayTransaction[]
   webhooks                     PaymentWebhook[]
+  operations                   PaymentGatewayOperation[]
 
   @@unique([propertyId, id], name: "uq_payment_provider_config_property_id")
   @@index([propertyId, enabled], name: "idx_payment_provider_config_enabled")
@@ -736,6 +765,7 @@ model PaymentIntent {
   id                       String                @id @default(uuid())
   propertyId               String                @map("property_id")
   paymentProviderConfigId  String                @map("payment_provider_config_id")
+  folioId                  String?               @map("folio_id")
   externalId               String                @unique @map("external_id") @db.VarChar(100)
   amount                   Int                   @map("amount")
   currency                 String                @db.VarChar(3)
@@ -745,7 +775,7 @@ model PaymentIntent {
   clientSecret             String?               @map("client_secret") @db.VarChar(100)
   captureMethod            String                @default("AUTOMATIC") @map("capture_method") @db.VarChar(20)
   confirmationMethod       String                @default("AUTOMATIC") @map("confirmation_method") @db.VarChar(20)
-  idempotencyKey           String?               @unique @map("idempotency_key") @db.VarChar(64)
+  idempotencyKey           String?               @map("idempotency_key") @db.VarChar(64)
   lastError                String?               @map("last_error")
   version                  Int                   @default(0)
   createdAt                DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -754,9 +784,12 @@ model PaymentIntent {
 
   property                     Property                      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
   paymentProviderConfig        PaymentProviderConfig         @relation(fields: [paymentProviderConfigId], references: [id], onDelete: Restrict)
+  folio                        Folio?                        @relation(fields: [folioId], references: [id], onDelete: Restrict)
   paymentGatewayTransaction    PaymentGatewayTransaction?
+  operations                   PaymentGatewayOperation[]
 
   @@unique([propertyId, id], name: "uq_payment_intent_property_id")
+  @@unique([propertyId, idempotencyKey], map: "uq_payment_intent_property_idempotency")
   @@index([propertyId, status], name: "idx_payment_intent_status")
   @@index([propertyId, externalId], name: "idx_payment_intent_external_id")
   @@map("payment_intents")
@@ -770,6 +803,10 @@ model PaymentGatewayTransaction {
   paymentIntentId          String?           @unique @map("payment_intent_id")
   externalId               String            @unique @map("external_id") @db.VarChar(100)
   amount                   Int               @map("amount")
+  authorizedAmount         Int               @default(0) @map("authorized_amount")
+  capturedAmount           Int               @default(0) @map("captured_amount")
+  pendingCaptureAmount     Int               @default(0) @map("pending_capture_amount")
+  pendingRefundAmount      Int               @default(0) @map("pending_refund_amount")
   currency                 String            @db.VarChar(3)
   status                   PaymentStatus     @map("status")
   description              String?           @db.Text
@@ -787,6 +824,8 @@ model PaymentGatewayTransaction {
   property                 Property              @relation(fields: [propertyId], references: [id], onDelete: Restrict)
   paymentProviderConfig    PaymentProviderConfig @relation(fields: [paymentProviderConfigId], references: [id], onDelete: Restrict)
   paymentIntent            PaymentIntent?        @relation(fields: [paymentIntentId], references: [id], onDelete: SetNull)
+  operations               PaymentGatewayOperation[]
+  adjustments              PaymentAdjustment[]
 
   @@unique([propertyId, id], name: "uq_payment_gateway_txn_property_id")
   @@index([propertyId, status], name: "idx_payment_gateway_txn_status")
@@ -805,8 +844,8 @@ model PaymentWebhook {
   processed                Boolean  @default(false)
   processedAt              DateTime? @map("processed_at") @db.Timestamptz(6)
   error                    String?  @db.Text
-  correlationId            String?  @unique @map("correlation_id") @db.VarChar(64)
-  idempotencyKey           String   @unique @map("idempotency_key") @db.VarChar(64)
+  correlationId            String?  @map("correlation_id") @db.VarChar(64)
+  idempotencyKey           String   @map("idempotency_key") @db.VarChar(64)
   version                  Int      @default(0)
   createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -816,8 +855,85 @@ model PaymentWebhook {
   paymentProviderConfig    PaymentProviderConfig @relation(fields: [paymentProviderConfigId], references: [id], onDelete: Restrict)
 
   @@unique([propertyId, id], name: "uq_payment_webhook_property_id")
+  @@unique([propertyId, paymentProviderConfigId, provider, idempotencyKey], map: "uq_payment_webhook_scoped_event")
+  @@unique([propertyId, paymentProviderConfigId, provider, eventType, correlationId], map: "uq_payment_webhook_scoped_correlation")
   @@index([paymentProviderConfigId, processedAt], name: "idx_payment_webhook_config_processed")
+  // Event and correlation identity uniqueness is scoped by property, provider config, and event type.
   @@map("payment_webhooks")
+  @@schema("platform_schema")
+}
+
+enum PaymentGatewayOperationType {
+  AUTHORIZATION
+  CAPTURE
+  REFUND
+  CANCEL
+
+  @@schema("platform_schema")
+}
+
+enum PaymentGatewayOperationState {
+  REQUESTED
+  PROVIDER_PENDING
+  PROVIDER_CONFIRMED
+  SETTLEMENT_PENDING
+  SETTLED
+  FAILED
+  REQUIRES_RECONCILIATION
+
+  @@schema("platform_schema")
+}
+
+model PaymentGatewayOperation {
+  id                       String                         @id
+  propertyId               String                         @map("property_id")
+  paymentProviderConfigId  String                         @map("payment_provider_config_id")
+  paymentIntentId          String?                        @map("payment_intent_id")
+  gatewayTransactionId     String?                        @map("gateway_transaction_id")
+  folioId                  String?                        @map("folio_id")
+  reservationId            String?                        @map("reservation_id")
+  operationType            PaymentGatewayOperationType   @map("operation_type")
+  idempotencyKey           String                         @map("idempotency_key") @db.VarChar(64)
+  requestHash              String                         @map("request_hash") @db.VarChar(64)
+  amount                   Int
+  currency                 String                         @db.VarChar(3)
+  providerIdempotencyKey   String                         @map("provider_idempotency_key") @db.VarChar(100)
+  providerReference        String?                        @map("provider_reference") @db.VarChar(100)
+  providerResult           Json?                          @map("provider_result")
+  state                    PaymentGatewayOperationState  @default(REQUESTED)
+  failureCode              String?                        @map("failure_code") @db.VarChar(64)
+  failureMessage           String?                        @map("failure_message") @db.Text
+  reconciliationReason     String?                        @map("reconciliation_reason") @db.Text
+  reason                   String?                        @db.VarChar(255)
+  actorId                  String                         @map("actor_id")
+  actorHotelGroupId        String?                        @map("actor_hotel_group_id")
+  actorSnapshot            Json                           @map("actor_snapshot")
+  originalPaymentId        String?                        @map("original_payment_id")
+  folioPaymentId           String?                        @map("folio_payment_id")
+  folioTransactionId       String?                        @map("folio_transaction_id")
+  createdAt                DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime                       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  providerStartedAt        DateTime?                      @map("provider_started_at") @db.Timestamptz(6)
+  providerConfirmedAt      DateTime?                      @map("provider_confirmed_at") @db.Timestamptz(6)
+  settledAt                DateTime?                      @map("settled_at") @db.Timestamptz(6)
+  failedAt                 DateTime?                      @map("failed_at") @db.Timestamptz(6)
+  transactionAppliedAt     DateTime?                      @map("transaction_applied_at") @db.Timestamptz(6)
+
+  property                 Property                       @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  providerConfig           PaymentProviderConfig          @relation(fields: [propertyId, paymentProviderConfigId], references: [propertyId, id], onDelete: Restrict)
+  paymentIntent            PaymentIntent?                 @relation(fields: [propertyId, paymentIntentId], references: [propertyId, id], onDelete: Restrict)
+  gatewayTransaction       PaymentGatewayTransaction?    @relation(fields: [propertyId, gatewayTransactionId], references: [propertyId, id], onDelete: Restrict)
+  folio                    Folio?                         @relation(fields: [propertyId, folioId], references: [propertyId, id], onDelete: Restrict)
+  reservation              Reservation?                   @relation(fields: [propertyId, reservationId], references: [propertyId, id], onDelete: Restrict)
+  originalPayment          Payment?                        @relation("PaymentGatewayOriginalPayment", fields: [propertyId, originalPaymentId], references: [propertyId, id], onDelete: Restrict)
+  folioPayment             Payment?                        @relation("PaymentGatewaySettlement", fields: [propertyId, folioPaymentId], references: [propertyId, id], onDelete: Restrict)
+  adjustment               PaymentAdjustment?              @relation("GatewayOperationAdjustment")
+
+  @@unique([propertyId, id], name: "uq_payment_gateway_operation_property_id")
+  @@unique([propertyId, operationType, idempotencyKey], name: "uq_payment_gateway_operation_idempotency")
+  @@index([propertyId, state, createdAt], name: "idx_payment_gateway_operation_recovery")
+  @@index([propertyId, gatewayTransactionId, operationType], name: "idx_payment_gateway_operation_transaction")
+  @@map("payment_gateway_operations")
   @@schema("platform_schema")
 }
 
@@ -1696,9 +1812,11 @@ model Reservation {
   guest          Guest                      @relation(fields: [propertyId, guestId], references: [propertyId, id], onDelete: Restrict)
   roomType       RoomType                   @relation(fields: [propertyId, roomTypeId], references: [propertyId, id], onDelete: Restrict)
   ratePlan       RatePlan                   @relation(fields: [propertyId, ratePlanId], references: [propertyId, id], onDelete: Restrict)
-  rateNights     ReservationRateNight[]
-  assignedRoom   Room?                      @relation("RoomAssignedReservations", fields: [propertyId, assignedRoomId], references: [propertyId, id], onDelete: Restrict)
-  assignmentLogs ReservationAssignmentLog[]
+  rateNights              ReservationRateNight[]
+  assignedRoom            Room?                      @relation("RoomAssignedReservations", fields: [propertyId, assignedRoomId], references: [propertyId, id], onDelete: Restrict)
+  assignmentLogs          ReservationAssignmentLog[]
+  paymentAdjustments      PaymentAdjustment[]
+  paymentGatewayOperations PaymentGatewayOperation[]
   housekeepingTasks HousekeepingTask[]
 
   @@unique([propertyId, id], name: "uq_reservations_property_id")
@@ -1875,9 +1993,13 @@ model Folio {
   closedAt       DateTime? @map("closed_at") @db.Timestamptz(6)
   closedBy       String?   @map("closed_by")
 
-  transactions FolioTransaction[]
-  payments     Payment[]
+  transactions   FolioTransaction[]
+  payments       Payment[]
+  paymentIntents PaymentIntent[]
+  adjustments    PaymentAdjustment[]
+  gatewayOperations PaymentGatewayOperation[]
 
+  @@unique([propertyId, id], name: "uq_folio_property_id")
   @@unique([propertyId, reservationId, folioNumber], name: "uq_folio_property_res_number")
   @@unique([propertyId, idempotencyKey], name: "uq_folio_property_idempotency")
   @@index([propertyId, reservationId], name: "idx_folio_property_reservation")
@@ -1906,6 +2028,7 @@ model FolioTransaction {
 
   folio Folio @relation(fields: [folioId], references: [id], onDelete: Restrict)
 
+  @@unique([propertyId, id], name: "uq_folio_transaction_property_id")
   @@unique([propertyId, idempotencyKey], name: "uq_folio_tx_property_idempotency")
   @@index([propertyId, folioId], name: "idx_folio_tx_property_folio")
   @@index([folioId, postedAt], name: "idx_folio_tx_folio_posted")
@@ -1932,10 +2055,44 @@ model Payment {
   processedBy     String   @map("processed_by")
 
   folio Folio @relation(fields: [folioId], references: [id], onDelete: Restrict)
+  adjustments PaymentAdjustment[]
+  gatewayOriginalFor PaymentGatewayOperation[] @relation("PaymentGatewayOriginalPayment")
+  gatewaySettlements PaymentGatewayOperation[] @relation("PaymentGatewaySettlement")
 
+  @@unique([propertyId, id], name: "uq_payment_property_id")
   @@unique([propertyId, idempotencyKey], name: "uq_payment_property_idempotency")
   @@index([propertyId, folioId], name: "idx_payment_property_folio")
   @@map("payments")
+  @@schema("finance_schema")
+}
+
+model PaymentAdjustment {
+  id                  String   @id
+  propertyId          String   @map("property_id")
+  folioId             String   @map("folio_id")
+  reservationId       String   @map("reservation_id")
+  originalPaymentId   String   @map("original_payment_id")
+  gatewayTransactionId String  @map("gateway_transaction_id")
+  refundOperationId   String   @map("refund_operation_id")
+  currency            String   @db.VarChar(3)
+  amount              Decimal  @db.Decimal(12, 4)
+  reason              String   @db.VarChar(255)
+  idempotencyKey      String   @map("idempotency_key") @db.VarChar(64)
+  actorId             String   @map("actor_id")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  property          Property                    @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  folio             Folio                       @relation(fields: [propertyId, folioId], references: [propertyId, id], onDelete: Restrict)
+  reservation       Reservation                 @relation(fields: [propertyId, reservationId], references: [propertyId, id], onDelete: Restrict)
+  originalPayment   Payment                     @relation(fields: [propertyId, originalPaymentId], references: [propertyId, id], onDelete: Restrict)
+  gatewayTransaction PaymentGatewayTransaction @relation(fields: [propertyId, gatewayTransactionId], references: [propertyId, id], onDelete: Restrict)
+  refundOperation   PaymentGatewayOperation     @relation("GatewayOperationAdjustment", fields: [propertyId, refundOperationId], references: [propertyId, id], onDelete: Restrict)
+
+  @@unique([propertyId, id], name: "uq_payment_adjustment_property_id")
+  @@unique([propertyId, idempotencyKey], name: "uq_payment_adjustment_idempotency")
+  @@unique([propertyId, refundOperationId], name: "uq_payment_adjustment_refund_operation")
+  @@index([propertyId, folioId, createdAt], name: "idx_payment_adjustment_folio")
+  @@map("payment_adjustments")
   @@schema("finance_schema")
 }
 

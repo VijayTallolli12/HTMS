@@ -1,0 +1,111 @@
+<div class="channel-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">DISTRIBUTION · SIMULATED</p>
+      <h1>Channel Manager</h1>
+      <p class="subtitle">Map property inventory and rates, then exercise channel workflows with a safe local demo adapter.</p>
+    </div>
+    <span class="demo-badge">DEMO ONLY · NO LIVE OTAs</span>
+  </header>
+
+  <div class="demo-notice" role="note">
+    Booking.com, Airbnb, and Expedia are not connected. All channel actions below are simulated by the explicitly labelled DEMO adapter.
+  </div>
+
+  <div class="alert alert-error" *ngIf="errorMessage()" role="alert">{{ errorMessage() }}</div>
+  <div class="alert alert-success" *ngIf="notice()" role="status">{{ notice() }}</div>
+
+  <div class="channel-layout">
+    <aside class="panel channel-list">
+      <div class="panel-heading">
+        <div><h2>Demo channels</h2><span>{{ configs().length }} configured</span></div>
+        <button class="button secondary" *ngIf="canCreate" (click)="startNewConfig()">New</button>
+      </div>
+      <div class="loading" *ngIf="isLoading()">Loading channel data…</div>
+      <button class="channel-row" *ngFor="let channel of configs()" [class.selected]="selectedId() === channel.id" (click)="selectConfig(channel)">
+        <span class="channel-icon">D</span>
+        <span class="channel-meta"><strong>{{ channel.name }}</strong><small>DEMO · {{ channel.enabled ? 'Enabled' : 'Disabled' }}</small></span>
+        <span class="status-dot" [class.off]="!channel.enabled"></span>
+      </button>
+      <div class="empty" *ngIf="!isLoading() && configs().length === 0">No demo channel configured.<br />Create one to begin.</div>
+      <div class="integration-notice"><strong>Live providers unavailable</strong><br />No provider credentials are requested or stored. A real OTA integration is not implied.</div>
+    </aside>
+
+    <main class="main-column">
+      <section class="panel" *ngIf="canViewChannels">
+        <div class="panel-heading"><div><p class="eyebrow">01 · CONNECTION STATE</p><h2>{{ selectedConfig() ? 'Demo property connection' : 'Configure demo channel' }}</h2></div>
+          <span class="status-pill" [class.inactive]="selectedConfig() && !selectedConfig()?.enabled">{{ selectedConfig()?.enabled ? 'DEMO CONNECTED' : (selectedConfig() ? 'DISABLED' : 'NOT CONFIGURED') }}</span>
+        </div>
+        <div class="form-grid">
+          <label>Channel name<input [(ngModel)]="form.name" [disabled]="!canManage" placeholder="DEMO Channel" /></label>
+          <label>Mapped property ID<input [(ngModel)]="form.externalPropertyId" [disabled]="!canManage" placeholder="DEMO-PROPERTY-001" /></label>
+        </div>
+        <div class="form-actions" *ngIf="canManage">
+          <button class="button primary" (click)="saveConfig()" [disabled]="isSaving() || !form.externalPropertyId.trim()">{{ isSaving() ? 'Saving…' : (selectedConfig() ? 'Save configuration' : 'Create DEMO channel') }}</button>
+          <button class="button secondary" *ngIf="selectedConfig() && hasPermission('channel:update')" (click)="toggleEnabled()">{{ selectedConfig()?.enabled ? 'Disable' : 'Enable' }}</button>
+          <button class="button danger" *ngIf="selectedConfig() && canDelete" (click)="deleteConfig()">Remove</button>
+        </div>
+      </section>
+
+      <section class="panel" *ngIf="selectedConfig()">
+        <div class="panel-heading"><div><p class="eyebrow">02 · INVENTORY MAPPING</p><h2>Room type mapping</h2></div><button class="button secondary" *ngIf="canManage" (click)="addRoomMapping()">Add room</button></div>
+        <p class="help">Map each HMS room type to a demo external code. Availability will be read from the PMS inventory ledger.</p>
+        <div class="mapping-row mapping-header"><span>HMS room type</span><span>DEMO external room code</span><span></span></div>
+        <div class="mapping-row" *ngFor="let mapping of form.roomMappings; let i = index">
+          <select [(ngModel)]="mapping.roomTypeId" [disabled]="!canManage"><option value="">Select room type</option><option *ngFor="let room of roomTypes()" [value]="room.id">{{ room.code }} · {{ room.name }}</option></select>
+          <input [(ngModel)]="mapping.externalRoomTypeCode" [disabled]="!canManage" placeholder="DEMO-ROOM-01" />
+          <button class="icon-button" *ngIf="canManage" (click)="removeRoomMapping(i)" aria-label="Remove room mapping">×</button>
+        </div>
+        <div class="empty compact" *ngIf="form.roomMappings.length === 0">Add at least one room mapping for reservation ingestion and availability sync.</div>
+      </section>
+
+      <section class="panel" *ngIf="selectedConfig()">
+        <div class="panel-heading"><div><p class="eyebrow">03 · COMMERCIAL MAPPING</p><h2>Rate plan mapping</h2></div><button class="button secondary" *ngIf="canManage" (click)="addRateMapping()">Add rate plan</button></div>
+        <p class="help">Rate updates use the PMS daily rates and mapped room/rate-plan combinations.</p>
+        <div class="mapping-row mapping-header"><span>HMS rate plan</span><span>DEMO external rate code</span><span></span></div>
+        <div class="mapping-row" *ngFor="let mapping of form.rateMappings; let i = index">
+          <select [(ngModel)]="mapping.ratePlanId" [disabled]="!canManage"><option value="">Select rate plan</option><option *ngFor="let rate of ratePlans()" [value]="rate.id">{{ rate.code }} · {{ rate.name }}</option></select>
+          <input [(ngModel)]="mapping.externalRatePlanCode" [disabled]="!canManage" placeholder="DEMO-BAR" />
+          <button class="icon-button" *ngIf="canManage" (click)="removeRateMapping(i)" aria-label="Remove rate mapping">×</button>
+        </div>
+        <div class="empty compact" *ngIf="form.rateMappings.length === 0">Add at least one rate mapping for rate sync and reservation ingestion.</div>
+      </section>
+
+      <section class="panel" *ngIf="selectedConfig()">
+        <div class="panel-heading"><div><p class="eyebrow">04 · OUTBOUND SIMULATION</p><h2>Availability & rate sync</h2></div><span class="demo-badge small">SIMULATED</span></div>
+        <div class="form-grid">
+          <label>Start date<input type="date" [(ngModel)]="syncStartDate" /></label>
+          <label>End date<input type="date" [(ngModel)]="syncEndDate" /></label>
+        </div>
+        <label class="checkbox-line"><input type="checkbox" [(ngModel)]="simulateTransientFailure" [disabled]="simulatePermanentFailure" /> Simulate transient failure once, then retry successfully</label>
+        <label class="checkbox-line"><input type="checkbox" [(ngModel)]="simulatePermanentFailure" [disabled]="simulateTransientFailure" /> Simulate persistent failure to exercise manual retry</label>
+        <button class="button primary" (click)="sync()" [disabled]="!selectedConfig()?.enabled || !canSync || isSyncing()">{{ isSyncing() ? 'Syncing demo data…' : 'Sync availability & rates' }}</button>
+      </section>
+
+      <section class="panel" *ngIf="selectedConfig()">
+        <div class="panel-heading"><div><p class="eyebrow">05 · INBOUND SIMULATION</p><h2>Ingest a demo reservation</h2></div><span class="demo-badge small">DEMO FIXTURE</span></div>
+        <p class="help">Creates a real PMS reservation using the mapped room/rate plan and the normal inventory/idempotency path. Submit an existing external ID again to demonstrate safe deduplication.</p>
+        <div class="form-grid three-col">
+          <label>External reservation ID<input [(ngModel)]="fixtureExternalId" /></label>
+          <label>Arrival<input type="date" [(ngModel)]="fixtureArrivalDate" /></label>
+          <label>Departure<input type="date" [(ngModel)]="fixtureDepartureDate" /></label>
+          <label>Guest first name<input [(ngModel)]="fixtureGuestFirstName" /></label>
+          <label>Guest last name<input [(ngModel)]="fixtureGuestLastName" /></label>
+          <label>Adults<input type="number" min="1" [(ngModel)]="fixtureAdults" /></label>
+        </div>
+        <button class="button primary" (click)="ingestReservation()" [disabled]="!selectedConfig()?.enabled || !canSync || !form.roomMappings.length || !form.rateMappings.length">Ingest DEMO reservation</button>
+      </section>
+
+      <section class="panel" *ngIf="selectedConfig()">
+        <div class="panel-heading"><div><p class="eyebrow">06 · OPERATIONS</p><h2>Sync logs</h2></div><button class="button secondary" (click)="loadLogs()" [disabled]="!selectedConfig()">Refresh</button></div>
+        <div class="empty compact" *ngIf="logs().length === 0">No sync attempts for this demo channel yet.</div>
+        <div class="log-list" *ngIf="logs().length">
+          <div class="log-row" *ngFor="let log of logs()">
+            <div class="log-main"><span class="sync-type">{{ log.syncType.replace('_', ' ') }}</span><span class="status-pill" [ngClass]="log.status.toLowerCase()">{{ log.status }}</span><small>{{ log.startedAt | date:'medium' }} · attempt {{ log.attemptCount }}</small><small class="error-text" *ngIf="log.errorMessage">{{ log.errorMessage }}</small></div>
+            <div class="log-actions"><span>{{ log.recordsProcessed }} processed / {{ log.recordsFailed }} failed</span><button class="button secondary small-button" *ngIf="log.status === 'FAILED' && canSync" (click)="retry(log)">Retry</button></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>

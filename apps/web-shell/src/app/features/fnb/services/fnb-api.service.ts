@@ -9,6 +9,7 @@ import {
   FnbOrderDto,
   CreateOrderDto,
   AddOrderItemDto,
+  UpdateMenuCategoryDto,
   UpdateOrderStatusDto,
   CloseOrderDto,
   TableStatus,
@@ -87,18 +88,18 @@ export class FnbApiService {
   // -------------------------------------------------------------
   getCategories(propertyId: string, outletId: string) {
     return this.http.get<ApiSuccessResponse<MenuCategoryDto[]>>(
-      `${this.fnbUrl(propertyId)}/outlets/${outletId}/categories`,
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/categories`,
     );
   }
 
-  createCategory(propertyId: string, outletId: string, dto: { name: string; description?: string; displayOrder?: number }) {
+  createCategory(propertyId: string, outletId: string, dto: { code: string; name: string; displayOrder?: number }) {
     return this.http.post<ApiSuccessResponse<MenuCategoryDto>>(
       `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/categories`,
       dto,
     );
   }
 
-  updateCategory(propertyId: string, outletId: string, categoryId: string, dto: { name?: string; description?: string; displayOrder?: number }) {
+  updateCategory(propertyId: string, outletId: string, categoryId: string, dto: UpdateMenuCategoryDto) {
     return this.http.patch<ApiSuccessResponse<MenuCategoryDto>>(
       `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/categories/${categoryId}`,
       dto,
@@ -107,8 +108,8 @@ export class FnbApiService {
 
   getItems(propertyId: string, outletId: string, categoryId?: string) {
     const url = categoryId
-      ? `${this.fnbUrl(propertyId)}/outlets/${outletId}/items?categoryId=${categoryId}`
-      : `${this.fnbUrl(propertyId)}/outlets/${outletId}/items`;
+      ? `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items?categoryId=${categoryId}`
+      : `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items`;
     return this.http.get<ApiSuccessResponse<MenuItemDto[]>>(url);
   }
 

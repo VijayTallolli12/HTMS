@@ -819,7 +819,59 @@ export const CANONICAL_PERMISSIONS: PermissionDefinition[] = [
     "name": "View Payslips",
     "description": "View individual employee payslips",
     "module": "PAYROLL"
-  }
+  },
+  {
+    "code": "channel:read",
+    "name": "View Channel Manager",
+    "description": "View demo channel state, mappings, and sync logs",
+    "module": "CHANNEL_MANAGER"
+  },
+  {
+    "code": "channel:create",
+    "name": "Configure Demo Channel",
+    "description": "Create explicitly labelled demo channel configurations",
+    "module": "CHANNEL_MANAGER"
+  },
+  {
+    "code": "channel:update",
+    "name": "Update Demo Channel",
+    "description": "Update demo property, room, and rate mappings",
+    "module": "CHANNEL_MANAGER"
+  },
+  {
+    "code": "channel:delete",
+    "name": "Delete Demo Channel",
+    "description": "Disable and remove demo channel configurations",
+    "module": "CHANNEL_MANAGER"
+  },
+  {
+    "code": "channel:sync",
+    "name": "Run Demo Channel Sync",
+    "description": "Ingest demo reservations and run or retry simulated syncs",
+    "module": "CHANNEL_MANAGER"
+  },
+  {
+    "code": "channel:reconcile",
+    "name": "Reconcile Demo Channel",
+    "description": "Reconcile demo channel reservation records",
+    "module": "CHANNEL_MANAGER"
+  },
+  { "code": "payment_gateway:view", "name": "View Payment Gateways", "description": "View property gateway catalog and configuration", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment_gateway:configure", "name": "Configure Payment Gateways", "description": "Configure property gateway credentials and methods", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment_gateway:test", "name": "Test Payment Gateway", "description": "Test the registered property gateway adapter", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment_gateway:enable", "name": "Enable Payment Gateway", "description": "Enable a verified adapter for a property", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment_gateway:disable", "name": "Disable Payment Gateway", "description": "Disable a property gateway", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment:intent:create", "name": "Create Payment Intent", "description": "Create a property payment intent", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment:authorize", "name": "Authorize Payment", "description": "Authorize an enabled gateway payment", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment:capture", "name": "Capture Payment", "description": "Capture an authorized gateway payment", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment:cancel", "name": "Cancel Payment Intent", "description": "Cancel an open gateway payment intent", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment:reconcile", "name": "Reconcile Gateway Payments", "description": "Generate property reconciliation reports", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment:read", "name": "View Gateway Payments", "description": "Read property gateway configuration and payments", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment:create", "name": "Create Gateway Configuration", "description": "Create property gateway configurations", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment:update", "name": "Update Gateway Configuration", "description": "Update property gateway configurations", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment:delete", "name": "Delete Gateway Configuration", "description": "Delete property gateway configurations", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment:refund", "name": "Refund Gateway Payment", "description": "Refund property gateway payments", "module": "PAYMENT_GATEWAY" },
+  { "code": "payment:webhook", "name": "Receive Gateway Webhook", "description": "Receive cryptographically verified provider callbacks", "module": "PAYMENT_GATEWAY" }
 ];
 
 export const CANONICAL_ROLE_PERMISSIONS: Array<{ roleCode: string; permCodes: string[] }> = [
@@ -833,7 +885,9 @@ export const CANONICAL_ROLE_PERMISSIONS: Array<{ roleCode: string; permCodes: st
       "organization.country.manage",
       "organization.property.manage",
       "organization.building.manage",
-      "organization.floor.manage"
+      "organization.floor.manage",
+      "channel:read",
+      "payment_gateway:view"
     ]
   },
   {
@@ -961,7 +1015,29 @@ export const CANONICAL_ROLE_PERMISSIONS: Array<{ roleCode: string; permCodes: st
       "payroll.run.view",
       "payroll.run.process",
       "payroll.run.finalize",
-      "payroll.payslip.view"
+      "payroll.payslip.view",
+      "channel:read",
+      "channel:create",
+      "channel:update",
+      "channel:delete",
+      "channel:sync",
+      "channel:reconcile",
+      "payment_gateway:view",
+      "payment_gateway:configure",
+      "payment_gateway:test",
+      "payment_gateway:enable",
+      "payment_gateway:disable",
+      "payment:intent:create",
+      "payment:authorize",
+      "payment:capture",
+      "payment:cancel",
+      "payment:reconcile",
+      "payment:read",
+      "payment:create",
+      "payment:update",
+      "payment:delete",
+      "payment:refund",
+      "payment:webhook"
     ]
   },
   {
@@ -1061,7 +1137,29 @@ export const CANONICAL_ROLE_PERMISSIONS: Array<{ roleCode: string; permCodes: st
       "payroll.run.finalize",
       "payroll.payslip.view",
       "organization.building.manage",
-      "organization.floor.manage"
+      "organization.floor.manage",
+      "channel:read",
+      "channel:create",
+      "channel:update",
+      "channel:delete",
+      "channel:sync",
+      "channel:reconcile",
+      "payment_gateway:view",
+      "payment_gateway:configure",
+      "payment_gateway:test",
+      "payment_gateway:enable",
+      "payment_gateway:disable",
+      "payment:intent:create",
+      "payment:authorize",
+      "payment:capture",
+      "payment:cancel",
+      "payment:reconcile",
+      "payment:read",
+      "payment:create",
+      "payment:update",
+      "payment:delete",
+      "payment:refund",
+      "payment:webhook"
     ]
   },
   {

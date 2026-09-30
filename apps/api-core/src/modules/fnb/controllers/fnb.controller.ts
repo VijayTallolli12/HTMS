@@ -43,6 +43,7 @@ import {
   CreateTableDto,
   UpdateTableStatusDto,
   CreateMenuCategoryDto,
+  UpdateMenuCategoryDto,
   CreateMenuItemDto,
   CreateOrderDto,
   AddOrderItemDto,
@@ -172,6 +173,20 @@ export class FnbController {
     @Req() req?: Request,
   ): Promise<ApiSuccessResponse<MenuCategoryDto>> {
     const data = await this.menuService.createCategory(propertyId, outletId, dto);
+    return createApiResponse(data, req);
+  }
+
+  @Patch('outlets/:outletId/menu/categories/:categoryId')
+  @RequirePermissions('fnb.menu.manage')
+  @ApiOperation({ summary: 'Update a menu category' })
+  async updateMenuCategory(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Param('categoryId') categoryId: string,
+    @Body() dto: UpdateMenuCategoryDto,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<MenuCategoryDto>> {
+    const data = await this.menuService.updateCategory(propertyId, outletId, categoryId, dto);
     return createApiResponse(data, req);
   }
 
@@ -343,6 +358,25 @@ export class FnbController {
   }
 
   // ----------------------------------------------------------------------
+  // Menu Item Search (MUST be declared before :itemId — route shadowing)
+  // ----------------------------------------------------------------------
+  @Get('outlets/:outletId/menu/items/search')
+  @RequirePermissions('fnb.menu.view')
+  @ApiOperation({ summary: 'Search menu items with pagination' })
+  async searchMenuItems(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId') outletId: string,
+    @Query() query: QueryMenuItemsDto,
+    @Req() req?: Request,
+  ) {
+    const data = await this.menuService.findMenuItemsPaginated(propertyId, {
+      ...query,
+      outletId,
+    });
+    return createApiResponse(data, req);
+  }
+
+  // ----------------------------------------------------------------------
   // Menu Item Detail (with variants and modifiers)
   // ----------------------------------------------------------------------
   @Get('outlets/:outletId/menu/items/:itemId')
@@ -400,22 +434,6 @@ export class FnbController {
     @Req() req?: Request,
   ): Promise<ApiSuccessResponse<MenuItemPriceDto>> {
     const data = await this.menuService.updateMenuItemPrice(propertyId, outletId, itemId, dto);
-    return createApiResponse(data, req);
-  }
-
-  @Get('outlets/:outletId/menu/items/search')
-  @RequirePermissions('fnb.menu.view')
-  @ApiOperation({ summary: 'Search menu items with pagination' })
-  async searchMenuItems(
-    @Param('propertyId', ParseUUIDPipe) propertyId: string,
-    @Param('outletId') outletId: string,
-    @Query() query: QueryMenuItemsDto,
-    @Req() req?: Request,
-  ) {
-    const data = await this.menuService.findMenuItemsPaginated(propertyId, {
-      ...query,
-      outletId,
-    });
     return createApiResponse(data, req);
   }
 

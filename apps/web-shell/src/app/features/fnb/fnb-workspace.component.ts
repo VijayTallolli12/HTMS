@@ -1,6 +1,5 @@
 import {
   Component,
-  OnInit,
   inject,
   signal,
   computed,
@@ -17,6 +16,7 @@ import {
 } from './services/fnb-api.service';
 import {
   OutletDto,
+  CreateMenuCategoryDto,
   RestaurantTableDto,
   MenuCategoryDto,
   MenuItemDto,
@@ -50,6 +50,7 @@ import {
   HmsLoadingComponent,
   HmsEmptyComponent,
 } from '../../shared/index';
+import { formatMoney } from '../../shared/utils/currency';
 
 type ActiveViewTab = 'tables' | 'kitchen' | 'menu' | 'catalog' | 'pricing' | 'outlets';
 
@@ -70,7 +71,7 @@ type ActiveViewTab = 'tables' | 'kitchen' | 'menu' | 'catalog' | 'pricing' | 'ou
   templateUrl: './fnb-workspace.component.html',
   styleUrls: ['./fnb-workspace.component.css'],
 })
-export class FnbWorkspaceComponent implements OnInit {
+export class FnbWorkspaceComponent {
   private readonly orgService = inject(OrganizationService);
   private readonly authService = inject(AuthService);
   private readonly fnbApi = inject(FnbApiService);
@@ -86,11 +87,20 @@ export class FnbWorkspaceComponent implements OnInit {
   successMessage = signal<string | null>(null);
 
   // Outlets
+  private outletPropertyId: string | null = null;
+  private outletLoadRequestId = 0;
   outlets = signal<OutletDto[]>([]);
+  propertyOutlets = computed(() => {
+    const propertyId = this.activeProperty()?.id;
+    return this.outlets().filter((outlet) => outlet.propertyId === propertyId);
+  });
   selectedOutletId = signal<string | null>(null);
-  selectedOutlet = computed(() =>
-    this.outlets().find((o) => o.id === this.selectedOutletId()) || null,
-  );
+  selectedOutlet = computed(() => {
+    const propertyId = this.activeProperty()?.id;
+    return this.outlets().find((outlet) =>
+      outlet.id === this.selectedOutletId() && outlet.propertyId === propertyId,
+    ) || null;
+  });
 
   // Tables
   tables = signal<RestaurantTableDto[]>([]);
@@ -177,14 +187,14 @@ export class FnbWorkspaceComponent implements OnInit {
   showCategoryModal = signal<boolean>(false);
   categoryFormMode = signal<'create' | 'edit'>('create');
   categoryEditingId = signal<string | null>(null);
-  categoryForm = signal<{ name?: string; description?: string; displayOrder?: number }>({});
+  categoryForm = signal<{ name?: string; displayOrder?: number }>({});
 
   // W4: item create needs an explicit category selection
   itemFormCategoryId = signal<string>('');
 
   // W4: template-safe field setters (Angular templates cannot use spread)
-  setCategoryField(field: 'name' | 'description' | 'displayOrder', value: unknown): void {
-    this.categoryForm.set({ ...this.categoryForm(), [field]: value } as { name?: string; description?: string; displayOrder?: number });
+  setCategoryField(field: 'name' | 'displayOrder', value: unknown): void {
+    this.categoryForm.set({ ...this.categoryForm(), [field]: value } as { name?: string; displayOrder?: number });
   }
 
   setCatalogField(field: string, value: unknown): void {
@@ -224,55 +234,111 @@ export class FnbWorkspaceComponent implements OnInit {
         if (prop?.id) {
           this.loadOutlets(prop.id);
           this.loadInHouseGuests(prop.id);
+        } else {
+          this.outletLoadRequestId += 1;
+          this.outletPropertyId = null;
+          this.outlets.set([]);
+          this.selectedOutletId.set(null);
+          this.inHouseGuests.set([]);
+          this.clearOutletData();
         }
       },
       { allowSignalWrites: true },
     );
   }
 
-  ngOnInit(): void {
-    const prop = this.activeProperty();
-    if (prop?.id) {
-      this.loadOutlets(prop.id);
-      this.loadInHouseGuests(prop.id);
-    }
-  }
-
   // -------------------------------------------------------------
   // Data Loading
   // -------------------------------------------------------------
   loadOutlets(propertyId: string): void {
+    const propertyChanged = this.outletPropertyId !== propertyId;
+    this.outletPropertyId = propertyId;
+    const requestId = ++this.outletLoadRequestId;
     this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    if (propertyChanged) {
+      this.selectedOutletId.set(null);
+      this.outlets.set([]);
+      this.inHouseGuests.set([]);
+      this.clearOutletData();
+    }
+
     this.fnbApi.getOutlets(propertyId).subscribe({
       next: (res) => {
-        const data = res.data || [];
+        if (requestId !== this.outletLoadRequestId || this.activeProperty()?.id !== propertyId) return;
+
+        // Keep the client boundary aligned with the API's property-scoped outlet query.
+        const data = (res.data || [])
+          .filter((outlet) => outlet.propertyId === propertyId)
+          .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+        const selected = data.find((outlet) => outlet.id === this.selectedOutletId()) || data[0] || null;
         this.outlets.set(data);
-        if (data.length > 0 && !this.selectedOutletId()) {
-          this.selectedOutletId.set(data[0].id);
-          this.loadOutletDetails(propertyId, data[0].id);
-        }
+        this.selectedOutletId.set(selected?.id || null);
         this.isLoading.set(false);
+
+        if (selected) {
+          this.loadOutletDetails(propertyId, selected.id);
+          this.loadCatalog(propertyId, selected.id);
+          this.loadPricing(propertyId, selected.id);
+          this.loadCatalogCategories(propertyId, selected.id);
+        } else {
+          this.clearOutletData();
+        }
       },
       error: (err) => {
-        this.errorMessage.set(
-          err?.error?.message || 'Failed to load restaurant outlets',
-        );
+        if (requestId !== this.outletLoadRequestId || this.activeProperty()?.id !== propertyId) return;
+        this.outlets.set([]);
+        this.selectedOutletId.set(null);
+        this.clearOutletData();
+        this.errorMessage.set(err?.error?.message || 'Failed to load restaurant outlets');
         this.isLoading.set(false);
       },
     });
   }
 
-  onOutletChange(outletId: string): void {
-    this.selectedOutletId.set(outletId);
+  private clearOutletData(): void {
+    this.tables.set([]);
     this.selectedTable.set(null);
     this.activeOrder.set(null);
-    const prop = this.activeProperty();
-    if (prop?.id && outletId) {
-      this.loadOutletDetails(prop.id, outletId);
-      this.loadCatalog(prop.id, outletId);
-      this.loadPricing(prop.id, outletId);
-      this.loadCatalogCategories(prop.id, outletId);
-    }
+    this.categories.set([]);
+    this.menuItems.set([]);
+    this.kitchenOrders.set([]);
+    this.catalogItems.set([]);
+    this.catalogCategories.set([]);
+    this.catalogTotal.set(0);
+    this.catalogPage.set(1);
+    this.catalogSelectedItem.set(null);
+    this.showCatalogItemDrawer.set(false);
+    this.selectedCategoryId.set('ALL');
+    this.pricingItems.set([]);
+    this.pricingTotal.set(0);
+    this.pricingPage.set(1);
+    this.pricingSelectedItem.set(null);
+    this.showPriceEditDrawer.set(false);
+    this.isLoadingCatalog.set(false);
+    this.isLoadingPricing.set(false);
+  }
+
+  private isCurrentOutletContext(propertyId: string, outletId: string): boolean {
+    const outlet = this.selectedOutlet();
+    return this.activeProperty()?.id === propertyId
+      && this.outletPropertyId === propertyId
+      && outlet?.id === outletId
+      && outlet.propertyId === propertyId;
+  }
+
+  onOutletChange(outletId: string): void {
+    const propertyId = this.activeProperty()?.id;
+    const outlet = this.outlets().find((item) => item.id === outletId);
+    if (!propertyId || !outlet || outlet.propertyId !== propertyId) return;
+
+    this.selectedOutletId.set(outletId);
+    this.clearOutletData();
+    this.loadOutletDetails(propertyId, outletId);
+    this.loadCatalog(propertyId, outletId);
+    this.loadPricing(propertyId, outletId);
+    this.loadCatalogCategories(propertyId, outletId);
   }
 
   loadOutletDetails(propertyId: string, outletId: string): void {
@@ -284,12 +350,12 @@ export class FnbWorkspaceComponent implements OnInit {
   loadTables(propertyId: string, outletId: string): void {
     this.fnbApi.getTables(propertyId, outletId).subscribe({
       next: (res) => {
-        this.tables.set(res.data || []);
+        if (this.isCurrentOutletContext(propertyId, outletId)) this.tables.set(res.data || []);
       },
       error: (err) => {
-        this.errorMessage.set(
-          err?.error?.message || 'Failed to load restaurant tables',
-        );
+        if (this.isCurrentOutletContext(propertyId, outletId)) {
+          this.errorMessage.set(err?.error?.message || 'Failed to load restaurant tables');
+        }
       },
     });
   }
@@ -297,13 +363,13 @@ export class FnbWorkspaceComponent implements OnInit {
   loadMenu(propertyId: string, outletId: string): void {
     this.fnbApi.getCategories(propertyId, outletId).subscribe({
       next: (res) => {
-        this.categories.set(res.data || []);
+        if (this.isCurrentOutletContext(propertyId, outletId)) this.categories.set(res.data || []);
       },
     });
 
     this.fnbApi.getItems(propertyId, outletId).subscribe({
       next: (res) => {
-        this.menuItems.set(res.data || []);
+        if (this.isCurrentOutletContext(propertyId, outletId)) this.menuItems.set(res.data || []);
       },
     });
   }
@@ -312,11 +378,12 @@ export class FnbWorkspaceComponent implements OnInit {
     this.isLoadingGuests.set(true);
     this.fnbApi.getInHouseGuests(propertyId).subscribe({
       next: (res) => {
+        if (this.activeProperty()?.id !== propertyId) return;
         this.inHouseGuests.set(res.data || []);
         this.isLoadingGuests.set(false);
       },
       error: () => {
-        this.isLoadingGuests.set(false);
+        if (this.activeProperty()?.id === propertyId) this.isLoadingGuests.set(false);
       },
     });
   }
@@ -327,7 +394,7 @@ export class FnbWorkspaceComponent implements OnInit {
         const active = (res.data || []).filter(
           (o) => o.status !== 'CLOSED' && o.status !== 'CANCELLED',
         );
-        this.kitchenOrders.set(active);
+        if (this.isCurrentOutletContext(propertyId, outletId)) this.kitchenOrders.set(active);
       },
     });
   }
@@ -617,12 +684,9 @@ export class FnbWorkspaceComponent implements OnInit {
     }
   }
 
-  formatPrice(price: string | number, currency = 'JPY'): string {
-    const num = Number(price) || 0;
-    if (currency === 'JPY') {
-      return `¥${num.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}`;
-    }
-    return `$${num.toFixed(2)}`;
+  formatPrice(price: string | number, currency?: string): string {
+    // Currency always follows the active property context — never a hardcoded default.
+    return formatMoney(Number(price) || 0, currency || this.activeProperty()?.currency || '');
   }
 
   // ================================================================
@@ -642,12 +706,14 @@ export class FnbWorkspaceComponent implements OnInit {
 
     this.fnbApi.searchMenuItems(propertyId, outletId, query).subscribe({
       next: (res) => {
+        if (!this.isCurrentOutletContext(propertyId, outletId)) return;
         this.catalogItems.set(res.data.items);
         this.catalogTotal.set(res.data.total);
         this.catalogPage.set(res.data.page);
         this.isLoadingCatalog.set(false);
       },
       error: (err) => {
+        if (!this.isCurrentOutletContext(propertyId, outletId)) return;
         this.errorMessage.set(err?.error?.message || 'Failed to load catalog');
         this.isLoadingCatalog.set(false);
       },
@@ -657,7 +723,7 @@ export class FnbWorkspaceComponent implements OnInit {
   loadCatalogCategories(propertyId: string, outletId: string): void {
     this.fnbApi.getCategories(propertyId, outletId).subscribe({
       next: (res) => {
-        this.catalogCategories.set(res.data || []);
+        if (this.isCurrentOutletContext(propertyId, outletId)) this.catalogCategories.set(res.data || []);
       },
     });
   }
@@ -670,11 +736,13 @@ export class FnbWorkspaceComponent implements OnInit {
     this.isLoadingCatalog.set(true);
     this.fnbApi.getMenuItemDetail(propertyId, outletId, item.id).subscribe({
       next: (res) => {
+        if (!this.isCurrentOutletContext(propertyId, outletId)) return;
         this.catalogSelectedItem.set(res.data);
         this.showCatalogItemDrawer.set(true);
         this.isLoadingCatalog.set(false);
       },
       error: (err) => {
+        if (!this.isCurrentOutletContext(propertyId, outletId)) return;
         this.errorMessage.set(err?.error?.message || 'Failed to load item details');
         this.isLoadingCatalog.set(false);
       },
@@ -715,12 +783,14 @@ export class FnbWorkspaceComponent implements OnInit {
       this.fnbApi.updateMenuItem(propertyId, outletId, item.id, this.catalogForm()).subscribe({
         next: (res) => {
           this.isSubmitting.set(false);
+          if (!this.isCurrentOutletContext(propertyId, outletId)) return;
           this.loadCatalog(propertyId, outletId, this.catalogPage());
           this.closeCatalogItemDrawer();
           this.successMessage.set('Menu item updated');
         },
         error: (err) => {
           this.isSubmitting.set(false);
+          if (!this.isCurrentOutletContext(propertyId, outletId)) return;
           this.errorMessage.set(err?.error?.message || 'Failed to update menu item');
         },
       });
@@ -769,6 +839,8 @@ export class FnbWorkspaceComponent implements OnInit {
     this.categoryFormMode.set('create');
     this.categoryEditingId.set(null);
     this.categoryForm.set({ displayOrder: (this.catalogCategories().length || 0) + 1 });
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
     this.showCategoryModal.set(true);
   }
 
@@ -776,6 +848,8 @@ export class FnbWorkspaceComponent implements OnInit {
     this.categoryFormMode.set('edit');
     this.categoryEditingId.set(cat.id);
     this.categoryForm.set({ name: cat.name, displayOrder: cat.displayOrder });
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
     this.showCategoryModal.set(true);
   }
 
@@ -784,23 +858,39 @@ export class FnbWorkspaceComponent implements OnInit {
     const outletId = this.selectedOutletId();
     if (!propertyId || !outletId) return;
     const form = this.categoryForm();
-    if (!form.name) return;
+    const name = form.name?.trim();
+    if (!name || name.length > 100) {
+      this.errorMessage.set('Category name is required and must be 100 characters or fewer');
+      return;
+    }
 
     this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    const code = this.categoryFormMode() === 'create'
+      ? name.toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || `CATEGORY-${Date.now()}`
+      : undefined;
+    const displayOrder = form.displayOrder === undefined ? 0 : Number(form.displayOrder);
+    if (!Number.isInteger(displayOrder) || displayOrder < 0) {
+      this.isSubmitting.set(false);
+      this.errorMessage.set('Display order must be a non-negative whole number');
+      return;
+    }
     const call = this.categoryFormMode() === 'create'
-      ? this.fnbApi.createCategory(propertyId, outletId, { name: form.name, description: form.description, displayOrder: form.displayOrder } as never)
-      : this.fnbApi.updateCategory(propertyId, outletId, this.categoryEditingId()!, { name: form.name, description: form.description, displayOrder: form.displayOrder } as never);
+      ? this.fnbApi.createCategory(propertyId, outletId, { code: code!, name, displayOrder } as CreateMenuCategoryDto)
+      : this.fnbApi.updateCategory(propertyId, outletId, this.categoryEditingId()!, { name, displayOrder });
 
-    call.subscribe({
-      next: () => {
-        this.isSubmitting.set(false);
-        this.showCategoryModal.set(false);
-        this.successMessage.set('Menu category saved');
+    call.subscribe({        next: () => {
+          this.isSubmitting.set(false);
+          if (!this.isCurrentOutletContext(propertyId, outletId)) return;
+          this.showCategoryModal.set(false);
+          this.successMessage.set(`Menu category "${name}" saved`);
         this.loadCatalogCategories(propertyId, outletId);
-      },
-      error: (err) => {
-        this.isSubmitting.set(false);
-        this.errorMessage.set(err?.error?.message || 'Failed to save category');
+        this.loadCatalog(propertyId, outletId, 1);
+      },        error: (err) => {
+          this.isSubmitting.set(false);
+          if (!this.isCurrentOutletContext(propertyId, outletId)) return;
+          this.errorMessage.set(err?.error?.message || 'Failed to save category');
       },
     });
   }
@@ -909,8 +999,12 @@ export class FnbWorkspaceComponent implements OnInit {
     const outletId = this.selectedOutletId();
     if (!propertyId || !outletId) return;
     this.fnbApi.getMenuItemDetail(propertyId, outletId, itemId).subscribe({
-      next: (res) => this.catalogSelectedItem.set(res.data),
-      error: () => this.errorMessage.set('Failed to refresh item detail'),
+      next: (res) => {
+        if (this.isCurrentOutletContext(propertyId, outletId)) this.catalogSelectedItem.set(res.data);
+      },
+      error: () => {
+        if (this.isCurrentOutletContext(propertyId, outletId)) this.errorMessage.set('Failed to refresh item detail');
+      },
     });
   }
 
@@ -961,13 +1055,7 @@ export class FnbWorkspaceComponent implements OnInit {
   }
 
   selectOutlet(outletId: string): void {
-    this.selectedOutletId.set(outletId);
-    const propertyId = this.activeProperty()?.id;
-    if (propertyId) {
-      this.loadMenu(propertyId, outletId);
-      this.loadCatalog(propertyId, outletId, 1);
-      this.loadCatalogCategories(propertyId, outletId);
-    }
+    this.onOutletChange(outletId);
   }
 
   onCatalogSearchChange(): void {
@@ -1003,12 +1091,14 @@ export class FnbWorkspaceComponent implements OnInit {
 
     this.fnbApi.searchMenuItems(propertyId, outletId, query).subscribe({
       next: (res) => {
+        if (!this.isCurrentOutletContext(propertyId, outletId)) return;
         this.pricingItems.set(res.data.items as any);
         this.pricingTotal.set(res.data.total);
         this.pricingPage.set(res.data.page);
         this.isLoadingPricing.set(false);
       },
       error: (err) => {
+        if (!this.isCurrentOutletContext(propertyId, outletId)) return;
         this.errorMessage.set(err?.error?.message || 'Failed to load pricing');
         this.isLoadingPricing.set(false);
       },

@@ -73,9 +73,30 @@ export class CreateMenuCategoryDto {
   @ApiPropertyOptional({ example: 1, default: 0 })
   @IsOptional()
   @IsInt()
+  @Min(0)
   displayOrder?: number;
 
   @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdateMenuCategoryDto {
+  @ApiPropertyOptional({ description: 'Category name' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiPropertyOptional({ example: 1, description: 'Display order' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  displayOrder?: number;
+
+  @ApiPropertyOptional({ description: 'Whether the category is active' })
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;

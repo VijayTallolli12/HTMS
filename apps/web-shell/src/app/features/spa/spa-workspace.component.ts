@@ -54,6 +54,7 @@ import {
   HmsLoadingComponent,
   HmsEmptyComponent,
 } from '../../shared/index';
+import { formatMoney } from '../../shared/utils/currency';
 
 type ActiveSpaTab = 'appointments' | 'services' | 'pricing' | 'team';
 
@@ -377,6 +378,8 @@ export class SpaWorkspaceComponent implements OnInit {
   // Service Management
   // -------------------------------------------------------------
   openServiceModal(service?: SpaServiceDto): void {
+    this.serviceAddons.set([]);
+    this.addonDraft = {};
     if (service) {
       this.editingService = service;
       this.loadServiceAddons(service.id);
@@ -899,12 +902,9 @@ export class SpaWorkspaceComponent implements OnInit {
     }
   }
 
-  formatPrice(price: string | number, currency = 'JPY'): string {
-    const num = Number(price) || 0;
-    if (currency === 'JPY') {
-      return `¥${num.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}`;
-    }
-    return `$${num.toFixed(2)}`;
+  formatPrice(price: string | number, currency?: string): string {
+    // Currency always follows the active property context — never a hardcoded default.
+    return formatMoney(Number(price) || 0, currency || this.activeProperty()?.currency || '');
   }
 
   formatTimeRange(start: string, end: string): string {

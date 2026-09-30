@@ -88,6 +88,30 @@ export async function seedIamBaseline() {
 
   // 2. Canonical Granular Permissions
   const permissions = [
+    // ── Channel Manager (explicitly simulated demo only) ───────────────
+    { code: 'channel:read', name: 'View Channel Manager', description: 'View DEMO channel state, mappings, and logs', module: 'CHANNEL_MANAGER' },
+    { code: 'channel:create', name: 'Configure Demo Channel', description: 'Create DEMO channel configurations', module: 'CHANNEL_MANAGER' },
+    { code: 'channel:update', name: 'Update Demo Channel', description: 'Update DEMO channel mappings', module: 'CHANNEL_MANAGER' },
+    { code: 'channel:delete', name: 'Delete Demo Channel', description: 'Disable or remove DEMO channels', module: 'CHANNEL_MANAGER' },
+    { code: 'channel:sync', name: 'Run Demo Channel Sync', description: 'Ingest demo reservations and run/retry simulated syncs', module: 'CHANNEL_MANAGER' },
+    { code: 'channel:reconcile', name: 'Reconcile Demo Channel', description: 'Reconcile demo reservations', module: 'CHANNEL_MANAGER' },
+    { code: 'payment_gateway:view', name: 'View Payment Gateways', description: 'View payment provider catalog and property configuration', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment_gateway:configure', name: 'Configure Payment Gateways', description: 'Configure property payment gateways and credentials', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment_gateway:test', name: 'Test Payment Gateway', description: 'Run adapter-backed connection tests', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment_gateway:enable', name: 'Enable Payment Gateway', description: 'Enable a verified property payment gateway', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment_gateway:disable', name: 'Disable Payment Gateway', description: 'Disable property payment gateways', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment_gateway:refund', name: 'Refund Payment Gateway Transaction', description: 'Refund a captured gateway payment', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment:intent:create', name: 'Create Payment Intent', description: 'Create property-scoped payment intents', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment:authorize', name: 'Authorize Payment', description: 'Authorize an enabled gateway payment', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment:capture', name: 'Capture Payment', description: 'Capture an authorized gateway payment', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment:cancel', name: 'Cancel Payment Intent', description: 'Cancel a pending gateway payment intent', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment:reconcile', name: 'Reconcile Gateway Payments', description: 'Generate property payment reconciliation reports', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment:read', name: 'View Gateway Payments', description: 'Read property gateway configuration and payments', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment:create', name: 'Create Gateway Configuration', description: 'Create property gateway configurations', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment:update', name: 'Update Gateway Configuration', description: 'Update property gateway configurations', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment:delete', name: 'Delete Gateway Configuration', description: 'Remove property gateway configurations', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment:refund', name: 'Refund Gateway Payment', description: 'Refund property gateway payments', module: 'PAYMENT_GATEWAY' },
+    { code: 'payment:webhook', name: 'Receive Gateway Webhook', description: 'Accept cryptographically verified gateway webhooks', module: 'PAYMENT_GATEWAY' },
     // ── Front Office ──────────────────────────────────────────────────
     {
       code: 'front_office.reservation.read',
@@ -832,10 +856,21 @@ export async function seedIamBaseline() {
   }
 
   // 3. Map System Roles to Permissions
+  const allChannelPermissions = ['channel:read', 'channel:create', 'channel:update', 'channel:delete', 'channel:sync', 'channel:reconcile'];
+  const allPaymentGatewayPermissions = [
+    'payment_gateway:view', 'payment_gateway:configure', 'payment_gateway:test', 'payment_gateway:enable',
+    'payment_gateway:disable', 'payment_gateway:refund', 'payment:intent:create', 'payment:authorize',
+    'payment:capture', 'payment:cancel', 'payment:reconcile', 'payment:read', 'payment:create',
+    'payment:update', 'payment:delete', 'payment:refund', 'payment:webhook',
+  ];
   const rolePermissionAssignments: Array<{ roleCode: string; permCodes: string[] }> = [
     {
+      roleCode: 'PLATFORM_OWNER',
+      permCodes: ['channel:read'],
+    },
+    {
       roleCode: 'CORP_ADMIN',
-      permCodes: permissions.map((p) => p.code),
+      permCodes: [...permissions.map((p) => p.code), ...allPaymentGatewayPermissions],
     },
     {
       roleCode: 'PROPERTY_GM',
@@ -934,6 +969,8 @@ export async function seedIamBaseline() {
         'payroll.run.process',
         'payroll.run.finalize',
         'payroll.payslip.view',
+        ...allChannelPermissions,
+        ...allPaymentGatewayPermissions,
       ],
     },
     {

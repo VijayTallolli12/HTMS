@@ -253,8 +253,31 @@ import { AuthService } from '../../core/services/auth.service';
           </a>
         </div>
 
-        <!-- 5. ADMINISTRATION -->
-        <div class="hms-sidebar__section" *ngIf="canAccessAdmin()">
+        <!-- 5. DISTRIBUTION -->
+        <div class="hms-sidebar__section" *ngIf="hasPermission('channel:read')">
+          <div class="hms-sidebar__section-title" *ngIf="!isCollapsed">Distribution</div>
+          <a
+            routerLink="/pms/channels"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Channel Manager (DEMO)'"
+            [attr.aria-label]="'Channel Manager (DEMO)'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="6" cy="6" r="3"></circle>
+                <circle cx="18" cy="6" r="3"></circle>
+                <circle cx="12" cy="18" r="3"></circle>
+                <path d="M8.6 7.5l2.1 7M15.4 7.5l-2.1 7M9 6h6"></path>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Channel Manager (DEMO)</span>
+          </a>
+        </div>
+
+        <!-- 6. ADMINISTRATION -->
+        <div class="hms-sidebar__section" *ngIf="canAccessAdmin() || canAccessOwnerTools() || hasPermission('payment_gateway:view')">
           <div class="hms-sidebar__section-title" *ngIf="!isCollapsed">Administration</div>
 
           <a
@@ -278,6 +301,42 @@ import { AuthService } from '../../core/services/auth.service';
               </svg>
             </span>
             <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Organization</span>
+          </a>
+
+          <a
+            *ngIf="hasPermission('payment_gateway:view')"
+            routerLink="/admin/payment-gateways"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Payment Gateways'"
+            [attr.aria-label]="'Payment Gateways'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <path d="M2 10h20M6 15h4"></path>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Payment Gateways</span>
+          </a>
+
+          <a
+            *ngIf="canAccessOwnerTools()"
+            routerLink="/owner/onboarding-preview"
+            routerLinkActive="hms-sidebar__item--active"
+            class="hms-sidebar__item"
+            (click)="onItemClick()"
+            [title]="'Onboarding Preview'"
+            [attr.aria-label]="'Onboarding Preview'"
+          >
+            <span class="hms-sidebar__item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </span>
+            <span class="hms-sidebar__item-label" *ngIf="!isCollapsed">Onboarding Preview</span>
           </a>
 
           <a
@@ -563,6 +622,10 @@ export class HmsSidebarComponent {
   canAccessAdmin(): boolean {
     const roles = this.authService.roles();
     return roles.some((r) => r.code === 'CORP_ADMIN' || r.code === 'PROPERTY_GM');
+  }
+
+  canAccessOwnerTools(): boolean {
+    return this.authService.hasRole('PLATFORM_OWNER');
   }
 
   onItemClick(): void {

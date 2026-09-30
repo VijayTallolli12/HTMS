@@ -87,10 +87,10 @@ export class SetupCenterComponent implements OnInit {
   // Phase 12: Distribution / OTA readiness surface. Readiness only — no
   // claim of external connectivity; live integrations are post-W2.
   readonly distributionChannels = [
-    { name: 'Booking.com', status: 'Not Connected', note: 'Ready to connect via channel manager' },
-    { name: 'Airbnb', status: 'Not Connected', note: 'Ready to connect via channel manager' },
-    { name: 'Expedia', status: 'Not Connected', note: 'Ready to connect via channel manager' },
-    { name: 'Channel Manager', status: 'Not Configured', note: 'Configure provider credentials' },
+    { name: 'Booking.com', status: 'Not Connected', note: 'Live integration unavailable in this demo' },
+    { name: 'Airbnb', status: 'Not Connected', note: 'Live integration unavailable in this demo' },
+    { name: 'Expedia', status: 'Not Connected', note: 'Live integration unavailable in this demo' },
+    { name: 'Channel Manager', status: 'DEMO Only', note: 'Open PMS → Channel Manager to configure simulated mappings' },
   ];
 
   readonly milestonesList = computed(() => {

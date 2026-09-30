@@ -7,6 +7,7 @@
 //   import { HmsButtonComponent } from './app/shared/components/button';
 
 export * from './layout/hms-layout.component';
+export * from './utils/currency';
 export * from './layout/hms-sidebar.component';
 export * from './components/button/hms-button.component';
 export * from './components/status-pill/hms-status-pill.component';

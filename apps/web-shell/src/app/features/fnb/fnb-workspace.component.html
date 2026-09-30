@@ -11,7 +11,7 @@
 
     <!-- Outlet Switcher & Property Context -->
     <div class="header-right">
-      <div class="outlet-selector-card" *ngIf="outlets().length > 0">
+      <div class="outlet-selector-card" *ngIf="propertyOutlets().length > 0">
         <label class="selector-label">Active Outlet</label>
         <div class="outlet-select-wrapper">
           <select
@@ -19,7 +19,7 @@
             [ngModel]="selectedOutletId()"
             (ngModelChange)="onOutletChange($event)"
           >
-            <option *ngFor="let outlet of outlets()" [value]="outlet.id">
+            <option *ngFor="let outlet of propertyOutlets()" [value]="outlet.id">
               {{ outlet.name }} ({{ outlet.outletType }})
             </option>
           </select>
@@ -27,6 +27,10 @@
             {{ selectedOutlet()?.outletType }}
           </span>
         </div>
+      </div>
+      <div class="outlet-selector-card" *ngIf="!isLoading() && propertyOutlets().length === 0">
+        <span class="selector-label">Active Outlet</span>
+        <span class="empty-outlet-label">No outlets configured for this property</span>
       </div>
     </div>
   </header>
@@ -175,8 +179,8 @@
             <div class="table-card-header">
               <div class="table-id-badge">{{ table.tableNumber }}</div>
               <hms-status-pill
-                [status]="getStatusPillVariant(table.status)"
-                [label]="table.status"
+                [statusKey]="table.status === 'AVAILABLE' ? 'READY' : table.status === 'RESERVED' ? 'PENDING' : table.status === 'OUT_OF_SERVICE' ? 'OUT_OF_ORDER' : 'OCCUPIED'"
+                [statusLabel]="table.status"
               ></hms-status-pill>
             </div>
 
@@ -234,8 +238,8 @@
           <div class="order-area-title">
             <span>Table {{ activeOrder()?.tableNumber }} &bull; Order #{{ activeOrder()?.orderNumber }}</span>
             <hms-status-pill
-              [status]="getStatusPillVariant(activeOrder()!.status)"
-              [label]="activeOrder()!.status"
+              [statusKey]="activeOrder()!.status === 'READY' || activeOrder()!.status === 'SERVED' || activeOrder()!.status === 'CLOSED' ? 'COMPLETED' : activeOrder()!.status === 'CANCELLED' ? 'CANCELLED' : activeOrder()!.status === 'OPEN' ? 'PENDING' : 'CLEANING'"
+              [statusLabel]="activeOrder()!.status"
             ></hms-status-pill>
           </div>
           <button type="button" class="btn-close-ticket" (click)="activeOrder.set(null)">
@@ -441,8 +445,8 @@
             <span class="kitchen-order-id">#{{ order.orderNumber }}</span>
           </div>
           <hms-status-pill
-            [status]="getStatusPillVariant(order.status)"
-            [label]="order.status"
+            [statusKey]="order.status === 'READY' || order.status === 'SERVED' || order.status === 'CLOSED' ? 'COMPLETED' : order.status === 'CANCELLED' ? 'CANCELLED' : order.status === 'OPEN' ? 'PENDING' : 'CLEANING'"
+            [statusLabel]="order.status"
           ></hms-status-pill>
         </div>
 
@@ -674,7 +678,7 @@
 
     <h3 class="subsection-title">Outlets</h3>
     <div class="outlet-grid">
-      <div *ngFor="let o of outlets()" class="outlet-card">
+      <div *ngFor="let o of propertyOutlets()" class="outlet-card">
         <div class="outlet-card-head">
           <span class="outlet-name">{{ o.name }}</span>
           <span class="outlet-code font-mono">{{ o.code }}</span>
@@ -713,18 +717,18 @@
     <div class="modal-form-body">
       <div class="form-group">
         <label class="form-label">Name *</label>
-        <input type="text" class="form-input" [ngModel]="categoryForm().name" (ngModelChange)="setCategoryField('name', $event)" placeholder="e.g. Signature Mains" />
+        <input type="text" class="form-input" [ngModel]="categoryForm().name" (ngModelChange)="setCategoryField('name', $event)" placeholder="e.g. Signature Mains" maxlength="100" />
       </div>
       <div class="form-group">
         <label class="form-label">Display Order</label>
-        <input type="number" class="form-input" [ngModel]="categoryForm().displayOrder" (ngModelChange)="setCategoryField('displayOrder', $event)" />
+        <input type="number" class="form-input" [ngModel]="categoryForm().displayOrder" (ngModelChange)="setCategoryField('displayOrder', $event)" min="0" />
       </div>
-      <div class="modal-actions">
-        <button type="button" class="btn-secondary" (click)="showCategoryModal.set(false)">Cancel</button>
-        <button type="button" class="btn-primary" [disabled]="isSubmitting() || !categoryForm().name" (click)="saveCategory()">
-          {{ isSubmitting() ? 'Saving...' : 'Save Category' }}
-        </button>
-      </div>
+    </div>
+    <div hmsModalFooter>
+      <hms-button variant="outline" (click)="showCategoryModal.set(false)">Cancel</hms-button>
+      <hms-button variant="gold" [disabled]="isSubmitting() || !categoryForm().name?.trim()" (click)="saveCategory()">
+        {{ isSubmitting() ? 'Saving...' : 'Save Category' }}
+      </hms-button>
     </div>
   </hms-modal>
 

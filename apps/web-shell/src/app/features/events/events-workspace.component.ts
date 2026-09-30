@@ -33,6 +33,7 @@ import {
   HmsLoadingComponent,
   HmsEmptyComponent,
 } from '../../shared/index';
+import { formatMoney } from '../../shared/utils/currency';
 
 type ActiveEventsTab = 'bookings' | 'venues' | 'packages' | 'resources';
 
@@ -699,12 +700,9 @@ export class EventsWorkspaceComponent implements OnInit {
   // -----------------------------------------------------------------
   // FORMATTING HELPERS
   // -----------------------------------------------------------------
-  formatPrice(price: string | number, currency = 'JPY'): string {
-    const num = Number(price) || 0;
-    if (currency === 'JPY') {
-      return `¥${num.toLocaleString('ja-JP')}`;
-    }
-    return `$${num.toFixed(2)}`;
+  formatPrice(price: string | number, currency?: string): string {
+    // Currency always follows the active property context — never a hardcoded default.
+    return formatMoney(Number(price) || 0, currency || this.activeProperty()?.currency || '');
   }
 
   formatDate(isoString: string): string {

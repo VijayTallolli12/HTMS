@@ -19,6 +19,7 @@ import {
 } from '@hms/api-contracts';
 import {
   CreateMenuCategoryDto,
+  UpdateMenuCategoryDto,
   CreateMenuItemDto,
   CreateMenuItemVariantDto,
   UpdateMenuItemVariantDto,
@@ -55,13 +56,32 @@ export class FnbMenuService {
     }));
   }
 
+  private async findOutletForProperty(propertyId: string, outletId: string): Promise<void> {
+    const outlet = await this.prisma.fnbOutlet.findFirst({
+      where: { id: outletId, propertyId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!outlet) throw new NotFoundException(`F&B Outlet '${outletId}' not found for property`);
+  }
+
   async createCategory(
     propertyId: string,
     outletId: string,
     dto: CreateMenuCategoryDto,
   ): Promise<MenuCategoryDto> {
+    await this.findOutletForProperty(propertyId, outletId);
+
+    const code = dto.code.trim().toUpperCase();
+    const name = dto.name.trim();
+    if (!code || code.length > 50 || !name || name.length > 100) {
+      throw new BadRequestException('Category code and name are required and must fit their supported lengths');
+    }
+    if (dto.displayOrder !== undefined && (!Number.isInteger(dto.displayOrder) || dto.displayOrder < 0)) {
+      throw new BadRequestException('Category display order must be a non-negative whole number');
+    }
+
     const existing = await this.prisma.fnbMenuCategory.findFirst({
-      where: { outletId, code: dto.code.trim().toUpperCase() },
+      where: { propertyId, outletId, code },
     });
     if (existing) {
       throw new ConflictException(`Menu category with code '${dto.code}' already exists`);
@@ -72,8 +92,8 @@ export class FnbMenuService {
         id: generateUuidV7(),
         propertyId,
         outletId,
-        code: dto.code.trim().toUpperCase(),
-        name: dto.name.trim(),
+        code,
+        name,
         displayOrder: dto.displayOrder ?? 0,
         isActive: dto.isActive ?? true,
       },
@@ -89,6 +109,46 @@ export class FnbMenuService {
       isActive: created.isActive,
       createdAt: created.createdAt.toISOString(),
       updatedAt: created.updatedAt.toISOString(),
+    };
+  }
+
+  async updateCategory(
+    propertyId: string,
+    outletId: string,
+    categoryId: string,
+    dto: UpdateMenuCategoryDto,
+  ): Promise<MenuCategoryDto> {
+    await this.findOutletForProperty(propertyId, outletId);
+    const category = await this.prisma.fnbMenuCategory.findFirst({
+      where: { id: categoryId, propertyId, outletId },
+    });
+    if (!category) {
+      throw new NotFoundException(`Menu category '${categoryId}' not found for outlet`);
+    }
+
+    const data: Prisma.FnbMenuCategoryUpdateInput = {};
+    if (dto.name !== undefined) {
+      const name = dto.name.trim();
+      if (!name || name.length > 100) throw new BadRequestException('Category name is required and must be 100 characters or fewer');
+      data.name = name;
+    }
+    if (dto.displayOrder !== undefined) {
+      if (!Number.isInteger(dto.displayOrder) || dto.displayOrder < 0) throw new BadRequestException('Category display order must be a non-negative whole number');
+      data.displayOrder = dto.displayOrder;
+    }
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+
+    const updated = await this.prisma.fnbMenuCategory.update({ where: { id: categoryId }, data });
+    return {
+      id: updated.id,
+      propertyId: updated.propertyId,
+      outletId: updated.outletId,
+      code: updated.code,
+      name: updated.name,
+      displayOrder: updated.displayOrder,
+      isActive: updated.isActive,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
     };
   }
 
@@ -440,7 +500,7 @@ export class FnbMenuService {
     propertyId: string,
     query: QueryMenuItemsDto,
   ): Promise<{ items: MenuItemDto[]; total: number; page: number; limit: number }> {
-    const where: any = { propertyId, deletedAt: null };
+    const where: any = { propertyId }; // FnbMenuItem has no soft-delete column; isActive governs visibility
     if (query.outletId) where.outletId = query.outletId;
     if (query.categoryId) where.categoryId = query.categoryId;
     if (query.availability) where.availability = query.availability;

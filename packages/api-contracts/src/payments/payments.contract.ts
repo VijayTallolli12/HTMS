@@ -2,14 +2,143 @@
 // Enterprise HMS — Payment Gateway Abstraction Contracts
 // ==============================================================================
 
-export type PaymentProviderType = 'STRIPE' | 'ADYEN' | 'SQUARE' | 'DEMO';
+export const PAYMENT_PROVIDER_CODES = [
+  'STRIPE', 'ADYEN', 'SQUARE', 'DEMO',
+  'AMAZON_PAYMENT_SERVICES', 'TELR', 'NETWORK_INTERNATIONAL', 'TAP', 'PAYTABS', 'CHECKOUT_COM',
+  'HYPERPAY', 'MOYASAR', 'GEIDEA', 'BENEFIT', 'PAYPAL', 'RAZORPAY', 'CASHFREE', 'PAYU',
+  'GMO_PAYMENT_GATEWAY', 'SB_PAYMENT_SERVICE',
+] as const;
+
+export type PaymentProviderType = (typeof PAYMENT_PROVIDER_CODES)[number];
+export type PaymentGatewayCapability =
+  | 'SALE'
+  | 'AUTHORIZE'
+  | 'CAPTURE'
+  | 'VOID'
+  | 'REFUND'
+  | 'PARTIAL_REFUND'
+  | 'PAYMENT_STATUS'
+  | 'TOKENIZATION'
+  | 'WEBHOOKS';
+export type PaymentGatewayEnvironment = 'SANDBOX' | 'PRODUCTION';
+export type PaymentGatewayIntegrationStatus =
+  | 'CATALOG_ONLY'
+  | 'DEMO_ADAPTER'
+  | 'CONFIGURED'
+  | 'AUTHENTICATED'
+  | 'CONNECTED'
+  | 'PRODUCTION_READY'
+  | 'PRODUCTION_VERIFIED'
+  | 'CONNECTION_FAILED'
+  | 'DISABLED';
+export type CredentialFieldType = 'text' | 'password' | 'url' | 'number';
+
+export interface CredentialValidationRules {
+  pattern?: string;
+  minLength?: number;
+  maxLength?: number;
+}
+
+export interface CredentialFieldSchema {
+  name: string;
+  label: string;
+  type: CredentialFieldType;
+  required: boolean;
+  secret: boolean;
+  masked: boolean;
+  validation?: CredentialValidationRules;
+}
+
+export interface PaymentGatewayProviderCatalogItem {
+  providerCode: PaymentProviderType;
+  displayName: string;
+  description: string;
+  supportedCountries: string[];
+  supportedCurrencies: string[];
+  supportedPaymentMethods: string[];
+  countryPaymentMethods: Record<string, string[]>;
+  credentialSchema: CredentialFieldSchema[];
+  capabilities: PaymentGatewayCapability[];
+  sandboxSupport: boolean;
+  productionSupport: boolean;
+  documentationUrl: string;
+  adapterStatus: 'CATALOG_ONLY' | 'DEMO_ADAPTER' | 'SANDBOX_READY';
+  integrationStatus: PaymentGatewayIntegrationStatus;
+}
+
+export interface PaymentGatewayCredentialFieldStatus {
+  name: string;
+  configured: boolean;
+  maskedValue?: string;
+}
+
+export interface PaymentGatewayConfigDto {
+  id: string;
+  propertyId: string;
+  providerCode: PaymentProviderType;
+  displayName: string;
+  environment: PaymentGatewayEnvironment;
+  supportedCurrencies: string[];
+  enabledPaymentMethods: string[];
+  priority: number;
+  isPrimary: boolean;
+  enabled: boolean;
+  integrationStatus: PaymentGatewayIntegrationStatus;
+  credentialFields: PaymentGatewayCredentialFieldStatus[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SavePaymentGatewayConfigDto {
+  providerCode: PaymentProviderType;
+  environment: PaymentGatewayEnvironment;
+  isPrimary?: boolean;
+  credentials: Record<string, string>;
+  supportedCurrencies: string[];
+  enabledPaymentMethods: string[];
+  priority?: number;
+}
+
+export interface UpdatePaymentGatewayConfigDto {
+  environment?: PaymentGatewayEnvironment;
+  credentials?: Record<string, string>;
+  supportedCurrencies?: string[];
+  enabledPaymentMethods?: string[];
+  priority?: number;
+  isPrimary?: boolean;
+  enabled?: boolean;
+}
+
+export interface PaymentGatewayConnectionTestDto {
+  ok: boolean;
+  status: PaymentGatewayIntegrationStatus;
+  message: string;
+  testedAt: string;
+}
+
+export interface PaymentGatewayProvider {
+  readonly providerCode: PaymentProviderType;
+  readonly capabilities: ReadonlySet<PaymentGatewayCapability>;
+  testConnection?(input: {
+    environment: PaymentGatewayEnvironment;
+    credentials: Readonly<Record<string, string>>;
+  }): Promise<PaymentGatewayConnectionTestDto>;
+  sale?(input: Record<string, unknown>): Promise<Record<string, unknown>>;
+  authorize?(input: Record<string, unknown>): Promise<Record<string, unknown>>;
+  capture?(input: Record<string, unknown>): Promise<Record<string, unknown>>;
+  void?(input: Record<string, unknown>): Promise<Record<string, unknown>>;
+  refund?(input: Record<string, unknown>): Promise<Record<string, unknown>>;
+  paymentStatus?(input: Record<string, unknown>): Promise<Record<string, unknown>>;
+  tokenize?(input: Record<string, unknown>): Promise<Record<string, unknown>>;
+  verifyWebhook?(rawBody: Buffer, signature: string, credentials: Readonly<Record<string, string>>): boolean;
+}
 
 export type PaymentGatewayTransactionStatus = 'PENDING' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'CANCELLED';
 
 export type PaymentIntentStatus = 'REQUIRES_PAYMENT_METHOD' | 'REQUIRES_CONFIRMATION' | 'REQUIRES_ACTION' | 'PROCESSING' | 'SUCCEEDED' | 'CANCELLED';
 
 // ==========================================
-// PAYMENT PROVIDER CONFIGURATION
+// LEGACY PAYMENT PROVIDER CONFIGURATION
 // ==========================================
 
 export interface PaymentProviderConfigDto {
@@ -18,7 +147,7 @@ export interface PaymentProviderConfigDto {
   provider: PaymentProviderType;
   name: string;
   enabled: boolean;
-  configuration: Record<string, any>;
+  configuration: Record<string, unknown>;
   supportedCurrencies: string[];
   lastSyncAt: string | null;
   lastError: string | null;
@@ -29,13 +158,13 @@ export interface PaymentProviderConfigDto {
 export interface CreatePaymentProviderConfigDto {
   provider: PaymentProviderType;
   name: string;
-  configuration: Record<string, any>;
+  configuration: Record<string, unknown>;
   supportedCurrencies?: string[];
 }
 
 export interface UpdatePaymentProviderConfigDto {
   name?: string;
-  configuration?: Record<string, any>;
+  configuration?: Record<string, unknown>;
   supportedCurrencies?: string[];
   enabled?: boolean;
 }
@@ -68,6 +197,7 @@ export interface CreatePaymentIntentDto {
   currency: string;
   description?: string;
   metadata?: Record<string, any>;
+  folioId?: string;
   captureMethod?: 'AUTOMATIC' | 'MANUAL';
   confirmationMethod?: 'AUTOMATIC' | 'MANUAL';
   idempotencyKey?: string;
@@ -143,6 +273,7 @@ export interface SimulateWebhookDto {
   paymentProviderConfigId: string;
   eventType: string;
   payload: Record<string, any>;
+  signature?: string;
 }
 
 // ==========================================
@@ -176,7 +307,7 @@ export interface GeneratePaymentReconciliationDto {
 }
 
 // ==========================================
-// PAYMENT PROVIDER ABSTRACTION
+// LEGACY PROVIDER ADAPTER CONTRACT
 // ==========================================
 
 export interface PaymentProvider {
@@ -189,7 +320,7 @@ export interface PaymentProvider {
   refundPayment(data: RefundPaymentDto): Promise<{ externalId: string; status: PaymentGatewayTransactionStatus; refundedAt: string }>;
   cancelPayment(data: CancelPaymentDto): Promise<{ externalId: string; status: PaymentIntentStatus }>;
   getPayment(externalId: string): Promise<PaymentGatewayTransactionDto | null>;
-  parseWebhook(payload: Record<string, any>, signature?: string): PaymentWebhookDto;
+  parseWebhook(payload: Record<string, any>): PaymentWebhookDto;
   verifyWebhookSignature(payload: string, signature: string, secret: string): boolean;
   generateIdempotencyKey(prefix: string): string;
 }

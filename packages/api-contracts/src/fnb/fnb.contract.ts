@@ -57,6 +57,12 @@ export interface CreateMenuCategoryDto {
   isActive?: boolean;
 }
 
+export interface UpdateMenuCategoryDto {
+  name?: string;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
 export interface MenuItemDto {
   id: string;
   propertyId: string;

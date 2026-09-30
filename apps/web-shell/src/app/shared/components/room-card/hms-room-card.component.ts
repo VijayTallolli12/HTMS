@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { formatMoney as formatCurrencyUtil } from '../../utils/currency';
 
 /** Rich per-room data supplied by the occupancy board API (all optional). */
 export interface RoomCardStay {
@@ -290,10 +291,6 @@ export class HmsRoomCardComponent {
   }
 
   formatMoney(amount: number, currency: string): string {
-    try {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
-    } catch {
-      return `${currency} ${amount.toLocaleString()}`;
-    }
+    return formatCurrencyUtil(amount, currency);
   }
 }

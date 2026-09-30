@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { setupGuard, setupWizardGuard } from './core/guards/setup.guard';
+import { ownerGuard } from './core/guards/owner.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 
 export const routes: Routes = [
   {
@@ -29,11 +31,25 @@ export const routes: Routes = [
     title: 'Setup Center',
   },
   {
+    path: 'admin/payment-gateways',
+    canActivate: [authGuard, permissionGuard('payment_gateway:view')],
+    loadComponent: () =>
+      import('./features/admin/payment-gateways.component').then((m) => m.PaymentGatewaysComponent),
+    title: 'Payment Gateways',
+  },
+  {
     path: 'owner/system-reset',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/owner/owner-system-reset.component').then((m) => m.OwnerSystemResetComponent),
     title: 'System Reset',
+  },
+  {
+    path: 'owner/onboarding-preview',
+    canActivate: [ownerGuard],
+    loadComponent: () =>
+      import('./features/owner/onboarding-preview.component').then((m) => m.OnboardingPreviewComponent),
+    title: 'Onboarding Preview',
   },
   {
     path: 'dashboard',

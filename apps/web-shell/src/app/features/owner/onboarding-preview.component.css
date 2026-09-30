@@ -1,0 +1,208 @@
+/* W4 Onboarding Preview — reuses the real setup wizard shell classes
+   (.setup-shell/.setup-header/.setup-card/... loaded here explicitly) plus
+   the W3 owner-tool tokens. Preview-specific styles live below. */
+
+@import '../setup/setup-wizard.component.css';
+
+.preview-shell {
+  min-height: 100vh;
+}
+
+/* ===== Preview banner ===== */
+.preview-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 880px;
+  margin: 0 auto 16px;
+  padding: 12px 16px;
+  border: 1px dashed var(--gold-accent, #cba135);
+  border-radius: 10px;
+  background: rgba(203, 161, 53, 0.08);
+}
+
+.preview-banner__icon {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  color: var(--gold-accent, #cba135);
+}
+
+.preview-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.preview-banner__text strong {
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+
+.preview-banner__text span {
+  font-size: 0.82rem;
+  color: var(--text-secondary, #64748b);
+}
+
+/* ===== Footer tag ===== */
+.setup-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preview-footer-tag {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #64748b);
+  letter-spacing: 0.03em;
+}
+
+/* ===== Room types editor ===== */
+.roomtypes-block {
+  margin-top: 20px;
+  border: 1px solid var(--surface-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: var(--surface-card, #ffffff);
+}
+
+.roomtypes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.roomtypes-head__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.roomtype-row {
+  display: grid;
+  grid-template-columns: 90px 1.6fr 1.2fr 70px 90px 32px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.roomtype-row input {
+  padding: 7px 9px;
+  border: 1px solid var(--surface-border, #e2e8f0);
+  border-radius: 7px;
+  font-size: 0.85rem;
+  min-width: 0;
+  background: var(--surface-raised, #f8fafc);
+  color: var(--text-primary);
+}
+
+.roomtype-remove {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.roomtypes-empty {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748b);
+  margin: 4px 0 0;
+}
+
+/* ===== Review additions ===== */
+.review-roomtypes {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.review-roomtypes th,
+.review-roomtypes td {
+  text-align: left;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--surface-border, #e2e8f0);
+}
+
+.review-roomtypes th {
+  color: var(--text-secondary, #64748b);
+  font-weight: 600;
+}
+
+/* ===== Complete screen checklist ===== */
+.preview-checklist {
+  list-style: none;
+  margin: 18px auto;
+  padding: 0;
+  max-width: 420px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.preview-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.preview-checklist svg {
+  width: 18px;
+  height: 18px;
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.preview-safety-note {
+  margin-top: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: inline-block;
+}
+
+/* ===== Small button variant ===== */
+.hms-btn--sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .preview-banner {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .roomtype-row {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 6px;
+  }
+
+  .roomtype-row input[aria-label="Bed count"],
+  .roomtype-row input[aria-label="Rooms of this type"] {
+    max-width: 110px;
+  }
+
+  .roomtypes-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

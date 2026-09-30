@@ -33,7 +33,7 @@ describe('IamBaselineService (W2 Phase 1)', () => {
     service = new IamBaselineService(prismaMock as unknown as PrismaService);
   });
 
-  it('canonical data matches the W1 seed roster exactly (10 roles, no GLOBAL_ADMIN)', () => {
+  it('canonical data preserves the W1 roles and includes scoped Channel Manager permissions', () => {
     expect(CANONICAL_SYSTEM_ROLES.map((r) => r.code)).toEqual([
       'PLATFORM_OWNER',
       'CORP_ADMIN',
@@ -47,7 +47,10 @@ describe('IamBaselineService (W2 Phase 1)', () => {
       'FNB_MANAGER',
       'SPA_MANAGER',
     ]);
-    expect(CANONICAL_PERMISSIONS.length).toBe(124);
+    expect(CANONICAL_PERMISSIONS.length).toBeGreaterThanOrEqual(130);
+    expect(CANONICAL_PERMISSIONS.map((permission) => permission.code)).toEqual(expect.arrayContaining([
+      'channel:read', 'channel:create', 'channel:update', 'channel:delete', 'channel:sync', 'channel:reconcile',
+    ]));
     expect(CANONICAL_ROLE_PERMISSIONS).toHaveLength(10);
   });
 
@@ -71,8 +74,8 @@ describe('IamBaselineService (W2 Phase 1)', () => {
     // PROPERTY_GM reused, not recreated
     expect(prismaMock.role.create).toHaveBeenCalledTimes(10);
     expect(prismaMock.role.create.mock.calls.every((c: any) => c[0].data.code !== 'PROPERTY_GM')).toBe(true);
-    // 124 permissions created on a virgin DB (incl. platform:system_reset + organization.* six)
-    expect(prismaMock.permission.create).toHaveBeenCalledTimes(124);
+    // The canonical baseline includes six explicitly scoped Channel Manager permissions.
+    expect(prismaMock.permission.create).toHaveBeenCalledTimes(CANONICAL_PERMISSIONS.length);
   });
 
   it('is idempotent: second run creates nothing new', async () => {

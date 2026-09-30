@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { SetupService } from '../../core/services/setup.service';
 import { PmsApiService } from '../pms/services/pms-api.service';
+import { formatMoney } from '../../shared/utils/currency';
 import {
   RevenueKpiDto,
   RevenueKpiRangeResponse,
@@ -600,12 +601,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return 'neutral';
   }
 
-  formatPrice(price: string | number, currency = 'JPY'): string {
+  formatPrice(price: string | number, currency?: string): string {
     const num = Number(price) || 0;
-    if (currency === 'JPY') {
-      return `¥${num.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}`;
-    }
-    return `$${num.toFixed(2)}`;
+    // Currency always follows the active property context — never a hardcoded default.
+    return formatMoney(num, currency || this.activeProperty()?.currency || '');
   }
 
   getTrendIcon(trend: 'up' | 'down' | 'neutral'): string {

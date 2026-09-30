@@ -90,6 +90,7 @@ describe('F&B Restaurant Operations Service Suite', () => {
       },
       fnbMenuItem: {
         findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0),
         findFirst: jest.fn().mockResolvedValue({
           id: menuItemId,
           propertyId,
@@ -178,6 +179,71 @@ describe('F&B Restaurant Operations Service Suite', () => {
     outletService = new FnbOutletService(mockPrisma);
     menuService = new FnbMenuService(mockPrisma);
     orderService = new FnbOrderService(mockPrisma, mockFolioService);
+  });
+
+  describe('Menu Categories', () => {
+    it('creates a normalized category only for an outlet owned by the property', async () => {
+      const now = new Date('2026-09-29T12:00:00.000Z');
+      mockPrisma.fnbMenuCategory.findFirst.mockResolvedValueOnce(null);
+      mockPrisma.fnbMenuCategory.create.mockResolvedValue({
+        id: 'category-2', propertyId, outletId, code: 'BREAKFAST', name: 'Breakfast',
+        displayOrder: 1, isActive: true, createdAt: now, updatedAt: now,
+      });
+
+      const category = await menuService.createCategory(propertyId, outletId, {
+        code: ' breakfast ', name: ' Breakfast ', displayOrder: 1,
+      });
+
+      expect(mockPrisma.fnbOutlet.findFirst).toHaveBeenCalledWith({
+        where: { id: outletId, propertyId, deletedAt: null }, select: { id: true },
+      });
+      expect(mockPrisma.fnbMenuCategory.findFirst).toHaveBeenCalledWith({
+        where: { propertyId, outletId, code: 'BREAKFAST' },
+      });
+      expect(mockPrisma.fnbMenuCategory.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ propertyId, outletId, code: 'BREAKFAST', name: 'Breakfast', displayOrder: 1 }),
+      });
+      expect(category).toMatchObject({ propertyId, outletId, code: 'BREAKFAST', name: 'Breakfast', displayOrder: 1 });
+    });
+
+    it('rejects duplicate category codes without creating another row', async () => {
+      mockPrisma.fnbMenuCategory.findFirst.mockResolvedValue({ id: 'category-1', code: 'BREAKFAST' });
+
+      await expect(menuService.createCategory(propertyId, outletId, {
+        code: 'breakfast', name: 'Breakfast', displayOrder: 1,
+      })).rejects.toThrow(ConflictException);
+      expect(mockPrisma.fnbMenuCategory.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a category request for an outlet outside the property', async () => {
+      mockPrisma.fnbOutlet.findFirst.mockResolvedValue(null);
+
+      await expect(menuService.createCategory(propertyId, outletId, {
+        code: 'BREAKFAST', name: 'Breakfast', displayOrder: 1,
+      })).rejects.toThrow(NotFoundException);
+      expect(mockPrisma.fnbMenuCategory.findFirst).not.toHaveBeenCalled();
+      expect(mockPrisma.fnbMenuCategory.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects invalid category fields before checking duplicates or writing', async () => {
+      await expect(menuService.createCategory(propertyId, outletId, {
+        code: 'BREAKFAST', name: '  ', displayOrder: -1,
+      })).rejects.toThrow(BadRequestException);
+      expect(mockPrisma.fnbMenuCategory.findFirst).not.toHaveBeenCalled();
+      expect(mockPrisma.fnbMenuCategory.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Menu Catalog Search', () => {
+    it('scopes paginated menu queries to the current property and outlet without a nonexistent soft-delete field', async () => {
+      await menuService.findMenuItemsPaginated(propertyId, { outletId, page: 1, limit: 20, isActive: true });
+
+      expect(mockPrisma.fnbMenuItem.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { propertyId, outletId, isActive: true },
+      }));
+      expect(mockPrisma.fnbMenuItem.count).toHaveBeenCalledWith({ where: { propertyId, outletId, isActive: true } });
+    });
+
   });
 
   describe('Table & Order Initiation', () => {

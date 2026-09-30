@@ -1,5 +1,4 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsIn,
@@ -11,17 +10,20 @@ import {
   IsUUID,
   MaxLength,
   Min,
-  ValidateNested,
 } from 'class-validator';
-import { PaymentProviderType, PaymentGatewayTransactionStatus, PaymentIntentStatus } from '@hms/api-contracts';
-
-// ==========================================
-// PAYMENT PROVIDER CONFIGURATION
-// ==========================================
+import {
+  PaymentProviderType,
+  PaymentGatewayTransactionStatus,
+  PaymentIntentStatus,
+  PAYMENT_PROVIDER_CODES,
+  PaymentGatewayEnvironment,
+  SavePaymentGatewayConfigDto,
+  UpdatePaymentGatewayConfigDto,
+} from '@hms/api-contracts';
 
 export class CreatePaymentProviderConfigDto {
-  @ApiProperty({ enum: ['STRIPE', 'ADYEN', 'SQUARE', 'DEMO'], description: 'Payment provider' })
-  @IsIn(['STRIPE', 'ADYEN', 'SQUARE', 'DEMO'])
+  @ApiProperty({ enum: PAYMENT_PROVIDER_CODES, description: 'Payment provider' })
+  @IsIn([...PAYMENT_PROVIDER_CODES])
   provider!: PaymentProviderType;
 
   @ApiProperty({ example: 'Stripe Payments', description: 'Human-readable name' })
@@ -30,7 +32,7 @@ export class CreatePaymentProviderConfigDto {
   @MaxLength(100)
   name!: string;
 
-  @ApiProperty({ description: 'Provider configuration (API keys, webhook secrets, etc.)' })
+  @ApiProperty({ description: 'Provider configuration (legacy endpoint; new administration API encrypts secrets)' })
   @IsObject()
   configuration!: Record<string, any>;
 
@@ -63,16 +65,89 @@ export class UpdatePaymentProviderConfigDto {
   enabled?: boolean;
 }
 
-// ==========================================
-// PAYMENT INTENT
-// ==========================================
+export class SavePaymentGatewayConfigRequest implements SavePaymentGatewayConfigDto {
+  @ApiProperty({ enum: PAYMENT_PROVIDER_CODES })
+  @IsIn([...PAYMENT_PROVIDER_CODES])
+  providerCode!: PaymentProviderType;
+
+  @ApiProperty({ enum: ['SANDBOX', 'PRODUCTION'] })
+  @IsIn(['SANDBOX', 'PRODUCTION'])
+  environment!: PaymentGatewayEnvironment;
+
+  @ApiProperty({ type: Object })
+  @IsObject()
+  credentials!: Record<string, string>;
+
+  @ApiProperty({ type: [String] })
+  @IsString({ each: true })
+  supportedCurrencies!: string[];
+
+  @ApiProperty({ type: [String] })
+  @IsString({ each: true })
+  enabledPaymentMethods!: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  priority?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
+}
+
+export class UpdatePaymentGatewayConfigRequest implements UpdatePaymentGatewayConfigDto {
+  @ApiPropertyOptional({ enum: ['SANDBOX', 'PRODUCTION'] })
+  @IsOptional()
+  @IsIn(['SANDBOX', 'PRODUCTION'])
+  environment?: PaymentGatewayEnvironment;
+
+  @ApiPropertyOptional({ type: Object })
+  @IsOptional()
+  @IsObject()
+  credentials?: Record<string, string>;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsString({ each: true })
+  supportedCurrencies?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsString({ each: true })
+  enabledPaymentMethods?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  priority?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean;
+}
+
+export class TestGatewayConnectionRequest {
+  @ApiProperty()
+  @IsUUID()
+  gatewayId!: string;
+}
 
 export class CreatePaymentIntentDto {
   @ApiProperty({ description: 'Payment provider configuration ID' })
   @IsUUID()
   paymentProviderConfigId!: string;
 
-  @ApiProperty({ example: 15000, description: 'Amount in minor units (e.g., cents)' })
+  @ApiProperty({ example: 15000, description: 'Amount in the currency minor unit scale, per the authoritative ISO currency exponent' })
   @IsNumber()
   @Min(1)
   amount!: number;
@@ -94,6 +169,11 @@ export class CreatePaymentIntentDto {
   @IsObject()
   metadata?: Record<string, any>;
 
+  @ApiPropertyOptional({ description: 'Folio to settle after provider-authoritative payment confirmation' })
+  @IsOptional()
+  @IsUUID()
+  folioId?: string;
+
   @ApiPropertyOptional({ enum: ['AUTOMATIC', 'MANUAL'], default: 'AUTOMATIC' })
   @IsOptional()
   @IsIn(['AUTOMATIC', 'MANUAL'])
@@ -104,11 +184,11 @@ export class CreatePaymentIntentDto {
   @IsIn(['AUTOMATIC', 'MANUAL'])
   confirmationMethod?: 'AUTOMATIC' | 'MANUAL';
 
-  @ApiPropertyOptional({ description: 'Idempotency key for duplicate protection' })
-  @IsOptional()
+  @ApiProperty({ description: 'Required idempotency key for durable payment intent creation' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(64)
-  idempotencyKey?: string;
+  idempotencyKey!: string;
 }
 
 export class AuthorizePaymentGatewayTransactionDto {
@@ -122,11 +202,11 @@ export class AuthorizePaymentGatewayTransactionDto {
   @MaxLength(100)
   paymentMethodId?: string;
 
-  @ApiPropertyOptional({ description: 'Idempotency key' })
-  @IsOptional()
+  @ApiProperty({ description: 'Required idempotency key for durable payment intent creation' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(64)
-  idempotencyKey?: string;
+  idempotencyKey!: string;
 }
 
 export class CapturePaymentGatewayTransactionDto {
@@ -140,17 +220,22 @@ export class CapturePaymentGatewayTransactionDto {
   @Min(1)
   amount?: number;
 
-  @ApiPropertyOptional({ description: 'Idempotency key' })
-  @IsOptional()
+  @ApiProperty({ description: 'Required idempotency key for this capture operation' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(64)
-  idempotencyKey?: string;
+  idempotencyKey!: string;
 }
 
 export class RefundPaymentGatewayTransactionDto {
-  @ApiProperty({ description: 'Payment ID' })
+  @ApiProperty({ description: 'Gateway transaction ID' })
   @IsUUID()
   paymentId!: string;
+
+  @ApiPropertyOptional({ description: 'Folio Payment ID for the original capture; required if multiple eligible captured payments exist' })
+  @IsOptional()
+  @IsUUID()
+  originalPaymentId?: string;
 
   @ApiPropertyOptional({ description: 'Amount to refund (partial refund), in minor units' })
   @IsOptional()
@@ -158,17 +243,17 @@ export class RefundPaymentGatewayTransactionDto {
   @Min(1)
   amount?: number;
 
-  @ApiPropertyOptional({ description: 'Refund reason' })
-  @IsOptional()
+  @ApiProperty({ description: 'Refund reason (required for auditable financial settlement)' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255)
-  reason?: string;
+  reason!: string;
 
-  @ApiPropertyOptional({ description: 'Idempotency key' })
-  @IsOptional()
+  @ApiProperty({ description: 'Required unique idempotency key for this refund operation' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(64)
-  idempotencyKey?: string;
+  idempotencyKey!: string;
 }
 
 export class CancelPaymentGatewayTransactionDto {
@@ -176,16 +261,12 @@ export class CancelPaymentGatewayTransactionDto {
   @IsUUID()
   paymentIntentId!: string;
 
-  @ApiPropertyOptional({ description: 'Idempotency key' })
-  @IsOptional()
+  @ApiProperty({ description: 'Required idempotency key' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(64)
-  idempotencyKey?: string;
+  idempotencyKey!: string;
 }
-
-// ==========================================
-// WEBHOOK SIMULATION
-// ==========================================
 
 export class SimulateWebhookDto {
   @ApiProperty({ description: 'Payment provider configuration ID' })
@@ -201,10 +282,6 @@ export class SimulateWebhookDto {
   @IsObject()
   payload!: Record<string, any>;
 }
-
-// ==========================================
-// RECONCILIATION
-// ==========================================
 
 export class GeneratePaymentReconciliationDto {
   @ApiProperty({ description: 'Payment provider configuration ID' })

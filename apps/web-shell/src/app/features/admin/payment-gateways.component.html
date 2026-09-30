@@ -1,0 +1,78 @@
+<div class="gateway-page">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">ADMINISTRATION · PAYMENTS</p>
+      <h1>Payment Gateways</h1>
+      <p class="subtitle">Configure property-scoped payment providers and supported tender methods.</p>
+    </div>
+    <div class="property-summary" *ngIf="activeProperty() as property">
+      <span class="property-label">PROPERTY</span>
+      <strong>{{ property.name }}</strong>
+      <span>{{ countryName() || 'Country' }} ({{ countryCode() || '—' }}) · {{ property.currency }}</span>
+    </div>
+  </header>
+
+  <div class="notice info" role="note"><strong>Catalog is not connectivity.</strong> Providers marked Catalog Only have no adapter and never make network requests. The HMS Demo Gateway is simulated and is never live.</div>
+  <div class="notice error" *ngIf="error()" role="alert">{{ error() }}</div>
+  <div class="notice success" *ngIf="notice()" role="status">{{ notice() }}</div>
+  <div class="empty" *ngIf="!canView">You do not have permission to view payment gateways for this property.</div>
+  <div class="loading" *ngIf="loading()">Loading property gateways…</div>
+
+  <section class="catalog-section" *ngIf="canView">
+    <div class="section-heading"><div><p class="eyebrow">REGION & CURRENCY MATCHED</p><h2>Recommended / Available Gateways</h2></div><span class="region-pill">{{ activeProperty()?.currency || '—' }} · {{ catalog().length }} providers</span></div>
+    <div class="provider-grid">
+      <article class="provider-card" *ngFor="let provider of catalog()" [class.recommended]="recommended(provider)">
+        <div class="card-top">
+          <div class="provider-mark">{{ provider.displayName.substring(0, 1) }}</div>
+          <div class="title-wrap"><span class="provider-name">{{ provider.displayName }}</span><span class="provider-description">{{ provider.description }}</span></div>
+        </div>
+        <div class="tags"><span *ngIf="recommended(provider)" class="tag recommended-tag">Recommended</span><span class="tag">{{ provider.adapterStatus.replace('_', ' ') }}</span></div>
+        <div class="detail-row"><span>Region</span><strong>{{ countryCode() || '—' }} · {{ provider.supportedCountries.join(', ') }}</strong></div>
+        <div class="detail-row"><span>Currencies</span><strong>{{ provider.supportedCurrencies.join(', ') || '—' }}</strong></div>
+        <div class="detail-row"><span>Methods</span><strong>{{ (provider.countryPaymentMethods[countryCode() || ''] || provider.supportedPaymentMethods).join(' · ') }}</strong></div>
+        <div class="capabilities"><span *ngFor="let capability of provider.capabilities">{{ capability.replace('_', ' ') }}</span><em *ngIf="!provider.capabilities.length">No implemented capabilities</em></div>
+        <div class="card-bottom">
+          <div class="state"><span class="status-dot" [class.demo]="provider.integrationStatus === 'DEMO_ADAPTER'"></span>{{ configFor(provider)?.integrationStatus || provider.integrationStatus }}</div>
+          <button type="button" class="button primary" (click)="openConfiguration(provider)" [disabled]="!canConfigure">{{ configFor(provider) ? 'Configure' : 'Configure' }}</button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="configured-section" *ngIf="canView">
+    <div class="section-heading"><div><p class="eyebrow">PROPERTY CONFIGURATION</p><h2>Configured Gateways</h2></div></div>
+    <div class="empty" *ngIf="!configs().length">No gateways configured. Providers are not activated automatically.</div>
+    <div class="table-wrap" *ngIf="configs().length">
+      <table><thead><tr><th>Provider</th><th>Environment</th><th>Methods</th><th>Priority</th><th>Status</th><th>Role</th><th>Actions</th></tr></thead>
+        <tbody><tr *ngFor="let config of configs()">
+          <td><strong>{{ config.displayName }}</strong><small>{{ config.providerCode }}</small></td>
+          <td>{{ config.environment }}</td><td>{{ config.enabledPaymentMethods.join(', ') || '—' }}</td><td>{{ config.priority }}</td>
+          <td><span class="status-badge" [attr.data-status]="config.integrationStatus">{{ config.enabled ? config.integrationStatus : 'DISABLED' }}</span></td>
+          <td>{{ config.isPrimary ? 'Primary' : 'Secondary' }}</td>
+          <td class="actions"><button class="link-button" (click)="testConnection(config)" [disabled]="!canTest || testing()">Test</button><button class="link-button" (click)="setEnabled(config, !config.enabled)" [disabled]="config.enabled ? !canDisable : !canEnable">{{ config.enabled ? 'Disable' : 'Enable' }}</button></td>
+        </tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="backdrop" *ngIf="selectedProvider()" (click)="closeConfiguration()">
+    <section class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" (click)="$event.stopPropagation()">
+      <header class="drawer-header"><div><p class="eyebrow">PROPERTY PROVIDER SETUP</p><h2 id="drawer-title">{{ selectedProvider()?.displayName }}</h2></div><button class="close" type="button" aria-label="Close" (click)="closeConfiguration()">×</button></header>
+      <p class="drawer-description">{{ selectedProvider()?.description }}</p>
+      <div class="notice info compact" *ngIf="selectedProvider()?.adapterStatus === 'CATALOG_ONLY'">Catalog Only · Credentials may be saved, but this provider cannot be enabled or contacted until an adapter is implemented and verified.</div>
+      <div class="notice warning compact" *ngIf="selectedProvider()?.adapterStatus === 'DEMO_ADAPTER'">DEMO / SIMULATED · No provider network calls; never Production Ready or Live.</div>
+      <label class="field">Environment<select [ngModel]="environment()" (ngModelChange)="environment.set($event)"><option value="SANDBOX">Sandbox</option><option value="PRODUCTION">Production (saved configuration only)</option></select></label>
+      <p class="section-label">Credentials</p>
+      <label class="field" *ngFor="let field of selectedProvider()?.credentialSchema">
+        <span>{{ field.label }} <b *ngIf="field.required">*</b><small *ngIf="field.secret">Encrypted at rest · never returned</small></span>
+        <input [type]="field.type" [(ngModel)]="credentials[field.name]" [attr.required]="field.required ? true : null" [placeholder]="credentialConfigured(field.name) ? 'Saved · enter new value to rotate' : ''" />
+      </label>
+      <p class="empty compact" *ngIf="!selectedProvider()?.credentialSchema?.length">Provider credentials are not yet defined; no credential values accepted.</p>
+      <p class="section-label">Enabled payment methods</p>
+      <div class="method-grid"><label class="method" *ngFor="let method of (selectedProvider()?.countryPaymentMethods?.[countryCode() || ''] || selectedProvider()?.supportedPaymentMethods || [])"><input type="checkbox" [checked]="enabledMethods().includes(method)" (change)="toggleMethod(method, $any($event.target).checked)" />{{ method }}</label></div>
+      <div class="config-row"><label class="field">Priority<input type="number" min="1" [ngModel]="priority()" (ngModelChange)="priority.set(+$event)" /></label><label class="primary-check"><input type="checkbox" [checked]="isPrimary()" (change)="isPrimary.set($any($event.target).checked)" /> Set as primary</label></div>
+      <div class="credential-status" *ngIf="selectedConfig()?.credentialFields?.length"><strong>Stored credentials</strong><span *ngFor="let field of selectedConfig()?.credentialFields">{{ field.name }}: {{ field.configured ? field.maskedValue || 'configured' : 'not configured' }}</span></div>
+      <footer class="drawer-actions"><button class="button secondary" type="button" (click)="closeConfiguration()">Cancel</button><button class="button primary" type="button" [disabled]="!canConfigure || saving()" (click)="saveConfiguration()">{{ saving() ? 'Saving…' : 'Save Configuration' }}</button><button class="button secondary" type="button" *ngIf="selectedConfig()" [disabled]="!canTest || testing()" (click)="testConnection(selectedConfig()!)">{{ testing() ? 'Testing…' : 'Test Connection' }}</button></footer>
+    </section>
+  </div>
+</div>
