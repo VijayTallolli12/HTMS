@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npx prisma generate --schema=packages/database/prisma/schema.prisma && npm run build:web",
+  "buildCommand": "npm run prisma:generate --workspace=@hms/database && npm run build:packages && npm run build:web",
   "outputDirectory": "apps/web-shell/dist/web-shell/browser",
   "rewrites": [
     {
