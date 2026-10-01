@@ -11,6 +11,7 @@ import { PropertyDto } from '@hms/api-contracts';
 import { HmsSidebarComponent } from './shared/layout/hms-sidebar.component';
 import { HmsBrandLogoComponent } from './shared/components/hms-brand-logo.component';
 import { HmsPropertySelectorComponent } from './shared/components/hms-property-selector.component';
+import { HmsConfirmDialogComponent } from './shared/components/modal/hms-confirm-dialog.component';
 
 @Component({
   selector: 'app-root',
@@ -23,6 +24,7 @@ import { HmsPropertySelectorComponent } from './shared/components/hms-property-s
     HmsSidebarComponent,
     HmsBrandLogoComponent,
     HmsPropertySelectorComponent,
+    HmsConfirmDialogComponent,
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],

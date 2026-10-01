@@ -738,6 +738,7 @@
   <hms-modal
     *ngIf="showCatalogItemDrawer()"
     [title]="catalogFormMode() === 'create' ? 'New Menu Item' : 'Edit Menu Item'"
+    [showFooter]="false"
     (closed)="closeCatalogItemDrawer()"
   >
     <div class="modal-form-body">
@@ -771,8 +772,7 @@
         <label class="form-label">Availability</label>
         <select class="form-select" [ngModel]="catalogForm().availability" (ngModelChange)="setCatalogField('availability', $event)">
           <option value="AVAILABLE">Available</option>
-          <option value="OUT_OF_STOCK">Out of stock</option>
-          <option value="SEASONAL">Seasonal</option>
+          <option value="UNAVAILABLE">Unavailable (86'd)</option>
         </select>
       </div>
 
@@ -825,7 +825,7 @@
   <!-- ========================================================================= -->
   <!-- MODAL: PRICE EDIT -->
   <!-- ========================================================================= -->
-  <hms-modal *ngIf="showPriceEditDrawer()" title="Edit Price" (closed)="showPriceEditDrawer.set(false)">
+  <hms-modal *ngIf="showPriceEditDrawer()" title="Edit Price" [showFooter]="false" (closed)="showPriceEditDrawer.set(false)">
     <div class="modal-form-body">
       <div class="form-group">
         <label class="form-label">New Price ({{ activeProperty()?.currency }})</label>

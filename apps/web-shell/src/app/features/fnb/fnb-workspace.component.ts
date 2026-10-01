@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { OrganizationService } from '../../core/services/organization.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ConfirmService } from '../../core/services/confirm.service';
 import {
   FnbApiService,
   InHouseGuestOption,
@@ -75,6 +76,7 @@ export class FnbWorkspaceComponent {
   private readonly orgService = inject(OrganizationService);
   private readonly authService = inject(AuthService);
   private readonly fnbApi = inject(FnbApiService);
+  private readonly confirmService = inject(ConfirmService);
 
   readonly activeProperty = this.orgService.activePropertyContext;
   readonly currentUser = this.authService.currentUser;
@@ -178,10 +180,6 @@ export class FnbWorkspaceComponent {
   // Outlets Management State
   managementOutlets = signal<OutletDto[]>([]);
   isLoadingOutletsMgmt = signal<boolean>(false);
-  outletSelectedForMgmt = signal<OutletDto | null>(null);
-  showOutletDetailDrawer = signal<boolean>(false);
-  isLoadingOutletDetail = signal<boolean>(false);
-  outletDetail = signal<any>(null);
 
   // W4: Category CRUD modal state
   showCategoryModal = signal<boolean>(false);
@@ -539,9 +537,14 @@ export class FnbWorkspaceComponent {
     if (!prop?.id || !order) return;
 
     this.isSubmitting.set(true);
-    this.fnbApi
-      .updateOrderStatus(prop.id, order.id, { status: nextStatus })
-      .subscribe({
+    // OPEN -> ORDERED is the "send to kitchen" submit, which enforces the
+    // non-empty-order guard server-side; all other transitions progress status.
+    const request$ =
+      nextStatus === 'ORDERED'
+        ? this.fnbApi.submitOrder(prop.id, order.id)
+        : this.fnbApi.updateOrderStatus(prop.id, order.id, { status: nextStatus });
+
+    request$.subscribe({
         next: (res) => {
           this.isSubmitting.set(false);
           this.activeOrder.set(res.data);
@@ -738,6 +741,7 @@ export class FnbWorkspaceComponent {
       next: (res) => {
         if (!this.isCurrentOutletContext(propertyId, outletId)) return;
         this.catalogSelectedItem.set(res.data);
+        this.startEditCatalogItem(res.data);
         this.showCatalogItemDrawer.set(true);
         this.isLoadingCatalog.set(false);
       },
@@ -754,7 +758,7 @@ export class FnbWorkspaceComponent {
     this.catalogSelectedItem.set(null);
   }
 
-  startEditCatalogItem(item: MenuItemDto): void {
+  startEditCatalogItem(item: MenuItemDetailDto): void {
     this.catalogFormMode.set('edit');
     this.catalogForm.set({
       name: item.name,
@@ -765,11 +769,19 @@ export class FnbWorkspaceComponent {
       displayOrder: item.displayOrder,
       isActive: item.isActive,
     });
+    this.itemFormCategoryId.set(item.categoryId);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
   }
 
   startCreateCatalogItem(): void {
     this.catalogFormMode.set('create');
     this.catalogForm.set({});
+    this.catalogSelectedItem.set(null);
+    this.itemFormCategoryId.set(this.catalogCategories()[0]?.id ?? '');
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.showCatalogItemDrawer.set(true);
   }
 
   saveCatalogItem(): void {
@@ -817,19 +829,27 @@ export class FnbWorkspaceComponent {
   }
 
   deleteCatalogItem(item: MenuItemDto): void {
-    if (!confirm(`Delete menu item "${item.name}"?`)) return;
     const propertyId = this.activeProperty()?.id;
     const outletId = this.selectedOutletId();
     if (!propertyId || !outletId) return;
 
-    // Soft-delete via isActive=false (domain rules keep orders referential).
-    this.fnbApi.updateMenuItem(propertyId, outletId, item.id, { isActive: false } as UpdateMenuItemDto).subscribe({
-      next: () => {
-        this.successMessage.set(`Menu item "${item.name}" archived.`);
-        this.loadCatalog(propertyId, outletId, this.catalogPage());
-      },
-      error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to archive menu item'),
-    });
+    this.confirmService
+      .confirmDanger(
+        'Archive menu item',
+        `Archive "${item.name}"? It will be hidden from menus. Existing orders keep their reference.`,
+        'Archive item',
+      )
+      .subscribe((ok) => {
+        if (!ok) return;
+        // Soft-delete via isActive=false (domain rules keep orders referential).
+        this.fnbApi.updateMenuItem(propertyId, outletId, item.id, { isActive: false } as UpdateMenuItemDto).subscribe({
+          next: () => {
+            this.successMessage.set(`Menu item "${item.name}" archived.`);
+            this.loadCatalog(propertyId, outletId, this.catalogPage());
+          },
+          error: (err) => this.errorMessage.set(err?.error?.message || 'Failed to archive menu item'),
+        });
+      });
   }
 
   // ================================================================
@@ -1169,36 +1189,6 @@ export class FnbWorkspaceComponent {
         this.isLoadingOutletsMgmt.set(false);
       },
     });
-  }
-
-  openOutletDetail(outlet: OutletDto): void {
-    const propertyId = this.activeProperty()?.id;
-    if (!propertyId) return;
-
-    this.isLoadingOutletDetail.set(true);
-    this.fnbApi.getOutlet(propertyId, outlet.id).subscribe({
-      next: (res) => {
-        this.outletDetail.set(res.data);
-        this.outletSelectedForMgmt.set(outlet);
-        this.showOutletDetailDrawer.set(true);
-        this.isLoadingOutletDetail.set(false);
-      },
-      error: (err) => {
-        this.errorMessage.set(err?.error?.message || 'Failed to load outlet details');
-        this.isLoadingOutletDetail.set(false);
-      },
-    });
-  }
-
-  closeOutletDetailDrawer(): void {
-    this.showOutletDetailDrawer.set(false);
-    this.outletSelectedForMgmt.set(null);
-    this.outletDetail.set(null);
-  }
-
-  toggleOutletStatus(outlet: OutletDto): void {
-    // Note: Update outlet status endpoint would need to be added
-    this.errorMessage.set('Outlet status toggle not yet implemented');
   }
 
   // ================================================================

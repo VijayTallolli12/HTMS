@@ -9,6 +9,7 @@ import {
 } from '@hms/api-contracts';
 import { UserManagementApiService } from './services/user-management-api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 
 interface RoleOption {
   code: string;
@@ -39,6 +40,7 @@ const ALL_ROLES: RoleOption[] = [
 export class UserManagementComponent implements OnInit {
   private readonly api = inject(UserManagementApiService);
   private readonly auth = inject(AuthService);
+  private readonly confirmService = inject(ConfirmService);
 
   readonly users = signal<ManagedUserSummaryDto[]>([]);
   readonly accessibleProperties = signal<AccessiblePropertyDto[]>([]);
@@ -313,22 +315,28 @@ export class UserManagementComponent implements OnInit {
     const newStatus: 'ACTIVE' | 'INACTIVE' = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     const actionLabel = newStatus === 'ACTIVE' ? 'activate' : 'deactivate';
 
-    if (!confirm(`Are you sure you want to ${actionLabel} ${user.firstName} ${user.lastName}?`)) {
-      return;
-    }
-
-    this.isLoading.set(true);
-    this.api.updateStatus(user.id, newStatus).subscribe({
-      next: () => {
-        this.successMessage.set(`User ${user.firstName} ${user.lastName} is now ${newStatus.toLowerCase()}.`);
-        setTimeout(() => this.successMessage.set(null), 4000);
-        this.loadUsers();
-      },
-      error: (err) => {
-        this.isLoading.set(false);
-        this.errorMessage.set(err?.error?.detail || `Failed to ${actionLabel} user.`);
-      },
-    });
+    this.confirmService
+      .confirm({
+        title: `${actionLabel === 'activate' ? 'Activate' : 'Deactivate'} user`,
+        message: `Are you sure you want to ${actionLabel} ${user.firstName} ${user.lastName}?`,
+        confirmLabel: actionLabel === 'activate' ? 'Activate' : 'Deactivate',
+        variant: newStatus === 'ACTIVE' ? 'primary' : 'danger',
+      })
+      .subscribe((ok) => {
+        if (!ok) return;
+        this.isLoading.set(true);
+        this.api.updateStatus(user.id, newStatus).subscribe({
+          next: () => {
+            this.successMessage.set(`User ${user.firstName} ${user.lastName} is now ${newStatus.toLowerCase()}.`);
+            setTimeout(() => this.successMessage.set(null), 4000);
+            this.loadUsers();
+          },
+          error: (err) => {
+            this.isLoading.set(false);
+            this.errorMessage.set(err?.error?.detail || `Failed to ${actionLabel} user.`);
+          },
+        });
+      });
   }
 
   getRoleBadgeClass(roleCode?: string): string {

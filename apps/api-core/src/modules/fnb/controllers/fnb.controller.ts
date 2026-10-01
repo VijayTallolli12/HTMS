@@ -86,6 +86,18 @@ export class FnbController {
     return createApiResponse(data, req);
   }
 
+  @Get('outlets/:outletId')
+  @RequirePermissions('fnb.outlet.view')
+  @ApiOperation({ summary: 'Retrieve a single F&B outlet by id' })
+  async getOutlet(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('outletId', ParseUUIDPipe) outletId: string,
+    @Req() req?: Request,
+  ): Promise<ApiSuccessResponse<OutletDto>> {
+    const data = await this.outletService.findOutletById(propertyId, outletId);
+    return createApiResponse(data, req);
+  }
+
   @Post('outlets')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermissions('fnb.outlet.view')

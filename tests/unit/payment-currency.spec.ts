@@ -8,7 +8,7 @@ import {
 } from '../../apps/api-core/src/modules/pms/payments/services/payment-currency';
 
 describe('payment currency exponent and conversions', () => {
-  it.each([['JPY', 0], ['KRW', 0], ['USD', 2], ['EUR', 2], ['AED', 2], ['SAR', 2], ['QAR', 2], ['INR', 2], ['KWD', 3], ['BHD', 3], ['OMR', 3]])('uses %s exponent %i', (currency, exponent) => {
+  it.each([['JPY', 0], ['KRW', 0], ['USD', 2], ['EUR', 2], ['AED', 2], ['SAR', 2], ['QAR', 2], ['INR', 2], ['GBP', 2], ['CAD', 2], ['AUD', 2], ['PLN', 2], ['COP', 2], ['KWD', 3], ['BHD', 3], ['OMR', 3]])('uses %s exponent %i', (currency, exponent) => {
     expect(currencyExponent(currency)).toBe(exponent);
   });
 

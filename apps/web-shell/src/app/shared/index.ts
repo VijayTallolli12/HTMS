@@ -12,6 +12,7 @@ export * from './layout/hms-sidebar.component';
 export * from './components/button/hms-button.component';
 export * from './components/status-pill/hms-status-pill.component';
 export * from './components/modal/hms-modal.component';
+export * from './components/modal/hms-confirm-dialog.component';
 export * from './components/data-table/hms-data-table.component';
 export * from './components/kpi-strip/hms-kpi-strip.component';
 export * from './components/search/hms-search.component';

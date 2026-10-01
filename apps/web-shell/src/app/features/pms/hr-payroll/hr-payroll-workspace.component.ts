@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
 import { PmsApiService } from '../services/pms-api.service';
 import { OrganizationService } from '../../../core/services/organization.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import {
   EmployeeDto,
   CreateEmployeeDto,
@@ -40,6 +41,7 @@ export class HrPayrollWorkspaceComponent implements OnInit, OnDestroy {
   private readonly orgService = inject(OrganizationService);
   private readonly pmsApi = inject(PmsApiService);
   private readonly router = inject(Router);
+  private readonly confirmService = inject(ConfirmService);
 
   private destroy$ = new Subject<void>();
   private searchSubject = new Subject<{ propertyId: string; query: QueryEmployeesDto }>();
@@ -435,19 +437,27 @@ export class HrPayrollWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   finalizeRun(run: PayrollRunDto) {
-    if (!confirm('Finalize this payroll run? This action cannot be undone.')) return;
-    const propertyId = this.getPropertyId();
-    if (!propertyId) return;
-    this.pmsApi.finalizePayrollRun(propertyId, run.id).subscribe({
-      next: () => {
-        this.loadRuns(propertyId);
-        if (this.selectedRun?.id === run.id) {
-          this.loadRunLines(run);
-        }
-        this.showSuccess('Payroll finalized');
-      },
-      error: (err) => this.showError(err.error?.detail || 'Failed to finalize payroll'),
-    });
+    this.confirmService
+      .confirmDanger(
+        'Finalize payroll run',
+        'Finalize this payroll run? This action cannot be undone.',
+        'Finalize run',
+      )
+      .subscribe((ok) => {
+        if (!ok) return;
+        const propertyId = this.getPropertyId();
+        if (!propertyId) return;
+        this.pmsApi.finalizePayrollRun(propertyId, run.id).subscribe({
+          next: () => {
+            this.loadRuns(propertyId);
+            if (this.selectedRun?.id === run.id) {
+              this.loadRunLines(run);
+            }
+            this.showSuccess('Payroll finalized');
+          },
+          error: (err) => this.showError(err.error?.detail || 'Failed to finalize payroll'),
+        });
+      });
   }
 
   // ==================== Helpers ====================

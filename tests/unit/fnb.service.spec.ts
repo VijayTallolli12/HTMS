@@ -171,6 +171,9 @@ describe('F&B Restaurant Operations Service Suite', () => {
           folioNumber: 'FOL-104',
         }),
       },
+      property: {
+        findFirst: jest.fn().mockResolvedValue({ currency: 'JPY' }),
+      },
       $transaction: jest.fn().mockImplementation(async (callback) => {
         return callback(mockPrisma);
       }),
@@ -288,6 +291,40 @@ describe('F&B Restaurant Operations Service Suite', () => {
           data: expect.objectContaining({
             status: 'OCCUPIED',
           }),
+        }),
+      );
+    });
+
+    it('derives order currency from the property rather than hardcoding JPY', async () => {
+      mockPrisma.property.findFirst.mockResolvedValue({ currency: 'AED' });
+      mockPrisma.fnbOrder.create.mockResolvedValue({
+        id: orderId,
+        propertyId,
+        outletId,
+        tableId,
+        orderNumber: 'FNB-20260925-0002',
+        status: 'OPEN',
+        guestCount: 2,
+        subtotal: new Prisma.Decimal(0),
+        taxAmount: new Prisma.Decimal(0),
+        totalAmount: new Prisma.Decimal(0),
+        currency: 'AED',
+        settlementType: 'ROOM_CHARGE',
+        version: 1,
+        items: [],
+        table: { tableNumber: 'T01' },
+        outlet: { name: 'Dubai Grand Restaurant' },
+      });
+
+      await orderService.createOrder(propertyId, { outletId, tableId, guestCount: 2 }, actorId);
+
+      expect(mockPrisma.property.findFirst).toHaveBeenCalledWith({
+        where: { id: propertyId },
+        select: { currency: true },
+      });
+      expect(mockPrisma.fnbOrder.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ currency: 'AED' }),
         }),
       );
     });

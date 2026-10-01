@@ -153,3 +153,6 @@
 <main class="hms-unauth-root" *ngIf="!isAuthenticated()">
   <router-outlet></router-outlet>
 </main>
+
+<!-- Global confirmation host: replaces native window.confirm() app-wide -->
+<hms-confirm-dialog></hms-confirm-dialog>

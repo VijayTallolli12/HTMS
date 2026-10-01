@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
 import { PmsApiService } from '../services/pms-api.service';
 import { OrganizationService } from '../../../core/services/organization.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import {
   GuestSearchDto,
   GuestSearchResultDto,
@@ -42,6 +43,7 @@ interface SearchState {
 export class CrmWorkspaceComponent implements OnInit, OnDestroy {
   private readonly orgService = inject(OrganizationService);
   private readonly pmsApi = inject(PmsApiService);
+  private readonly confirmService = inject(ConfirmService);
 
   private destroy$ = new Subject<void>();
   private searchSubject = new Subject<SearchState>();
@@ -313,22 +315,29 @@ export class CrmWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   deletePreference(pref: GuestPreferenceDto) {
-    if (!this.selectedGuest || !confirm(`Delete preference "${pref.preference}"?`)) return;
-    const propertyId = this.getPropertyId();
-    if (!propertyId) return;
-    this.pmsApi
-      .deletePreference(propertyId, this.selectedGuest.guest.id, pref.category, pref.preference)
-      .subscribe({
-        next: () => {
-          this.selectedGuest!.preferences = this.selectedGuest!.preferences.filter(
-            (p) => p.id !== pref.id,
-          );
-          this.showSuccess('Preference deleted');
-        },
-        error: (err) => {
-          console.error('Failed to delete preference', err);
-          this.showError('Failed to delete preference');
-        },
+    if (!this.selectedGuest) return;
+    const guest = this.selectedGuest;
+    this.confirmService
+      .confirmDanger('Delete preference', `Delete preference "${pref.preference}"?`, 'Delete')
+      .subscribe((ok) => {
+        if (!ok) return;
+        const propertyId = this.getPropertyId();
+        if (!propertyId) return;
+        this.pmsApi
+          .deletePreference(propertyId, guest.guest.id, pref.category, pref.preference)
+          .subscribe({
+            next: () => {
+              if (!this.selectedGuest) return;
+              this.selectedGuest.preferences = this.selectedGuest.preferences.filter(
+                (p) => p.id !== pref.id,
+              );
+              this.showSuccess('Preference deleted');
+            },
+            error: (err) => {
+              console.error('Failed to delete preference', err);
+              this.showError('Failed to delete preference');
+            },
+          });
       });
   }
 

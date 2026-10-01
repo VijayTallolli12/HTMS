@@ -15,6 +15,25 @@ describe('Payment gateway provider framework', () => {
       expect(saProviders.every((provider) => provider.integrationStatus !== 'CONNECTED')).toBe(true);
     });
 
+    it('resolves eligible providers for a Japan/JPY property (regression: previously 0 providers)', () => {
+      const jpProviders = registry.list('JP', 'JPY').map((provider) => provider.providerCode);
+      expect(jpProviders).toContain('DEMO');
+      expect(jpProviders).toContain('GMO_PAYMENT_GATEWAY');
+      expect(jpProviders).toContain('SB_PAYMENT_SERVICE');
+      expect(jpProviders).toContain('STRIPE');
+      expect(jpProviders.length).toBeGreaterThan(0);
+      // A Japan-only domestic provider must never surface for a UAE property.
+      expect(registry.list('AE', 'AED').map((p) => p.providerCode)).not.toContain('GMO_PAYMENT_GATEWAY');
+    });
+
+    it('derives non-MENA supported currencies and local payment methods per country', () => {
+      expect(registry.get('DEMO')?.supportedCurrencies).toContain('JPY');
+      expect(registry.get('STRIPE')?.supportedCurrencies).toEqual(expect.arrayContaining(['JPY', 'USD', 'GBP', 'INR']));
+      expect(registry.get('DEMO')?.countryPaymentMethods.JP).toContain('JCB');
+      expect(registry.get('DEMO')?.countryPaymentMethods.IN).toContain('UPI');
+      expect(registry.get('GMO_PAYMENT_GATEWAY')?.countryPaymentMethods.JP).toContain('KONBINI');
+    });
+
     it('describes MENA-local payment methods by region', () => {
       expect(registry.get('DEMO')?.countryPaymentMethods.AE).toContain('JAYWAN');
       expect(registry.get('DEMO')?.countryPaymentMethods.SA).toContain('MADA');

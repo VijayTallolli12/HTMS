@@ -78,8 +78,13 @@ const catalogCredentialSchema = (providerCode: PaymentProviderType): CredentialF
 
 const allMena = ['AE', 'SA', 'QA', 'KW', 'BH', 'OM', 'JO', 'EG'];
 const cardMethods = ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS'];
+// ISO 4217 currency (or currencies) in circulation per supported country. Every
+// country referenced in `supportedCountries` below MUST appear here, otherwise
+// providers listing that country derive an empty supportedCurrencies set and are
+// silently filtered out of the catalog for that property (the "0 providers" bug).
 const currenciesByCountry: Record<string, string[]> = {
   AE: ['AED'], SA: ['SAR'], QA: ['QAR'], KW: ['KWD'], BH: ['BHD'], OM: ['OMR'], JO: ['JOD'], EG: ['EGP'],
+  US: ['USD'], GB: ['GBP'], CA: ['CAD'], AU: ['AUD'], JP: ['JPY'], IN: ['INR'], PL: ['PLN'], CO: ['COP'],
 };
 
 const supportedCountries: Record<string, string[]> = {
@@ -133,6 +138,14 @@ const countryMethods: Record<string, string[]> = {
   OM: [...cardMethods, 'OMANNET'],
   JO: [...cardMethods],
   EG: [...cardMethods],
+  US: [...cardMethods, 'APPLE_PAY', 'GOOGLE_PAY', 'PAYPAL'],
+  GB: [...cardMethods, 'APPLE_PAY', 'GOOGLE_PAY', 'PAYPAL'],
+  CA: [...cardMethods, 'APPLE_PAY', 'GOOGLE_PAY', 'INTERAC'],
+  AU: [...cardMethods, 'APPLE_PAY', 'GOOGLE_PAY', 'AFTERPAY'],
+  JP: [...cardMethods, 'JCB', 'KONBINI', 'APPLE_PAY'],
+  IN: [...cardMethods, 'UPI', 'RUPAY', 'NETBANKING'],
+  PL: [...cardMethods, 'BLIK', 'PRZELEWY24'],
+  CO: [...cardMethods, 'PSE', 'NEQUI'],
 };
 
 export function deriveGatewayStatus(input: {
@@ -214,5 +227,12 @@ function countryPaymentMethodsFor(providerCode: PaymentProviderType, country: st
   if (providerCode === 'HYPERPAY' && country === 'SA') return [...cardMethods, 'MADA', 'STC_PAY', 'APPLE_PAY', 'TABBY', 'TAMARA'];
   if (providerCode === 'MOYASAR' && country === 'SA') return [...cardMethods, 'MADA', 'APPLE_PAY'];
   if (providerCode === 'GEIDEA' && country === 'SA') return [...cardMethods, 'MADA', 'STC_PAY', 'APPLE_PAY'];
+  if ((providerCode === 'GMO_PAYMENT_GATEWAY' || providerCode === 'SB_PAYMENT_SERVICE') && country === 'JP') {
+    return [...cardMethods, 'JCB', 'KONBINI'];
+  }
+  if ((providerCode === 'RAZORPAY' || providerCode === 'CASHFREE') && country === 'IN') {
+    return [...cardMethods, 'UPI', 'RUPAY', 'NETBANKING'];
+  }
+  if (providerCode === 'PAYU' && country === 'PL') return [...cardMethods, 'BLIK', 'PRZELEWY24'];
   return cardMethods;
 }

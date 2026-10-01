@@ -11,6 +11,7 @@ import {
   OrganizationHierarchyTree,
 } from '@hms/api-contracts';
 import { OrganizationService } from '../../core/services/organization.service';
+import { ConfirmService } from '../../core/services/confirm.service';
 import { HmsDataTableComponent, HmsModalComponent, HmsAlertComponent, HmsButtonComponent, HmsEmptyComponent, HmsLoadingComponent } from '../../shared/index';
 
 type NavLevel = 'group' | 'region' | 'country' | 'property' | 'building' | 'floor' | 'tree';
@@ -24,6 +25,22 @@ type NavLevel = 'group' | 'region' | 'country' | 'property' | 'building' | 'floo
 })
 export class OrganizationManagementComponent implements OnInit {
   private readonly orgService = inject(OrganizationService);
+  private readonly confirmService = inject(ConfirmService);
+
+  /** Shared guard for every deactivate action: HMS confirm dialog, then run. */
+  private confirmDeactivate(entityLabel: string, name: string, run: () => void): void {
+    this.confirmService
+      .confirmDanger(
+        `Deactivate ${entityLabel}`,
+        `Are you sure you want to deactivate ${entityLabel} '${name}'?`,
+        'Deactivate',
+      )
+      .subscribe((ok) => {
+        if (!ok) return;
+        this.clearMessages();
+        run();
+      });
+  }
 
   readonly currentLevel = signal<NavLevel>('group');
   readonly isLoading = signal<boolean>(false);
@@ -360,74 +377,74 @@ export class OrganizationManagementComponent implements OnInit {
   }
 
   deleteGroup(id: string, name: string): void {
-    if (!confirm(`Are you sure you want to deactivate Hotel Group '${name}'?`)) return;
-    this.clearMessages();
-    this.orgService.deleteGroup(id).subscribe({
-      next: () => {
-        this.successMessage.set(`Hotel Group '${name}' deactivated successfully.`);
-        this.loadGroups();
-      },
-      error: (err) => this.handleError(err),
+    this.confirmDeactivate('Hotel Group', name, () => {
+      this.orgService.deleteGroup(id).subscribe({
+        next: () => {
+          this.successMessage.set(`Hotel Group '${name}' deactivated successfully.`);
+          this.loadGroups();
+        },
+        error: (err) => this.handleError(err),
+      });
     });
   }
 
   deleteRegion(id: string, name: string): void {
-    if (!confirm(`Are you sure you want to deactivate Region '${name}'?`)) return;
-    this.clearMessages();
-    this.orgService.deleteRegion(id).subscribe({
-      next: () => {
-        this.successMessage.set(`Region '${name}' deactivated successfully.`);
-        if (this.selectedGroup()) this.loadRegions(this.selectedGroup()!.id);
-      },
-      error: (err) => this.handleError(err),
+    this.confirmDeactivate('Region', name, () => {
+      this.orgService.deleteRegion(id).subscribe({
+        next: () => {
+          this.successMessage.set(`Region '${name}' deactivated successfully.`);
+          if (this.selectedGroup()) this.loadRegions(this.selectedGroup()!.id);
+        },
+        error: (err) => this.handleError(err),
+      });
     });
   }
 
   deleteCountry(id: string, name: string): void {
-    if (!confirm(`Are you sure you want to deactivate Country '${name}'?`)) return;
-    this.clearMessages();
-    this.orgService.deleteCountry(id).subscribe({
-      next: () => {
-        this.successMessage.set(`Country '${name}' deactivated successfully.`);
-        if (this.selectedRegion()) this.loadCountries(this.selectedRegion()!.id);
-      },
-      error: (err) => this.handleError(err),
+    this.confirmDeactivate('Country', name, () => {
+      this.orgService.deleteCountry(id).subscribe({
+        next: () => {
+          this.successMessage.set(`Country '${name}' deactivated successfully.`);
+          if (this.selectedRegion()) this.loadCountries(this.selectedRegion()!.id);
+        },
+        error: (err) => this.handleError(err),
+      });
     });
   }
 
   deleteProperty(id: string, name: string): void {
-    if (!confirm(`Are you sure you want to deactivate Property '${name}'?`)) return;
-    this.clearMessages();
-    this.orgService.deleteProperty(id).subscribe({
-      next: () => {
-        this.successMessage.set(`Property '${name}' deactivated successfully.`);
-        if (this.selectedCountry()) this.loadProperties(this.selectedCountry()!.id);
-      },
-      error: (err) => this.handleError(err),
+    this.confirmDeactivate('Property', name, () => {
+      this.orgService.deleteProperty(id).subscribe({
+        next: () => {
+          this.successMessage.set(`Property '${name}' deactivated successfully.`);
+          if (this.selectedCountry()) this.loadProperties(this.selectedCountry()!.id);
+        },
+        error: (err) => this.handleError(err),
+      });
     });
   }
 
   deleteBuilding(id: string, name: string): void {
-    if (!confirm(`Are you sure you want to deactivate Building '${name}'?`)) return;
-    this.clearMessages();
-    this.orgService.deleteBuilding(id).subscribe({
-      next: () => {
-        this.successMessage.set(`Building '${name}' deactivated successfully.`);
-        if (this.selectedProperty()) this.loadBuildings(this.selectedProperty()!.id);
-      },
-      error: (err) => this.handleError(err),
+    this.confirmDeactivate('Building', name, () => {
+      this.orgService.deleteBuilding(id).subscribe({
+        next: () => {
+          this.successMessage.set(`Building '${name}' deactivated successfully.`);
+          if (this.selectedProperty()) this.loadBuildings(this.selectedProperty()!.id);
+        },
+        error: (err) => this.handleError(err),
+      });
     });
   }
 
   deleteFloor(id: string, name: string): void {
-    if (!confirm(`Are you sure you want to deactivate Floor '${name}'?`)) return;
-    this.clearMessages();
-    this.orgService.deleteFloor(id).subscribe({
-      next: () => {
-        this.successMessage.set(`Floor '${name}' deactivated successfully.`);
-        if (this.selectedBuilding()) this.loadFloors(this.selectedBuilding()!.id);
-      },
-      error: (err) => this.handleError(err),
+    this.confirmDeactivate('Floor', name, () => {
+      this.orgService.deleteFloor(id).subscribe({
+        next: () => {
+          this.successMessage.set(`Floor '${name}' deactivated successfully.`);
+          if (this.selectedBuilding()) this.loadFloors(this.selectedBuilding()!.id);
+        },
+        error: (err) => this.handleError(err),
+      });
     });
   }
 

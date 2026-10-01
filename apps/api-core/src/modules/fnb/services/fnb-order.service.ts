@@ -43,6 +43,15 @@ export class FnbOrderService {
       throw new NotFoundException(`Outlet '${dto.outletId}' not found for property`);
     }
 
+    const property = await this.prisma.property.findFirst({
+      where: { id: propertyId },
+      select: { currency: true },
+    });
+    if (!property) {
+      throw new NotFoundException(`Property '${propertyId}' not found`);
+    }
+    const orderCurrency = property.currency;
+
     let tableNumber: string | null = null;
     let tableToOccupyId: string | null = null;
 
@@ -104,7 +113,7 @@ export class FnbOrderService {
           subtotal: new Prisma.Decimal('0.00'),
           taxAmount: new Prisma.Decimal('0.00'),
           totalAmount: new Prisma.Decimal('0.00'),
-          currency: 'JPY',
+          currency: orderCurrency,
           settlementType: 'ROOM_CHARGE',
         },
         include: {

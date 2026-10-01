@@ -24,6 +24,7 @@
   --status-warning: #d97706;
   --status-danger: #dc2626;
   --status-info: #2563eb;
+  --status-inspection: #7c3aed;
 
   /* Typography (Slate & Charcoal) */
   --text-primary: #0f172a;
@@ -1129,6 +1130,41 @@ button:hover,
   color: var(--text-primary);
 }
 
+.hms-modal__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.hms-modal__subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.hms-modal__loading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.hms-modal__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--surface-border);
+  border-top-color: var(--gold-accent);
+  border-radius: 50%;
+  animation: hms-spin 0.7s linear infinite;
+}
+
 /* Data Table */
 .hms-table {
   width: 100%;
@@ -1485,6 +1521,80 @@ button:hover,
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
+}
+
+.hms-drawer__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.hms-drawer__subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Width variants (max-width: 90vw is inherited from the base rule) */
+.hms-drawer--sm {
+  width: 380px;
+}
+
+.hms-drawer--md {
+  width: 480px;
+}
+
+.hms-drawer--lg {
+  width: 620px;
+}
+
+.hms-drawer--xl {
+  width: 820px;
+}
+
+@media (max-width: 640px) {
+  .hms-drawer--sm,
+  .hms-drawer--md,
+  .hms-drawer--lg,
+  .hms-drawer--xl {
+    width: 100vw;
+  }
+}
+
+.hms-drawer__loading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.hms-drawer__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--surface-border);
+  border-top-color: var(--gold-accent);
+  border-radius: 50%;
+  animation: hms-spin 0.7s linear infinite;
+}
+
+@keyframes hms-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hms-drawer__spinner {
+    animation-duration: 1.4s;
+  }
 }
 
 /* Room Card */

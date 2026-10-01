@@ -7,6 +7,9 @@ describe('PasswordService (W1-T03 T03)', () => {
   let configService: ConfigService;
 
   beforeAll(() => {
+    // Argon2id with production security parameters (64MB memory, 3 iterations, 4 threads)
+    // requires sufficient time when multiple Jest workers execute concurrently under CPU load.
+    jest.setTimeout(30000);
     const securityConfig = parseSecurityConfig({}, 'test');
     configService = {
       get: jest.fn().mockImplementation((key: string) => {

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RoomTypeDto, CreateRoomTypeRequest } from '@hms/api-contracts';
 import { PmsApiService } from '../services/pms-api.service';
 import { OrganizationService } from '../../../core/services/organization.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import { HmsEmptyComponent } from '../../../shared/components/empty/hms-empty.component';
 
 @Component({
@@ -305,6 +306,7 @@ import { HmsEmptyComponent } from '../../../shared/components/empty/hms-empty.co
 export class RoomTypesComponent implements OnInit {
   private readonly pmsApi = inject(PmsApiService);
   private readonly orgService = inject(OrganizationService);
+  private readonly confirmService = inject(ConfirmService);
 
   readonly activeProperty = this.orgService.activePropertyContext;
   readonly roomTypes = signal<RoomTypeDto[]>([]);
@@ -407,15 +409,23 @@ export class RoomTypesComponent implements OnInit {
     const prop = this.activeProperty();
     if (!prop) return;
 
-    if (!confirm('Are you sure you want to deactivate/delete this room type?')) return;
-    this.pmsApi.deleteRoomType(prop.id, id).subscribe({
-      next: () => {
-        this.successMessage.set('Room type deleted successfully');
-        this.loadRoomTypes();
-      },
-      error: (err) => {
-        this.errorMessage.set(err.error?.detail || 'Failed to delete room type');
-      },
-    });
+    this.confirmService
+      .confirmDanger(
+        'Delete room type',
+        'Are you sure you want to deactivate/delete this room type?',
+        'Delete',
+      )
+      .subscribe((ok) => {
+        if (!ok) return;
+        this.pmsApi.deleteRoomType(prop.id, id).subscribe({
+          next: () => {
+            this.successMessage.set('Room type deleted successfully');
+            this.loadRoomTypes();
+          },
+          error: (err) => {
+            this.errorMessage.set(err.error?.detail || 'Failed to delete room type');
+          },
+        });
+      });
   }
 }

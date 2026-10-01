@@ -76,9 +76,9 @@ export class FnbApiService {
     );
   }
 
-  updateTableStatus(propertyId: string, tableId: string, status: TableStatus) {
+  updateTableStatus(propertyId: string, outletId: string, tableId: string, status: TableStatus) {
     return this.http.patch<ApiSuccessResponse<RestaurantTableDto>>(
-      `${this.fnbUrl(propertyId)}/tables/${tableId}/status`,
+      `${this.fnbUrl(propertyId)}/outlets/${outletId}/tables/${tableId}/status`,
       { status },
     );
   }
@@ -111,12 +111,6 @@ export class FnbApiService {
       ? `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items?categoryId=${categoryId}`
       : `${this.fnbUrl(propertyId)}/outlets/${outletId}/menu/items`;
     return this.http.get<ApiSuccessResponse<MenuItemDto[]>>(url);
-  }
-
-  getFullMenu(propertyId: string, outletId: string) {
-    return this.http.get<
-      ApiSuccessResponse<Array<MenuCategoryDto & { items: MenuItemDto[] }>>
-    >(`${this.fnbUrl(propertyId)}/outlets/${outletId}/menu`);
   }
 
   createItem(propertyId: string, outletId: string, dto: any) {
@@ -183,9 +177,16 @@ export class FnbApiService {
     orderId: string,
     dto: UpdateOrderStatusDto,
   ) {
-    return this.http.post<ApiSuccessResponse<FnbOrderDto>>(
+    return this.http.patch<ApiSuccessResponse<FnbOrderDto>>(
       `${this.fnbUrl(propertyId)}/orders/${orderId}/status`,
       dto,
+    );
+  }
+
+  submitOrder(propertyId: string, orderId: string) {
+    return this.http.post<ApiSuccessResponse<FnbOrderDto>>(
+      `${this.fnbUrl(propertyId)}/orders/${orderId}/submit`,
+      null,
     );
   }
 
