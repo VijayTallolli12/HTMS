@@ -41,13 +41,13 @@
       *ngIf="errorMessage()"
       type="error"
       [message]="errorMessage()!"
-      (dismissed)="errorMessage.set(null)"
+      (dismiss)="errorMessage.set(null)"
     ></hms-alert>
     <hms-alert
       *ngIf="successMessage()"
       type="success"
       [message]="successMessage()!"
-      (dismissed)="successMessage.set(null)"
+      (dismiss)="successMessage.set(null)"
     ></hms-alert>
   </div>
 

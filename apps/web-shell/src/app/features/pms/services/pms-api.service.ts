@@ -431,9 +431,14 @@ export class PmsApiService {
   }
 
   checkout(propertyId: string, reservationId: string) {
+    // Checkout is an idempotent financial operation. The API rejects requests
+    // without this header, so generate a client token for every user-initiated
+    // attempt (retries of the same HTTP request remain safe at the API layer).
+    const idempotencyKey = `checkout_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     return this.http.post<ApiSuccessResponse<CheckoutResponseDto>>(
       `${this.pmsUrl(propertyId)}/finance/reservations/${reservationId}/checkout`,
       {},
+      { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   }
 

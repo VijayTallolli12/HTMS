@@ -37,7 +37,7 @@
   </div>
 
   <!-- Room Assignment Modal -->
-  <hms-modal [title]="'Assign Physical Room • Conf #' + (selectedReservation()?.confirmationNumber)" [wide]="true" *ngIf="showAssignModal()">
+  <hms-modal [title]="'Assign Physical Room • Conf #' + (selectedReservation()?.confirmationNumber)" [wide]="true" *ngIf="showAssignModal()" (closed)="closeAssignModal()">
     <div class="guest-summary" *ngIf="selectedReservation()">
       <span>Guest: <strong>{{ selectedReservation()!.guest?.firstName }} {{ selectedReservation()!.guest?.lastName }}</strong></span>
       <span>Booked Category: <strong class="text-gold">{{ selectedReservation()!.roomTypeCode }}</strong></span>
@@ -89,8 +89,8 @@
     </div>
 
     <div hmsModalFooter>
-      <hms-button variant="outline" (click)="closeAssignModal()">Cancel</hms-button>
-      <hms-button variant="gold" [disabled]="isAssigning() || !selectedRoomId()" (click)="confirmRoomAssignment()">
+      <hms-button variant="outline" (clicked)="closeAssignModal()">Cancel</hms-button>
+      <hms-button variant="gold" [disabled]="isAssigning() || !selectedRoomId()" (clicked)="confirmRoomAssignment()">
         <span *ngIf="!isAssigning()">Confirm Room Assignment</span>
         <span *ngIf="isAssigning()">Allocating Room...</span>
       </hms-button>
@@ -98,12 +98,12 @@
   </hms-modal>
 
   <!-- Check-In Modal -->
-  <hms-modal [title]="'Execute Guest Check-In'" [wide]="true" *ngIf="showCheckInModal()">
+  <hms-modal [title]="'Execute Guest Check-In'" [wide]="true" *ngIf="showCheckInModal()" (closed)="closeCheckInModal()">
     <!-- Success State -->
     <div class="checkin-success" *ngIf="checkInSuccessData()">
       <hms-empty [title]="'Guest Checked In Successfully!'" [desc]="'Room is now OCCUPIED.'"></hms-empty>
       <div class="mt-1">
-        <hms-button variant="gold" (click)="navigateToFolio(selectedReservation()!.id)">
+        <hms-button variant="gold" (clicked)="navigateToFolio(selectedReservation()!.id)">
           Go to Guest Folio &amp; Cashiering &rarr;
         </hms-button>
       </div>
@@ -146,8 +146,8 @@
     </div>
 
     <div hmsModalFooter *ngIf="!checkInSuccessData()">
-      <hms-button variant="outline" (click)="closeCheckInModal()">Cancel</hms-button>
-      <hms-button variant="success" [disabled]="isCheckingIn() || (!identityVerified && !registrationCardSigned)" (click)="confirmCheckIn()">
+      <hms-button variant="outline" (clicked)="closeCheckInModal()">Cancel</hms-button>
+      <hms-button variant="success" [disabled]="isCheckingIn() || !identityVerified || !registrationCardSigned" (clicked)="confirmCheckIn()">
         <span *ngIf="!isCheckingIn()">Complete Check-In & Issue Key</span>
         <span *ngIf="isCheckingIn()">Checking In...</span>
       </hms-button>
@@ -179,9 +179,9 @@
 </ng-template>
 <ng-template #actionsCellCell let-value let-row="row">
   <div class="actions-cell">
-    <hms-button variant="outline" size="sm" *ngIf="row?.status === 'CONFIRMED' && !row?.assignedRoom" (click)="openAssignModal(row)">Assign Room</hms-button>
-    <hms-button variant="success" size="sm" *ngIf="row?.status === 'CONFIRMED' && row?.assignedRoom" (click)="openCheckInModal(row)">Execute Check-In</hms-button>
-    <hms-button variant="outline" size="sm" *ngIf="row?.status === 'CONFIRMED' && row?.assignedRoom" (click)="openAssignModal(row)">Change Room</hms-button>
+    <hms-button variant="outline" size="sm" *ngIf="row?.status === 'CONFIRMED' && !row?.assignedRoom" (clicked)="openAssignModal(row)">Assign Room</hms-button>
+    <hms-button variant="success" size="sm" *ngIf="row?.status === 'CONFIRMED' && row?.assignedRoom" (clicked)="openCheckInModal(row)">Execute Check-In</hms-button>
+    <hms-button variant="outline" size="sm" *ngIf="row?.status === 'CONFIRMED' && row?.assignedRoom" (clicked)="openAssignModal(row)">Change Room</hms-button>
     <a [routerLink]="['/pms/folios']" [queryParams]="{ reservationId: row?.id }" class="hms-btn hms-btn--info hms-btn--sm">Billing Folio</a>
   </div>
 </ng-template>
