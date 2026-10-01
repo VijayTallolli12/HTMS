@@ -8,7 +8,7 @@ test.describe('Web Shell Foundation Smoke Tests', () => {
     await expect(page).toHaveURL(/.*\/login/);
 
     // Verify brand heading / title on login page
-    await expect(page.locator('.brand-title, .hms-brand-logo, h2').first()).toBeVisible();
+    await expect(page.locator('.brand-title, .hms-brand-logo, h2')).toBeVisible();
 
     // Verify email & password form inputs exist
     await expect(page.locator('input[type="email"], #email')).toBeVisible();
